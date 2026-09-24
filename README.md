@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.5)
+# Boys of Chantilly dashboard (v1.5.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -66,3 +66,11 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   If man is unavailable for seasons where ESPN has no weekly lineups.
 - Phone tab bar: Scores, Pecking Order, Pick 'em, Standings, More (Awards, Story, History, Waivers and trades).
 - `netlify/lib/history.mjs`, `seasonUrl` / `seasonLeague` in `netlify/lib/espn.mjs` (seasons before 2018 use ESPN's leagueHistory endpoint).
+
+## 1.5.1
+- "Pecking Order" renamed "Food Chain" (#foodchain works as a link). Adds a Weekly pot: $12 to each week's high scorer
+  (ties split), season winnings, and the live leader for the current week.
+- "Waivers and trades" renamed "Transactions". Each move shows the team's FAAB left afterward (anchored on ESPN's
+  spent total; bids from later moves added back). Finished periods cached (`tx/v1/p<N>`).
+- Standings: dashed lines under rank 1 (regular-season leader) and under the last playoff spot (ESPN's playoff team count, default 8).
+- Summary card shows when trophies are loading or failed to load.
