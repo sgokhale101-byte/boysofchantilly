@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
   const views = ['mTeam', 'mRoster', 'mMatchupScore', 'mStandings', 'mSettings', 'mTransactions2'];
   const qs = views.map((v) => `view=${v}`).join('&');
-  const espnUrl = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${leagueId}?${qs}`;
+   const espnUrl = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${leagueId}?${qs}`;
 
   try {
     const resp = await fetch(espnUrl, {
