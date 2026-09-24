@@ -91,7 +91,7 @@
   h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
 
   /* Pick 'em */
-  .picks-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
+  .matchups.picks-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
   .pick { border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
   .pick .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .pick .opt {
@@ -194,6 +194,46 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
+
+  /* Scoreboard */
+  .medians { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .med { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .med .v { font-family: var(--display); font-weight: 900; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .med.proj .v { color: var(--violet); }
+  .med .k { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .sb { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .sb .tm { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 6px 0; }
+  .sb .tm .nm { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb .tm .meta { font-size: 13px; color: var(--muted); }
+  .sb .tm .cur { font-family: var(--display); font-weight: 800; font-size: 28px; text-align: right; font-variant-numeric: tabular-nums; line-height: 1; }
+  .sb .tm .pj { font-size: 13px; color: var(--violet); text-align: right; font-variant-numeric: tabular-nums; }
+  .sb .tm.trail .nm, .sb .tm.trail .cur { color: var(--muted); }
+  .wp { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 8px 0 4px; background: var(--line); }
+  .wp span:first-child { background: var(--white); }
+  .wp span:last-child { background: var(--royal); }
+  .wpl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  details.lu { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+  details.lu summary { cursor: pointer; font-size: 13px; color: var(--lilac); }
+  .lu-grid { display: grid; gap: 12px; margin-top: 8px; }
+  .lu-grid h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+  .lu-grid table { min-width: 0; width: 100%; table-layout: fixed; font-size: 12.5px; }
+  .lu-grid th { font-size: 11.5px; padding: 3px 2px; text-align: right; }
+  .lu-grid td { padding: 4px 2px; border-bottom: 1px solid var(--line); text-align: right; }
+  .lu-grid th:first-child, .lu-grid td:first-child { text-align: left; color: var(--muted); width: 44px; }
+  .lu-grid th:nth-child(2), .lu-grid td:nth-child(2) { text-align: left; overflow: hidden; text-overflow: ellipsis; }
+  .lu-grid th:nth-child(3), .lu-grid th:nth-child(4) { width: 50px; }
+  .lu-grid th:nth-child(5) { width: 58px; }
+  .matchups.scoreboard-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); align-items: start; }
+  .lu-grid .dim { color: var(--muted); }
+  .lu-grid .done { color: var(--muted); }
+  details.how { margin: 0 0 18px; color: var(--muted); font-size: 14px; max-width: 70ch; }
+  details.how summary { cursor: pointer; color: var(--lilac); }
+  details.how p { margin: 8px 0 0; }
+  .pick .opt .chance { font-size: 13px; color: var(--muted); }
+  .pick .opt .chance b { font-family: var(--display); font-weight: 800; font-size: 26px; color: var(--white); margin-right: 4px; }
+  .pick .opt .votes { font-size: 13px; color: var(--lilac); }
+  td.up { color: var(--violet); } td.down { color: var(--muted); }
+  @media (max-width: 640px) { .med .v { font-size: 34px; } }
 </style>
 </head>
 <body>
@@ -215,41 +255,55 @@
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
-    <button role="tab" id="tab-live" aria-controls="panel-live" aria-selected="true" data-tab="live">Live</button>
-    <button role="tab" id="tab-pickem" aria-controls="panel-pickem" aria-selected="false" data-tab="pickem">Pick 'em</button>
-    <button role="tab" id="tab-standings" aria-controls="panel-standings" aria-selected="false" data-tab="standings">Standings</button>
-    <button role="tab" id="tab-moves" aria-controls="panel-moves" aria-selected="false" data-tab="moves">Waivers and trades</button>
+    <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard">Scoreboard</button>
+    <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking">Pecking order</button>
+    <button role="tab" id="tab-pickem" aria-controls="panel-pickem" data-tab="pickem">Pick 'em</button>
+    <button role="tab" id="tab-standings" aria-controls="panel-standings" data-tab="standings">Standings</button>
+    <button role="tab" id="tab-moves" aria-controls="panel-moves" data-tab="moves">Waivers and trades</button>
   </nav>
 
   <div class="banner" id="banner" role="alert" hidden></div>
 
-  <div class="panel" id="panel-live" role="tabpanel" aria-labelledby="tab-live">
+  <div class="panel" id="panel-scoreboard" role="tabpanel" aria-labelledby="tab-scoreboard">
+    <section aria-labelledby="sbH">
+      <h2 id="sbH">Scoreboard</h2>
+      <p class="note">Current scores with projected finals. Projections update as games play out.</p>
+      <div class="medians">
+        <div class="med"><div class="v" id="medCur">–</div><div class="k">Current median</div></div>
+        <div class="med proj"><div class="v" id="medProj">–</div><div class="k">Projected median</div></div>
+      </div>
+      <details class="how"><summary>How projections work</summary>
+        <p>Each starter's ESPN projection is adjusted with the Vegas line for their NFL game: players on teams Vegas expects to score more get a bump, and players facing low-scoring games get trimmed. A defense gets the reverse, based on its opponent's expected points. Points already scored are locked in, and only the unplayed part of each game is projected.</p>
+        <p>Win chances come from the gap between the two projected totals and how much each lineup still has left to play: the more points still on the table, the more uncertain the result.</p>
+        <p id="oddsNote"></p>
+      </details>
+      <div class="matchups scoreboard-grid" id="scoreboard"></div>
+    </section>
+  </div>
+
+  <div class="panel" id="panel-pecking" role="tabpanel" aria-labelledby="tab-pecking" hidden>
     <section aria-labelledby="medianH">
-      <h2 id="medianH">Live score rank</h2>
+      <h2 id="medianH">Pecking order</h2>
       <p class="note">Every team ranked by this week's score. Teams above the median line are winning their second game of the week; teams below it are losing it.</p>
       <div class="board board-pad"><div class="board-inner" id="board"></div></div>
     </section>
-
     <section aria-labelledby="highH">
-      <h2 id="highH">Top scorers and lowest score</h2>
+      <h2 id="highH">Top 4 and last place</h2>
       <p class="note" id="highNote">The week's four highest-scoring teams and the lowest.</p>
       <div class="highs">
         <div><h3>Top 4</h3><ol class="top4" id="top4"></ol></div>
-        <div><h3>Lowest score</h3><div class="low" id="low"></div></div>
+        <div><h3>Last place</h3><div class="low" id="low"></div></div>
       </div>
-    </section>
-
-    <section aria-labelledby="muH">
-      <h2 id="muH">Matchups</h2>
-      <p class="note">Head-to-head scores. Live weeks refresh every minute.</p>
-      <div class="matchups" id="matchups"></div>
     </section>
   </div>
 
   <div class="panel" id="panel-pickem" role="tabpanel" aria-labelledby="tab-pickem" hidden>
     <section aria-labelledby="pickH">
       <h2 id="pickH">Pick 'em</h2>
-      <p class="note" id="pickNote">Tap the team you think wins each matchup. You get one vote per matchup, and voting on a game closes once either team scores.</p>
+      <p class="note" id="pickNote"></p>
+      <details class="how"><summary>Where the win chances come from</summary>
+        <p>Each team's projected score is built from its starters' ESPN projections, adjusted with the Vegas spread and over/under for every NFL game. The win chance compares the two projected totals and accounts for how unpredictable fantasy scores are. It's a model, not a guarantee.</p>
+      </details>
       <div class="matchups picks-grid" id="picks"></div>
     </section>
   </div>
@@ -257,11 +311,13 @@
   <div class="panel" id="panel-standings" role="tabpanel" aria-labelledby="tab-standings" hidden>
     <section aria-labelledby="stH">
       <h2 id="stH">Standings</h2>
-      <p class="note" id="standNote">Median record counts one extra game per completed week: a win for finishing above the league median, a loss for finishing below.</p>
-      <div class="toggle" role="group" aria-label="Sort standings">
-        <button id="sortH2H" aria-pressed="true">Head-to-head</button>
-        <button id="sortAll" aria-pressed="false">With median</button>
+      <div class="toggle" role="group" aria-label="Standings view">
+        <button data-view="current" aria-pressed="true">Current</button>
+        <button data-view="h2h" aria-pressed="false">Head-to-head</button>
+        <button data-view="median" aria-pressed="false">Median</button>
+        <button data-view="ifman" aria-pressed="false">If man</button>
       </div>
+      <p class="note" id="standNote"></p>
       <div class="table-scroll"><table id="standings"></table></div>
     </section>
   </div>
@@ -269,42 +325,50 @@
   <div class="panel" id="panel-moves" role="tabpanel" aria-labelledby="tab-moves" hidden>
     <section aria-labelledby="txH">
       <h2 id="txH">Waivers and trades</h2>
-      <p class="note" id="txNote">Completed adds, drops, and trades for the selected week.</p>
+      <p class="note">Completed adds, drops, and trades for the selected week.</p>
       <ul class="tx" id="tx"></ul>
     </section>
   </div>
 
   <footer>Data from ESPN, pulled live through this site's own server. League 353576.</footer>
 </div>
-
 <script>
 (() => {
   const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
-  const state = { league: null, week: null, currentWeek: null, lastWeek: null, sort: "h2h", players: null, timer: null, tab: "live", games: [], picks: null, pickErr: {} };
+  const TABS = ["scoreboard", "pecking", "pickem", "standings", "moves"];
+  const state = {
+    league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
+    wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
+  };
   const voter = (() => {
     try {
       let v = localStorage.getItem("boc-voter");
-      if (!v) { v = (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("")); localStorage.setItem("boc-voter", v); }
+      if (!v) { v = crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem("boc-voter", v); }
       return v;
     } catch { return null; }
   })();
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (n) => (Math.round((n || 0) * 100) / 100).toFixed(2);
+  const pct = (p) => `${Math.round((p || 0) * 100)}%`;
 
-  async function api(params) {
-    const qs = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => [].concat(v).forEach((x) => qs.append(k, x)));
-    const res = await fetch(`/api/espn?${qs}`);
+  async function getJSON(url, opts) {
+    const res = await fetch(url, opts);
     let data;
-    try { data = await res.json(); } catch { throw new Error("The data service returned something unexpected. Check that the function deployed."); }
+    try { data = await res.json(); } catch { throw new Error("The data service returned something unexpected. Check that the functions deployed."); }
     if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
     return data;
   }
+  function espn(params) {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => [].concat(v).forEach((x) => qs.append(k, x)));
+    return getJSON(`/api/espn?${qs}`);
+  }
+  const showError = (msg) => { const b = $("banner"); b.textContent = msg; b.hidden = false; };
+  const clearError = () => { $("banner").hidden = true; };
 
-  function showError(msg) { const b = $("banner"); b.textContent = msg; b.hidden = false; }
-  function clearError() { $("banner").hidden = true; }
-
+  // ---------- Teams ----------
+  const teamById = (id) => state.league?.teams.find((t) => t.id === id);
   const teamName = (t) => t ? (t.name || `${t.location || ""} ${t.nickname || ""}`.trim() || `Team ${t.id}`) : "Bye";
   function ownerName(t) {
     const L = state.league; if (!t || !L.members) return "";
@@ -312,87 +376,63 @@
     const m = L.members.find((x) => x.id === id);
     return m ? (m.firstName ? `${m.firstName} ${m.lastName || ""}`.trim() : m.displayName) : "";
   }
-  const teamById = (id) => state.league.teams.find((t) => t.id === id);
   function logo(t) {
     if (t && t.logo) return `<img class="logo-sm" src="${esc(t.logo)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
     return `<span class="logo-sm">${esc((t && t.abbrev) || "")}</span>`;
   }
-  const pts = (side) => side ? (side.totalPointsLive ?? side.totalPoints ?? 0) : 0;
+  const nameOf = (id) => teamName(teamById(id));
   function median(arr) {
     const a = [...arr].sort((x, y) => x - y); if (!a.length) return 0;
     const m = Math.floor(a.length / 2);
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   }
+  const decided = (g) => g.winner && g.winner !== "UNDECIDED";
+  const regCount = () => state.league?.settings?.scheduleSettings?.matchupPeriodCount || 99;
+  const wkSides = () => (state.wk?.matchups || []).flatMap((m) => [m.home, m.away]).filter(Boolean);
+  const weekLive = () => state.week === state.currentWeek && (state.wk?.matchups || []).some((m) => !decided(m));
 
-  // Median wins/losses from completed regular-season weeks
-  function medianRecords() {
-    const L = state.league, rec = {};
-    L.teams.forEach((t) => (rec[t.id] = { w: 0, l: 0, t: 0 }));
-    const regCount = L.settings?.scheduleSettings?.matchupPeriodCount || 99;
-    const byWeek = {};
-    (L.schedule || []).forEach((g) => {
-      if (g.matchupPeriodId > regCount) return;
-      (byWeek[g.matchupPeriodId] ||= []).push(g);
-    });
-    Object.values(byWeek).forEach((games) => {
-      if (games.some((g) => !g.winner || g.winner === "UNDECIDED")) return; // week not final
-      const scores = [];
-      games.forEach((g) => { [g.home, g.away].forEach((s) => s && scores.push({ id: s.teamId, p: s.totalPoints || 0 })); });
-      const med = median(scores.map((s) => s.p));
-      scores.forEach((s) => { const r = rec[s.id]; if (!r) return; s.p > med ? r.w++ : s.p < med ? r.l++ : r.t++; });
-    });
-    return rec;
+  // ---------- Scoreboard ----------
+  function renderScoreboard() {
+    const W = state.wk; if (!W) return;
+    $("medCur").textContent = fmt(W.medians.current);
+    $("medProj").textContent = fmt(W.medians.projected);
+    $("oddsNote").textContent = !W.odds.nflData
+      ? "NFL game data wasn't available this time, so projections are ESPN's alone."
+      : W.odds.games ? `Vegas lines found for ${W.odds.games} NFL game${W.odds.games === 1 ? "" : "s"} this week.` : "No Vegas lines are posted for this week yet, so projections are ESPN's alone.";
+    const lineup = (side) => `<div><h4>${esc(nameOf(side.teamId))}</h4><table><thead><tr><th>Slot</th><th>Player</th><th>Pts</th><th>Proj</th><th>Game</th></tr></thead><tbody>${side.starters.map((p) => {
+      const g = p.game, st = !g ? "Bye" : g.state === "post" ? "Final" : g.state === "in" ? "Live" : `${g.home ? "vs" : "at"} ${g.opp || ""}`;
+      return `<tr><td>${esc(p.slot)}</td><td>${esc(p.name)}</td><td class="${g && g.state === "post" ? "done" : ""}">${fmt(p.actual)}</td><td class="dim">${g && g.state !== "post" ? fmt(p.actual + p.remaining) : "–"}</td><td class="dim">${esc(st)}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+    $("scoreboard").innerHTML = W.matchups.map((m) => {
+      const { home: h, away: a } = m;
+      if (!a) return `<div class="sb"><div class="tm">${logo(teamById(h.teamId))}<div><div class="nm">${esc(nameOf(h.teamId))}</div><div class="meta">Bye</div></div><div><div class="cur">${fmt(h.current)}</div></div></div></div>`;
+      const final = decided(m);
+      const row = (s, o) => `<div class="tm ${s.current < o.current ? "trail" : ""}">${logo(teamById(s.teamId))}
+          <div style="min-width:0"><div class="nm">${esc(nameOf(s.teamId))}</div><div class="meta">${esc(ownerName(teamById(s.teamId)))}</div></div>
+          <div><div class="cur">${fmt(s.current)}</div>${final ? "" : `<div class="pj">Projected ${fmt(s.projected)}</div>`}</div></div>`;
+      const hp = h.winProb ?? 0.5;
+      return `<div class="sb">${row(h, a)}${row(a, h)}
+        ${final ? `<div class="wpl"><span>Final</span></div>` : `<div class="wp" aria-hidden="true"><span style="width:${hp * 100}%"></span><span style="width:${(1 - hp) * 100}%"></span></div>
+        <div class="wpl"><span>${esc(teamById(h.teamId)?.abbrev || "")} ${pct(hp)} to win</span><span>${esc(teamById(a.teamId)?.abbrev || "")} ${pct(1 - hp)}</span></div>`}
+        <details class="lu"><summary>Lineups</summary><div class="lu-grid">${lineup(h)}${lineup(a)}</div></details></div>`;
+    }).join("") || `<div class="empty">No matchups scheduled this week.</div>`;
   }
 
-  function renderStandings() {
-    const L = state.league, med = medianRecords();
-    const rows = L.teams.map((t) => {
-      const o = t.record?.overall || {};
-      const m = med[t.id];
-      const h2hGames = (o.wins || 0) + (o.losses || 0) + (o.ties || 0);
-      const allW = (o.wins || 0) + m.w, allL = (o.losses || 0) + m.l, allT = (o.ties || 0) + m.t;
-      return {
-        t, o, m, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0,
-        h2hPct: h2hGames ? ((o.wins || 0) + (o.ties || 0) / 2) / h2hGames : 0,
-        allPct: (allW + allL + allT) ? (allW + allT / 2) / (allW + allL + allT) : 0,
-        all: [allW, allL, allT],
-      };
-    });
-    const key = state.sort === "h2h" ? "h2hPct" : "allPct";
-    rows.sort((a, b) => b[key] - a[key] || b.pf - a.pf);
-    const rec = (w, l, t) => `${w}-${l}${t ? `-${t}` : ""}`;
-    $("standings").innerHTML = `
-      <thead><tr><th>#</th><th>Team</th><th>Head-to-head</th><th>Median</th><th>Combined</th><th>Points for</th><th>Points against</th></tr></thead>
-      <tbody>${rows.map((r, i) => `
-        <tr>
-          <td class="rank">${i + 1}</td>
-          <td><div class="tcell">${logo(r.t)}<div><div>${esc(teamName(r.t))}</div><div class="owner">${esc(ownerName(r.t))}</div></div></div></td>
-          <td class="${state.sort === "h2h" ? "strong" : ""}">${rec(r.o.wins || 0, r.o.losses || 0, r.o.ties || 0)}</td>
-          <td>${rec(r.m.w, r.m.l, r.m.t)}</td>
-          <td class="${state.sort === "all" ? "strong" : ""}">${rec(...r.all)}</td>
-          <td>${fmt(r.pf)}</td>
-          <td>${fmt(r.pa)}</td>
-        </tr>`).join("")}</tbody>`;
-  }
-
+  // ---------- Pecking order ----------
   function placeMedian() {
     const track = document.querySelector("#board .track"), line = $("mline");
     if (!track || !line) return;
     line.style.left = `${track.offsetLeft + track.offsetWidth * state.medFrac}px`;
   }
-
-  function renderWeek(games) {
-    const scores = [];
-    games.forEach((g) => [g.home, g.away].forEach((s) => s && scores.push({ t: teamById(s.teamId), p: pts(s) })));
-    scores.sort((a, b) => b.p - a.p);
-    const med = median(scores.map((s) => s.p));
+  function renderPecking() {
+    const scores = wkSides().map((s) => ({ t: teamById(s.teamId), p: s.current })).sort((a, b) => b.p - a.p);
+    const med = state.wk ? state.wk.medians.current : 0;
     const max = Math.max(1, ...scores.map((s) => s.p)) * 1.04;
     const started = scores.some((s) => s.p > 0);
-
     const board = $("board");
     if (!started) {
-      board.innerHTML = `<div class="empty">No points scored yet this week. The board fills in once games kick off.</div>`;
       board.parentElement.classList.remove("board-pad");
+      board.innerHTML = `<div class="empty">No points scored yet this week. The board fills in once games kick off.</div>`;
     } else {
       board.parentElement.classList.add("board-pad");
       board.innerHTML = scores.map((s) => `
@@ -401,25 +441,10 @@
           <div class="track"><div class="bar" style="width:${(s.p / max) * 100}%"></div></div>
           <div class="pts">${fmt(s.p)}</div>
         </div>`).join("") + `<div class="median-line" id="mline"><span class="median-tag">Median ${fmt(med)}</span></div>`;
-      // Position the median line over the bar track column
       state.medFrac = med / max;
       requestAnimationFrame(placeMedian);
     }
-
-    renderHighlights(scores, started, med);
-
-    $("matchups").innerHTML = games.map((g) => {
-      const hp = pts(g.home), ap = pts(g.away);
-      const final = g.winner && g.winner !== "UNDECIDED";
-      const side = (s, p, lead) => `<div class="side ${lead ? "lead" : ""}">${logo(teamById(s?.teamId))}<span class="nm">${esc(s ? teamName(teamById(s.teamId)) : "Bye")}</span><span class="sc">${s ? fmt(p) : ""}</span></div>`;
-      return `<div class="mu">${side(g.home, hp, hp >= ap && hp > 0)}${side(g.away, ap, ap > hp)}
-        <div class="foot">${final ? "Final" : hp + ap > 0 ? `In progress, margin ${fmt(Math.abs(hp - ap))}` : "Not started"}</div></div>`;
-    }).join("") || `<div class="empty">No matchups scheduled this week.</div>`;
-  }
-
-  function renderHighlights(scores, started, med) {
-    const live = state.week === state.currentWeek && state.games.some((g) => !g.winner || g.winner === "UNDECIDED");
-    $("highNote").textContent = live ? "The four highest-scoring teams so far this week, and the lowest. These update as games finish." : "The week's four highest-scoring teams and the lowest.";
+    $("highNote").textContent = weekLive() ? "The four highest-scoring teams so far, and the lowest. These update as games finish." : "The week's four highest-scoring teams and the lowest.";
     if (!started) {
       $("top4").innerHTML = `<li><span class="nm" style="color:var(--muted);font-weight:400">Fills in once games kick off.</span></li>`;
       $("low").innerHTML = `<div class="lbl">Fills in once games kick off.</div>`;
@@ -434,87 +459,149 @@
   async function loadPicks() {
     const week = state.week;
     try {
-      const res = await fetch(`/api/picks?week=${week}${voter ? `&voter=${encodeURIComponent(voter)}` : ""}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Couldn't load picks.");
+      const data = await getJSON(`/api/picks?week=${week}${voter ? `&voter=${encodeURIComponent(voter)}` : ""}`);
       if (week === state.week) { state.picks = data; renderPicks(); }
     } catch (e) {
-      state.picks = { week, tallies: {}, mine: {}, error: e.message };
-      renderPicks();
+      if (week === state.week) { state.picks = { week, tallies: {}, mine: {}, error: e.message }; renderPicks(); }
     }
   }
-
   function renderPicks() {
-    const games = state.games.filter((g) => g.away);
+    const games = (state.wk?.matchups || []).filter((m) => m.away);
     const P = state.picks || { tallies: {}, mine: {} };
     const isCurrent = state.week === state.currentWeek;
     $("pickNote").textContent = isCurrent
       ? "Tap the team you think wins each matchup. You get one vote per matchup, and voting on a game closes once either team scores."
       : state.week < state.currentWeek ? `How everyone voted in week ${state.week}. Checkmarks show who actually won.` : "Voting opens when this week becomes the current week.";
     if (!games.length) { $("picks").innerHTML = `<div class="empty">No matchups scheduled this week.</div>`; return; }
-    $("picks").innerHTML = games.map((g) => {
-      const t = P.tallies[g.id] || { home: 0, away: 0 };
+    $("picks").innerHTML = games.map((m) => {
+      const t = P.tallies[m.id] || { home: 0, away: 0 };
       const total = t.home + t.away;
-      const my = P.mine[g.id];
-      const kicked = pts(g.home) > 0 || pts(g.away) > 0;
+      const my = P.mine[m.id];
+      const kicked = m.home.current > 0 || m.away.current > 0;
       const open = isCurrent && !kicked && !my && voter && !P.error;
-      const showResults = !open || my;
-      const final = g.winner && g.winner !== "UNDECIDED";
-      const opt = (side, s) => {
-        const pct = total ? Math.round((t[side] / total) * 100) : 0;
-        const won = final && ((side === "home" && g.winner === "HOME") || (side === "away" && g.winner === "AWAY"));
-        return `<button class="opt ${my === side ? "mine" : ""} ${won ? "won" : ""}" data-mid="${g.id}" data-side="${side}" ${open ? "" : "disabled"}
-            aria-label="${open ? `Pick ${esc(teamName(teamById(s.teamId)))}` : esc(teamName(teamById(s.teamId)))}">
-          <span class="top">${logo(teamById(s.teamId))}<span class="nm">${esc(teamName(teamById(s.teamId)))}</span></span>
-          ${showResults ? `<span class="pct">${pct}%</span>` : `<span class="tag">Tap to pick</span>`}
-          ${my === side ? `<span class="tag">Your pick</span>` : ""}
-          <span class="fill" style="width:${showResults ? pct : 0}%"></span>
+      const showVotes = !open;
+      const final = decided(m);
+      const opt = (key, s) => {
+        const vp = total ? Math.round((t[key] / total) * 100) : 0;
+        const won = final && ((key === "home" && m.winner === "HOME") || (key === "away" && m.winner === "AWAY"));
+        const nm = nameOf(s.teamId);
+        return `<button class="opt ${my === key ? "mine" : ""} ${won ? "won" : ""}" data-mid="${m.id}" data-side="${key}" ${open ? "" : "disabled"} aria-label="${esc(open ? `Pick ${nm}` : nm)}">
+          <span class="top">${logo(teamById(s.teamId))}<span class="nm">${esc(nm)}</span></span>
+          ${final ? `<span class="chance">Final score ${fmt(s.current)}</span>` : `<span class="chance"><b>${pct(s.winProb)}</b>win chance</span><span class="chance">Projected ${fmt(s.projected)}</span>`}
+          ${showVotes ? `<span class="votes">${vp}% of votes${my === key ? ", your pick" : ""}</span>` : `<span class="votes">Tap to pick</span>`}
+          <span class="fill" style="width:${showVotes ? vp : 0}%"></span>
         </button>`;
       };
       let foot;
-      if (state.pickErr[g.id]) foot = `<div class="foot err">${esc(state.pickErr[g.id])}</div>`;
+      if (state.pickErr[m.id]) foot = `<div class="foot err">${esc(state.pickErr[m.id])}</div>`;
       else if (P.error) foot = `<div class="foot err">${esc(P.error)}</div>`;
       else if (!voter) foot = `<div class="foot err">This browser is blocking storage, so it can't vote. Try a different browser.</div>`;
       else foot = `<div class="foot">${total} vote${total === 1 ? "" : "s"}${isCurrent ? (kicked ? ", voting closed" : my ? ", you're locked in" : "") : ""}</div>`;
-      return `<div class="pick"><div class="opts">${opt("home", g.home)}${opt("away", g.away)}</div>${foot}</div>`;
+      return `<div class="pick"><div class="opts">${opt("home", m.home)}${opt("away", m.away)}</div>${foot}</div>`;
     }).join("");
   }
-
   $("picks").addEventListener("click", async (e) => {
     const btn = e.target.closest(".opt"); if (!btn || btn.disabled) return;
     const mid = Number(btn.dataset.mid), side = btn.dataset.side;
     state.picks ||= { week: state.week, tallies: {}, mine: {} };
-    const all = $("picks").querySelectorAll(`.opt[data-mid="${mid}"]`); all.forEach((b) => (b.disabled = true));
+    $("picks").querySelectorAll(`.opt[data-mid="${mid}"]`).forEach((b) => (b.disabled = true));
     delete state.pickErr[mid];
     try {
-      const res = await fetch("/api/picks", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ week: state.week, matchupId: mid, choice: side, voter }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Your vote didn't go through.");
+      const data = await getJSON("/api/picks", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ week: state.week, matchupId: mid, choice: side, voter }) });
       state.picks.mine[mid] = side;
       state.picks.tallies[mid] = data.tally;
-    } catch (err) {
-      state.pickErr[mid] = err.message;
-    }
+    } catch (err) { state.pickErr[mid] = err.message; }
     renderPicks();
   });
 
+  // ---------- Standings ----------
+  function h2hRecords() {
+    const rec = {};
+    state.league.teams.forEach((t) => (rec[t.id] = { w: 0, l: 0, t: 0, pf: 0, pa: 0 }));
+    (state.league.schedule || []).forEach((g) => {
+      if (g.matchupPeriodId > regCount() || !decided(g) || !g.away) return;
+      const h = rec[g.home.teamId], a = rec[g.away.teamId]; if (!h || !a) return;
+      const hp = g.home.totalPoints || 0, ap = g.away.totalPoints || 0;
+      h.pf += hp; h.pa += ap; a.pf += ap; a.pa += hp;
+      if (g.winner === "HOME") { h.w++; a.l++; } else if (g.winner === "AWAY") { a.w++; h.l++; } else { h.t++; a.t++; }
+    });
+    return rec;
+  }
+  function medianRecords() {
+    const rec = {}, byWeek = {};
+    state.league.teams.forEach((t) => (rec[t.id] = { w: 0, l: 0, t: 0, pf: 0 }));
+    (state.league.schedule || []).forEach((g) => { if (g.matchupPeriodId <= regCount()) (byWeek[g.matchupPeriodId] ||= []).push(g); });
+    Object.values(byWeek).forEach((games) => {
+      if (games.some((g) => !decided(g))) return;
+      const scores = [];
+      games.forEach((g) => [g.home, g.away].forEach((s) => s && scores.push({ id: s.teamId, p: s.totalPoints || 0 })));
+      const med = median(scores.map((s) => s.p));
+      scores.forEach((s) => { const r = rec[s.id]; if (!r) return; r.pf += s.p; s.p > med ? r.w++ : s.p < med ? r.l++ : r.t++; });
+    });
+    return rec;
+  }
+  const winPct = (r) => { const g = r.w + r.l + r.t; return g ? (r.w + r.t / 2) / g : 0; };
+  const recStr = (r) => `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}`;
+  const teamCell = (t) => `<td><div class="tcell">${logo(t)}<div><div>${esc(teamName(t))}</div><div class="owner">${esc(ownerName(t))}</div></div></div></td>`;
+
+  const NOTES = {
+    current: "Official standings as ESPN has them, in playoff-seed order.",
+    h2h: "Records from head-to-head matchups only.",
+    median: "One game per completed week against the league median: a win for finishing above it, a loss for finishing below.",
+    ifman: "What the standings would be if every team had started its best possible lineup every week, against opponents who did the same.",
+  };
+  async function renderStandings() {
+    const L = state.league; if (!L) return;
+    const v = state.view, table = $("standings");
+    $("standNote").textContent = NOTES[v];
+    document.querySelectorAll(".toggle [data-view]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === v));
+    const h2h = h2hRecords();
+    if (v === "current") {
+      const rows = L.teams.map((t) => { const o = t.record?.overall || {}; return { t, r: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 }, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0, seed: t.playoffSeed || 99 }; });
+      rows.sort((a, b) => a.seed - b.seed || winPct(b.r) - winPct(a.r) || b.pf - a.pf);
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.pf)}</td><td>${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
+    } else if (v === "h2h") {
+      const rows = L.teams.map((t) => ({ t, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td><td>${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
+    } else if (v === "median") {
+      const med = medianRecords();
+      const rows = L.teams.map((t) => ({ t, r: med[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
+    } else {
+      if (!state.ifman && !state.ifmanErr) {
+        table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every team's best lineup for each completed week…</td></tr></tbody>`;
+        try { state.ifman = await getJSON("/api/ifman"); } catch (e) { state.ifmanErr = e.message; }
+        if (state.view !== "ifman") return;
+      }
+      if (state.ifmanErr) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Couldn't load best-lineup standings: ${esc(state.ifmanErr)}</td></tr></tbody>`; return; }
+      if (!state.ifman.weeks.length) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Fills in after the first week is final.</td></tr></tbody>`; return; }
+      const h2hRank = {};
+      L.teams.map((t) => ({ id: t.id, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf).forEach((x, i) => (h2hRank[x.id] = i + 1));
+      const rows = L.teams.map((t) => { const d = state.ifman.teams[t.id] || { wins: 0, losses: 0, ties: 0, optimalPF: 0, actualPF: 0 }; return { t, r: { w: d.wins, l: d.losses, t: d.ties }, opt: d.optimalPF, act: d.actualPF }; })
+        .sort((a, b) => winPct(b.r) - winPct(a.r) || b.opt - a.opt);
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Best-lineup points</th><th>Actual points</th><th>Left on bench</th><th>vs. head-to-head</th></tr></thead><tbody>${rows.map((x, i) => {
+        const d = h2hRank[x.t.id] - (i + 1);
+        return `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.opt)}</td><td>${fmt(x.act)}</td><td>${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `Up ${d}` : d < 0 ? `Down ${-d}` : "Same"}</td></tr>`;
+      }).join("")}</tbody>`;
+    }
+  }
+  document.querySelector(".toggle").addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) { state.view = b.dataset.view; renderStandings(); } });
+
+  // ---------- Transactions ----------
   async function loadPlayers() {
     if (state.players) return state.players;
     try {
-      const list = await api({ kind: "players" });
+      const list = await espn({ kind: "players" });
       state.players = {};
       (Array.isArray(list) ? list : []).forEach((p) => (state.players[p.id] = p));
     } catch { state.players = {}; }
     return state.players;
   }
-
   async function renderTx(week) {
     const list = $("tx");
     try {
-      const [data, players] = await Promise.all([
-        api({ view: ["mTransactions2"], scoringPeriodId: week }),
-        loadPlayers(),
-      ]);
+      const [data, players] = await Promise.all([espn({ view: ["mTransactions2"], scoringPeriodId: week }), loadPlayers()]);
+      if (week !== state.week) return;
       const pname = (id) => { const p = players[id]; return p ? `${p.fullName}${POS[p.defaultPositionId] ? `, ${POS[p.defaultPositionId]}` : ""}` : `Player ${id}`; };
       const txs = (data.transactions || [])
         .filter((t) => t.status === "EXECUTED" && ["WAIVER", "FREEAGENT", "TRADE_ACCEPT"].includes(t.type))
@@ -524,17 +611,10 @@
         const when = new Date(t.processDate || t.proposedDate).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
         const kind = t.type === "WAIVER" ? `Waiver${t.bidAmount ? `, $${t.bidAmount}` : ""}` : t.type === "FREEAGENT" ? "Free agent" : "Trade";
         const items = (t.items || []).filter((i) => i.type !== "LINEUP");
-        let moves;
-        if (t.type === "TRADE_ACCEPT") {
-          moves = items.map((i) => `<div class="add">${esc(pname(i.playerId))} to ${esc(teamName(teamById(i.toTeamId)))}</div>`).join("");
-        } else {
-          moves = items.map((i) => i.type === "ADD"
-            ? `<div class="add">Added ${esc(pname(i.playerId))}</div>`
-            : `<div class="drop">Dropped ${esc(pname(i.playerId))}</div>`).join("");
-        }
-        const who = t.type === "TRADE_ACCEPT"
-          ? [...new Set(items.flatMap((i) => [i.fromTeamId, i.toTeamId]))].map((id) => teamName(teamById(id))).join(" and ")
-          : teamName(teamById(t.teamId));
+        const moves = t.type === "TRADE_ACCEPT"
+          ? items.map((i) => `<div class="add">${esc(pname(i.playerId))} to ${esc(nameOf(i.toTeamId))}</div>`).join("")
+          : items.map((i) => i.type === "ADD" ? `<div class="add">Added ${esc(pname(i.playerId))}</div>` : `<div class="drop">Dropped ${esc(pname(i.playerId))}</div>`).join("");
+        const who = t.type === "TRADE_ACCEPT" ? [...new Set(items.flatMap((i) => [i.fromTeamId, i.toTeamId]))].map(nameOf).join(" and ") : nameOf(t.teamId);
         return `<li><div class="when">${esc(when)}</div><div><span class="who">${esc(who)}</span><span class="kind">${esc(kind)}</span><div class="moves">${moves}</div></div></li>`;
       }).join("");
     } catch (e) {
@@ -542,6 +622,7 @@
     }
   }
 
+  // ---------- Loading ----------
   async function loadWeek(week, { quiet = false } = {}) {
     if (week !== state.week) { state.picks = null; state.pickErr = {}; }
     state.week = week;
@@ -549,37 +630,28 @@
     $("prevWeek").disabled = week <= 1;
     $("nextWeek").disabled = week >= state.lastWeek;
     try {
-      const data = await api({ view: ["mScoreboard", "mMatchupScore"], scoringPeriodId: week });
-      const games = (data.schedule || []).filter((g) => g.matchupPeriodId === week);
-      state.games = games;
-      renderWeek(games);
-      if (!quiet || state.tab === "pickem") loadPicks(); else renderPicks();
-      const live = week === state.currentWeek && games.some((g) => !g.winner || g.winner === "UNDECIDED") && games.some((g) => pts(g.home) + pts(g.away) > 0);
+      const wk = await getJSON(`/api/week?week=${week}`);
+      if (week !== state.week) return;
+      state.wk = wk;
+      renderScoreboard(); renderPecking(); renderPicks();
+      if (!quiet || state.tab === "pickem") loadPicks();
+      const live = weekLive() && wkSides().some((s) => s.current > 0);
       $("liveDot").classList.toggle("live", live);
       $("updated").textContent = `${live ? "Live, updated" : "Updated"} ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
-      clearInterval(state.timer);
-      if (week === state.currentWeek) state.timer = setInterval(() => refresh(), 60000);
       clearError();
     } catch (e) { showError(e.message); }
+    clearInterval(state.timer);
+    if (week === state.currentWeek) state.timer = setInterval(refresh, 60000);
     if (!quiet) renderTx(week);
   }
-
+  const LEAGUE_VIEWS = ["mSettings", "mTeam", "mStandings", "mMatchupScore", "mStatus"];
   async function refresh() {
-    try {
-      state.league = await api({ view: ["mSettings", "mTeam", "mStandings", "mMatchupScore", "mStatus"] });
-      renderStandings();
-    } catch (e) { showError(e.message); }
+    try { state.league = await espn({ view: LEAGUE_VIEWS }); if (state.tab === "standings") renderStandings(); } catch (e) { showError(e.message); }
     loadWeek(state.week, { quiet: true });
   }
-
   async function init() {
-    try {
-      state.league = await api({ view: ["mSettings", "mTeam", "mStandings", "mMatchupScore", "mStatus"] });
-    } catch (e) {
-      showError(e.message);
-      $("leagueSub").textContent = "League data unavailable";
-      return;
-    }
+    try { state.league = await espn({ view: LEAGUE_VIEWS }); }
+    catch (e) { showError(e.message); $("leagueSub").textContent = "League data unavailable"; return; }
     const L = state.league;
     state.currentWeek = L.status?.currentMatchupPeriod || L.scoringPeriodId || 1;
     state.lastWeek = Math.max(state.currentWeek, 1);
@@ -588,13 +660,15 @@
     loadWeek(state.currentWeek);
   }
 
+  // ---------- Tabs ----------
   function showTab(name, push = true) {
-    if (!["live", "pickem", "standings", "moves"].includes(name)) name = "live";
+    if (!TABS.includes(name)) name = name === "live" ? "pecking" : "scoreboard";
     state.tab = name;
-    document.querySelectorAll(".tabs [role=tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
+    document.querySelectorAll(".tabs [role=tab]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.tab === name); b.tabIndex = b.dataset.tab === name ? 0 : -1; });
     document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.id !== `panel-${name}`));
     if (push) history.replaceState(null, "", `#${name}`);
-    if (name === "live") requestAnimationFrame(placeMedian);
+    if (name === "pecking") requestAnimationFrame(placeMedian);
+    if (name === "standings") renderStandings();
   }
   document.querySelector(".tabs").addEventListener("click", (e) => { const b = e.target.closest("[role=tab]"); if (b) showTab(b.dataset.tab); });
   document.querySelector(".tabs").addEventListener("keydown", (e) => {
@@ -604,15 +678,11 @@
     const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
     showTab(next.dataset.tab); next.focus();
   });
-  showTab(location.hash.slice(1) || "live", false);
-
   $("prevWeek").onclick = () => state.week > 1 && loadWeek(state.week - 1);
   $("nextWeek").onclick = () => state.week < state.lastWeek && loadWeek(state.week + 1);
-  const setSort = (s) => { state.sort = s; $("sortH2H").setAttribute("aria-pressed", s === "h2h"); $("sortAll").setAttribute("aria-pressed", s === "all"); renderStandings(); };
-  $("sortH2H").onclick = () => setSort("h2h");
-  $("sortAll").onclick = () => setSort("all");
   window.addEventListener("resize", placeMedian, { passive: true });
 
+  showTab(location.hash.slice(1) || "scoreboard", false);
   init();
 })();
 </script>
