@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boys of Chantilly</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #000000;
+    --royal: #6B2FB3;
+    --violet: #B98CFF;
+    --lilac: #E4D6FF;
+    --white: #FFFFFF;
+    --muted: #A99DBB;
+    --line: #34234D;
+    --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { background: var(--black); scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; background: var(--black); color: var(--white);
+    font-family: var(--body); font-size: 16px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
+
+  /* Masthead */
+  header.mast {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 28px 0 22px; border-bottom: 1px solid var(--line);
+  }
+  .crest {
+    width: 64px; height: 64px; flex: none; border-radius: 50%;
+    background: var(--royal); display: grid; place-items: center; overflow: hidden;
+  }
+  .crest img { width: 100%; height: 100%; object-fit: cover; }
+  .crest span { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: 1; }
+  .mast h1 {
+    margin: 0; font-family: var(--display); font-weight: 900;
+    font-size: clamp(34px, 6vw, 56px); line-height: .95; letter-spacing: .01em;
+  }
+  .mast .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .mast .controls { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .week-nav { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; }
+  .week-nav button {
+    background: none; border: 0; cursor: pointer; padding: 8px 14px; font-size: 18px; line-height: 1;
+  }
+  .week-nav button:disabled { opacity: .3; cursor: default; }
+  .week-nav .label { font-family: var(--display); font-weight: 800; font-size: 20px; min-width: 88px; text-align: center; }
+  .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.live { background: var(--violet); box-shadow: 0 0 0 0 var(--violet); animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(185,140,255,.7); } 70% { box-shadow: 0 0 0 8px rgba(185,140,255,0); } 100% { box-shadow: 0 0 0 0 rgba(185,140,255,0); } }
+
+  .banner { margin-top: 24px; padding: 14px 16px; border: 1px solid var(--violet); border-radius: 10px; color: var(--lilac); }
+  .banner[hidden] { display: none; }
+
+  section { margin-top: 44px; }
+  h2 { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1.1; margin: 0 0 4px; }
+  .note { color: var(--muted); font-size: 14px; margin: 0 0 18px; max-width: 70ch; }
+
+  /* The median board: the one loud element on the page */
+  .board { position: relative; border-top: 1px solid var(--line); }
+  .row {
+    display: grid; grid-template-columns: minmax(120px, 220px) 1fr 72px; gap: 14px;
+    align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .row .team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .row .team .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .row .track { position: relative; height: 22px; }
+  .row .bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; background: var(--line); transition: width .6s ease; }
+  .row.above .bar { background: var(--white); }
+  .row.below .team .nm { color: var(--muted); }
+  .row .pts { font-family: var(--display); font-weight: 800; font-size: 22px; text-align: right; font-variant-numeric: tabular-nums; }
+  .row.below .pts { color: var(--muted); }
+  .median-line {
+    position: absolute; top: -10px; bottom: 0; width: 0; border-left: 2px solid var(--violet);
+    pointer-events: none; transition: left .6s ease;
+  }
+  .median-tag {
+    position: absolute; top: -34px; transform: translateX(-50%); white-space: nowrap;
+    background: var(--royal); color: var(--white); font-weight: 700; font-size: 13px;
+    padding: 3px 10px; border-radius: 999px;
+  }
+  .board-inner { position: relative; }
+  .board-pad { padding-top: 38px; }
+
+  .logo-sm { width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover; background: var(--royal); display: grid; place-items: center; font-size: 10px; font-weight: 700; overflow: hidden; }
+
+  /* Matchups */
+  .matchups { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .mu { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .mu .side { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .mu .side .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .mu .side .sc { font-family: var(--display); font-weight: 800; font-size: 24px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .mu .side.lead .nm, .mu .side.lead .sc { color: var(--white); }
+  .mu .side.lead .nm { font-weight: 600; }
+  .mu .foot { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
+
+  /* Standings */
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 640px; }
+  th, td { padding: 10px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 13px; font-weight: 600; color: var(--muted); }
+  th:nth-child(1), td:nth-child(1), th:nth-child(2), td:nth-child(2) { text-align: left; }
+  td.rank { font-family: var(--display); font-weight: 800; font-size: 20px; width: 36px; color: var(--violet); }
+  td .tcell { display: flex; align-items: center; gap: 10px; }
+  td .owner { color: var(--muted); font-size: 13px; }
+  td.strong { font-weight: 700; }
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; margin-bottom: 14px; }
+  .toggle button { background: none; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 14px; color: var(--muted); }
+  .toggle button[aria-pressed="true"] { background: var(--royal); color: var(--white); }
+
+  /* Transactions */
+  .tx { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .tx li { display: grid; grid-template-columns: 110px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .tx .when { color: var(--muted); font-size: 13px; }
+  .tx .who { font-weight: 600; }
+  .tx .kind { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--violet); color: var(--lilac); margin-left: 6px; }
+  .tx .moves { margin-top: 2px; font-size: 15px; }
+  .tx .add { color: var(--white); }
+  .tx .drop { color: var(--muted); }
+  .empty { color: var(--muted); padding: 18px 0; border-top: 1px solid var(--line); }
+
+  footer { margin-top: 56px; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 640px) {
+    .mast .controls { margin-left: 0; width: 100%; justify-content: space-between; }
+    .row { grid-template-columns: minmax(90px, 120px) 1fr 60px; gap: 10px; }
+    .row .logo-sm { display: none; }
+    .tx li { grid-template-columns: 1fr; gap: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="crest"><img src="logo.png" alt="Boys of Chantilly logo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'C'}))"></div>
+    <div>
+      <h1>Boys of Chantilly</h1>
+      <div class="sub" id="leagueSub">Loading league…</div>
+    </div>
+    <div class="controls">
+      <div class="week-nav" role="group" aria-label="Choose week">
+        <button id="prevWeek" aria-label="Previous week">‹</button>
+        <div class="label" id="weekLabel">Week –</div>
+        <button id="nextWeek" aria-label="Next week">›</button>
+      </div>
+      <div class="status"><span class="dot" id="liveDot"></span><span id="updated">–</span></div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="alert" hidden></div>
+
+  <section aria-labelledby="medianH">
+    <h2 id="medianH">This week vs. the median</h2>
+    <p class="note" id="medianNote">Everyone above the line wins a second game this week. Everyone below it takes a second loss.</p>
+    <div class="board board-pad"><div class="board-inner" id="board"></div></div>
+  </section>
+
+  <section aria-labelledby="muH">
+    <h2 id="muH">Matchups</h2>
+    <p class="note">Head-to-head scores. Live weeks refresh every minute.</p>
+    <div class="matchups" id="matchups"></div>
+  </section>
+
+  <section aria-labelledby="stH">
+    <h2 id="stH">Standings</h2>
+    <p class="note" id="standNote">Median record counts one extra game per completed week: a win for finishing above the league median, a loss for finishing below.</p>
+    <div class="toggle" role="group" aria-label="Sort standings">
+      <button id="sortH2H" aria-pressed="true">Head-to-head</button>
+      <button id="sortAll" aria-pressed="false">With median</button>
+    </div>
+    <div class="table-scroll"><table id="standings"></table></div>
+  </section>
+
+  <section aria-labelledby="txH">
+    <h2 id="txH">Waivers and trades</h2>
+    <p class="note" id="txNote">Completed adds, drops, and trades for the selected week.</p>
+    <ul class="tx" id="tx"></ul>
+  </section>
+
+  <footer>Data from ESPN, pulled live through this site's own server. League 353576.</footer>
+</div>
+
+<script>
+(() => {
+  const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
+  const state = { league: null, week: null, currentWeek: null, lastWeek: null, sort: "h2h", players: null, timer: null };
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (n) => (Math.round((n || 0) * 100) / 100).toFixed(2);
+
+  async function api(params) {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => [].concat(v).forEach((x) => qs.append(k, x)));
+    const res = await fetch(`/api/espn?${qs}`);
+    let data;
+    try { data = await res.json(); } catch { throw new Error("The data service returned something unexpected. Check that the function deployed."); }
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
+    return data;
+  }
+
+  function showError(msg) { const b = $("banner"); b.textContent = msg; b.hidden = false; }
+  function clearError() { $("banner").hidden = true; }
+
+  const teamName = (t) => t ? (t.name || `${t.location || ""} ${t.nickname || ""}`.trim() || `Team ${t.id}`) : "Bye";
+  function ownerName(t) {
+    const L = state.league; if (!t || !L.members) return "";
+    const id = t.primaryOwner || (t.owners || [])[0];
+    const m = L.members.find((x) => x.id === id);
+    return m ? (m.firstName ? `${m.firstName} ${m.lastName || ""}`.trim() : m.displayName) : "";
+  }
+  const teamById = (id) => state.league.teams.find((t) => t.id === id);
+  function logo(t) {
+    if (t && t.logo) return `<img class="logo-sm" src="${esc(t.logo)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
+    return `<span class="logo-sm">${esc((t && t.abbrev) || "")}</span>`;
+  }
+  const pts = (side) => side ? (side.totalPointsLive ?? side.totalPoints ?? 0) : 0;
+  function median(arr) {
+    const a = [...arr].sort((x, y) => x - y); if (!a.length) return 0;
+    const m = Math.floor(a.length / 2);
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
+
+  // Median wins/losses from completed regular-season weeks
+  function medianRecords() {
+    const L = state.league, rec = {};
+    L.teams.forEach((t) => (rec[t.id] = { w: 0, l: 0, t: 0 }));
+    const regCount = L.settings?.scheduleSettings?.matchupPeriodCount || 99;
+    const byWeek = {};
+    (L.schedule || []).forEach((g) => {
+      if (g.matchupPeriodId > regCount) return;
+      (byWeek[g.matchupPeriodId] ||= []).push(g);
+    });
+    Object.values(byWeek).forEach((games) => {
+      if (games.some((g) => !g.winner || g.winner === "UNDECIDED")) return; // week not final
+      const scores = [];
+      games.forEach((g) => { [g.home, g.away].forEach((s) => s && scores.push({ id: s.teamId, p: s.totalPoints || 0 })); });
+      const med = median(scores.map((s) => s.p));
+      scores.forEach((s) => { const r = rec[s.id]; if (!r) return; s.p > med ? r.w++ : s.p < med ? r.l++ : r.t++; });
+    });
+    return rec;
+  }
+
+  function renderStandings() {
+    const L = state.league, med = medianRecords();
+    const rows = L.teams.map((t) => {
+      const o = t.record?.overall || {};
+      const m = med[t.id];
+      const h2hGames = (o.wins || 0) + (o.losses || 0) + (o.ties || 0);
+      const allW = (o.wins || 0) + m.w, allL = (o.losses || 0) + m.l, allT = (o.ties || 0) + m.t;
+      return {
+        t, o, m, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0,
+        h2hPct: h2hGames ? ((o.wins || 0) + (o.ties || 0) / 2) / h2hGames : 0,
+        allPct: (allW + allL + allT) ? (allW + allT / 2) / (allW + allL + allT) : 0,
+        all: [allW, allL, allT],
+      };
+    });
+    const key = state.sort === "h2h" ? "h2hPct" : "allPct";
+    rows.sort((a, b) => b[key] - a[key] || b.pf - a.pf);
+    const rec = (w, l, t) => `${w}-${l}${t ? `-${t}` : ""}`;
+    $("standings").innerHTML = `
+      <thead><tr><th>#</th><th>Team</th><th>Head-to-head</th><th>Median</th><th>Combined</th><th>Points for</th><th>Points against</th></tr></thead>
+      <tbody>${rows.map((r, i) => `
+        <tr>
+          <td class="rank">${i + 1}</td>
+          <td><div class="tcell">${logo(r.t)}<div><div>${esc(teamName(r.t))}</div><div class="owner">${esc(ownerName(r.t))}</div></div></div></td>
+          <td class="${state.sort === "h2h" ? "strong" : ""}">${rec(r.o.wins || 0, r.o.losses || 0, r.o.ties || 0)}</td>
+          <td>${rec(r.m.w, r.m.l, r.m.t)}</td>
+          <td class="${state.sort === "all" ? "strong" : ""}">${rec(...r.all)}</td>
+          <td>${fmt(r.pf)}</td>
+          <td>${fmt(r.pa)}</td>
+        </tr>`).join("")}</tbody>`;
+  }
+
+  function placeMedian() {
+    const track = document.querySelector("#board .track"), line = $("mline");
+    if (!track || !line) return;
+    line.style.left = `${track.offsetLeft + track.offsetWidth * state.medFrac}px`;
+  }
+
+  function renderWeek(games) {
+    const scores = [];
+    games.forEach((g) => [g.home, g.away].forEach((s) => s && scores.push({ t: teamById(s.teamId), p: pts(s) })));
+    scores.sort((a, b) => b.p - a.p);
+    const med = median(scores.map((s) => s.p));
+    const max = Math.max(1, ...scores.map((s) => s.p)) * 1.04;
+    const started = scores.some((s) => s.p > 0);
+
+    const board = $("board");
+    if (!started) {
+      board.innerHTML = `<div class="empty">No points scored yet this week. The board fills in once games kick off.</div>`;
+      board.parentElement.classList.remove("board-pad");
+    } else {
+      board.parentElement.classList.add("board-pad");
+      board.innerHTML = scores.map((s) => `
+        <div class="row ${s.p > med ? "above" : s.p < med ? "below" : ""}">
+          <div class="team">${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span></div>
+          <div class="track"><div class="bar" style="width:${(s.p / max) * 100}%"></div></div>
+          <div class="pts">${fmt(s.p)}</div>
+        </div>`).join("") + `<div class="median-line" id="mline"><span class="median-tag">Median ${fmt(med)}</span></div>`;
+      // Position the median line over the bar track column
+      state.medFrac = med / max;
+      requestAnimationFrame(placeMedian);
+    }
+
+    $("matchups").innerHTML = games.map((g) => {
+      const hp = pts(g.home), ap = pts(g.away);
+      const final = g.winner && g.winner !== "UNDECIDED";
+      const side = (s, p, lead) => `<div class="side ${lead ? "lead" : ""}">${logo(teamById(s?.teamId))}<span class="nm">${esc(s ? teamName(teamById(s.teamId)) : "Bye")}</span><span class="sc">${s ? fmt(p) : ""}</span></div>`;
+      return `<div class="mu">${side(g.home, hp, hp >= ap && hp > 0)}${side(g.away, ap, ap > hp)}
+        <div class="foot">${final ? "Final" : started ? `In progress, margin ${fmt(Math.abs(hp - ap))}` : "Not started"}</div></div>`;
+    }).join("") || `<div class="empty">No matchups scheduled this week.</div>`;
+  }
+
+  async function loadPlayers() {
+    if (state.players) return state.players;
+    try {
+      const list = await api({ kind: "players" });
+      state.players = {};
+      (Array.isArray(list) ? list : []).forEach((p) => (state.players[p.id] = p));
+    } catch { state.players = {}; }
+    return state.players;
+  }
+
+  async function renderTx(week) {
+    const list = $("tx");
+    try {
+      const [data, players] = await Promise.all([
+        api({ view: ["mTransactions2"], scoringPeriodId: week }),
+        loadPlayers(),
+      ]);
+      const pname = (id) => { const p = players[id]; return p ? `${p.fullName}${POS[p.defaultPositionId] ? `, ${POS[p.defaultPositionId]}` : ""}` : `Player ${id}`; };
+      const txs = (data.transactions || [])
+        .filter((t) => t.status === "EXECUTED" && ["WAIVER", "FREEAGENT", "TRADE_ACCEPT"].includes(t.type))
+        .sort((a, b) => (b.processDate || b.proposedDate || 0) - (a.processDate || a.proposedDate || 0));
+      if (!txs.length) { list.innerHTML = `<li class="empty" style="display:block;border:0">No completed moves this week.</li>`; return; }
+      list.innerHTML = txs.map((t) => {
+        const when = new Date(t.processDate || t.proposedDate).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const kind = t.type === "WAIVER" ? `Waiver${t.bidAmount ? `, $${t.bidAmount}` : ""}` : t.type === "FREEAGENT" ? "Free agent" : "Trade";
+        const items = (t.items || []).filter((i) => i.type !== "LINEUP");
+        let moves;
+        if (t.type === "TRADE_ACCEPT") {
+          moves = items.map((i) => `<div class="add">${esc(pname(i.playerId))} to ${esc(teamName(teamById(i.toTeamId)))}</div>`).join("");
+        } else {
+          moves = items.map((i) => i.type === "ADD"
+            ? `<div class="add">Added ${esc(pname(i.playerId))}</div>`
+            : `<div class="drop">Dropped ${esc(pname(i.playerId))}</div>`).join("");
+        }
+        const who = t.type === "TRADE_ACCEPT"
+          ? [...new Set(items.flatMap((i) => [i.fromTeamId, i.toTeamId]))].map((id) => teamName(teamById(id))).join(" and ")
+          : teamName(teamById(t.teamId));
+        return `<li><div class="when">${esc(when)}</div><div><span class="who">${esc(who)}</span><span class="kind">${esc(kind)}</span><div class="moves">${moves}</div></div></li>`;
+      }).join("");
+    } catch (e) {
+      list.innerHTML = `<li class="empty" style="display:block;border:0">Couldn't load transactions: ${esc(e.message)}</li>`;
+    }
+  }
+
+  async function loadWeek(week, { quiet = false } = {}) {
+    state.week = week;
+    $("weekLabel").textContent = `Week ${week}`;
+    $("prevWeek").disabled = week <= 1;
+    $("nextWeek").disabled = week >= state.lastWeek;
+    try {
+      const data = await api({ view: ["mScoreboard", "mMatchupScore"], scoringPeriodId: week });
+      const games = (data.schedule || []).filter((g) => g.matchupPeriodId === week);
+      renderWeek(games);
+      const live = week === state.currentWeek && games.some((g) => !g.winner || g.winner === "UNDECIDED") && games.some((g) => pts(g.home) + pts(g.away) > 0);
+      $("liveDot").classList.toggle("live", live);
+      $("updated").textContent = `${live ? "Live, updated" : "Updated"} ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+      clearInterval(state.timer);
+      if (week === state.currentWeek) state.timer = setInterval(() => refresh(), 60000);
+      clearError();
+    } catch (e) { showError(e.message); }
+    if (!quiet) renderTx(week);
+  }
+
+  async function refresh() {
+    try {
+      state.league = await api({ view: ["mSettings", "mTeam", "mStandings", "mMatchupScore", "mStatus"] });
+      renderStandings();
+    } catch (e) { showError(e.message); }
+    loadWeek(state.week, { quiet: true });
+  }
+
+  async function init() {
+    try {
+      state.league = await api({ view: ["mSettings", "mTeam", "mStandings", "mMatchupScore", "mStatus"] });
+    } catch (e) {
+      showError(e.message);
+      $("leagueSub").textContent = "League data unavailable";
+      return;
+    }
+    const L = state.league;
+    state.currentWeek = L.status?.currentMatchupPeriod || L.scoringPeriodId || 1;
+    state.lastWeek = Math.max(state.currentWeek, 1);
+    $("leagueSub").textContent = `${L.settings?.name || "League 353576"}, ${L.seasonId || ""} season, ${L.teams.length} teams`;
+    renderStandings();
+    loadWeek(state.currentWeek);
+  }
+
+  $("prevWeek").onclick = () => state.week > 1 && loadWeek(state.week - 1);
+  $("nextWeek").onclick = () => state.week < state.lastWeek && loadWeek(state.week + 1);
+  const setSort = (s) => { state.sort = s; $("sortH2H").setAttribute("aria-pressed", s === "h2h"); $("sortAll").setAttribute("aria-pressed", s === "all"); renderStandings(); };
+  $("sortH2H").onclick = () => setSort("h2h");
+  $("sortAll").onclick = () => setSort("all");
+  window.addEventListener("resize", placeMedian, { passive: true });
+
+  init();
+})();
+</script>
+</body>
+</html>

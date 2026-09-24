@@ -1,7 +1,7 @@
+# Netlify config for the Boys of Chantilly dashboard.
+# No build step: the site is static HTML plus one serverless function.
 [build]
-  functions = "netlify/functions"
+  publish = "public"
 
-[[redirects]]
-  from = "/api/league"
-  to = "/.netlify/functions/league"
-  status = 200
+[functions]
+  directory = "netlify/functions"
