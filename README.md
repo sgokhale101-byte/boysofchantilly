@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.3.2)
+# Boys of Chantilly dashboard (v1.4)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -29,3 +29,11 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Phone layout: bottom tab bar, no sideways scrolling, compact tables (extra columns hidden on phones).
 - "I'm ___" team picker next to the week selector, remembered per browser. Shows a summary card (record, standing,
   current and projected score, opponent and win chance) and highlights that team across every tab.
+
+## 1.4
+- Awards tab (`/api/awards`): per finished week, Biggest overperformer / letdown (actual vs. starters' ESPN projections),
+  Manager of the week (fewest bench points left behind; ties go to the higher score), Noah of the week (highest-scoring
+  head-to-head loss), Srimanth of the week (lowest-scoring head-to-head win), plus a season trophy case.
+- Trophy icons are reusable SVG symbols in index.html: `<svg class="trophy"><use href="#tr-KEY"></use></svg>`,
+  keys overperformer, letdown, manager, noah, srimanth.
+- `netlify/lib/season.mjs` loads and caches every finished week (key `weeksum/v1/w<N>`); If man and Awards share it.

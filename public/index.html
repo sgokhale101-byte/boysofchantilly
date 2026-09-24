@@ -343,9 +343,80 @@
     th:not(:nth-child(1)):not(:nth-child(2)), td:not(:nth-child(1)):not(:nth-child(2)) { width: 60px; }
     th:nth-child(3), td:nth-child(3) { width: 46px; }
   }
+
+  /* Awards */
+  .trophy { width: 44px; height: 44px; flex: none; display: block; }
+  .trophy.sm { width: 26px; height: 26px; }
+  .case { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 8px; margin-bottom: 30px; }
+  .case .ct { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; row-gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+  .case .ct .shelf { grid-column: 1 / -1; justify-content: flex-start; min-height: 26px; align-items: center; }
+  .case .ct.me { border-color: var(--royal); }
+  .case .ct .nm { font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .case .ct.me .nm { color: var(--violet); }
+  .case .shelf { display: flex; gap: 8px; flex-wrap: wrap; }
+  .case .shelf span { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 700; }
+  .case .empty-shelf { color: var(--muted); font-size: 13px; }
+  .wkcard { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+  .wkcard > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 4px; }
+  .wkcard h3 { font-family: var(--display); font-weight: 800; font-size: 26px; color: var(--white); margin: 0; }
+  .wkcard .recap { color: var(--muted); font-size: 13.5px; }
+  .aw { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .aw:last-child { border-bottom: 0; }
+  .aw .title { font-weight: 700; }
+  .aw .def { color: var(--muted); font-size: 12.5px; }
+  .aw .who { margin-top: 4px; font-weight: 600; color: var(--lilac); }
+  .aw .who.me { color: var(--violet); }
+  .aw .why { font-size: 13.5px; }
+  .aw.none .who { color: var(--muted); font-weight: 400; }
+  @media (max-width: 640px) {
+    .tabs { grid-template-columns: repeat(6, 1fr); }
+    .tabs button { font-size: 13px; padding: 12px 1px 10px; }
+    .wkcard { padding: 12px; }
+    .case { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .case .ct { padding: 8px 10px; column-gap: 8px; }
+    .case .ct .nm { font-size: 14px; }
+    .aw { grid-template-columns: 40px 1fr; gap: 10px; }
+    .trophy { width: 40px; height: 40px; }
+  }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- Trophy badges. High awards: purple medal. Low awards: black medal with purple rim. -->
+    <symbol id="tr-overperformer" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
+      <path d="M22 18h20v8a10 10 0 0 1-20 0z" fill="#fff"/>
+      <path d="M22 20.5h-3.5a4.5 4.5 0 0 0 4.2 7.4M42 20.5h3.5a4.5 4.5 0 0 1-4.2 7.4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="30" y="35" width="4" height="6" fill="#fff"/><rect x="24.5" y="41" width="15" height="4.5" rx="1.2" fill="#fff"/>
+      <path d="M32 19.5l-5.5 5.5h3.5v4.5h4v-4.5h3.5z" fill="#6B2FB3"/>
+    </symbol>
+    <symbol id="tr-letdown" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#000"/><circle cx="32" cy="32" r="29" fill="none" stroke="#B98CFF" stroke-width="2.5"/>
+      <path d="M22 18h20v8a10 10 0 0 1-20 0z" fill="#E4D6FF"/>
+      <path d="M22 20.5h-3.5a4.5 4.5 0 0 0 4.2 7.4M42 20.5h3.5a4.5 4.5 0 0 1-4.2 7.4" fill="none" stroke="#E4D6FF" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="30" y="35" width="4" height="6" fill="#E4D6FF"/><rect x="24.5" y="41" width="15" height="4.5" rx="1.2" fill="#E4D6FF"/>
+      <path d="M32 31l-5.5-5.5h3.5V21h4v4.5h3.5z" fill="#000"/>
+    </symbol>
+    <symbol id="tr-manager" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
+      <rect x="21" y="17" width="22" height="30" rx="3" fill="#fff"/>
+      <rect x="26.5" y="14" width="11" height="6.5" rx="2" fill="#B98CFF"/>
+      <path d="M26 32.5l4.2 4.2 8-9" fill="none" stroke="#6B2FB3" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tr-noah" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#000"/><circle cx="32" cy="32" r="29" fill="none" stroke="#B98CFF" stroke-width="2.5"/>
+      <path d="M32 46C19 37 16 31 16 25.5a8 8 0 0 1 16-2.5a8 8 0 0 1 16 2.5C48 31 45 37 32 46z" fill="#E4D6FF"/>
+      <path d="M33.5 22.5l-4.5 7 5.5 4-4.5 7" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="tr-srimanth" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
+      <path d="M24.5 46C18 40 16.5 31 18.5 24.5C20.5 18 25.5 15 32 15s11.5 3 13.5 9.5C47.5 31 46 40 39.5 46" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/>
+      <g fill="#6B2FB3"><circle cx="18.5" cy="36.3" r="1.3"/><circle cx="18.4" cy="24.8" r="1.3"/><circle cx="24.1" cy="17" r="1.3"/><circle cx="39.9" cy="17" r="1.3"/><circle cx="45.6" cy="24.8" r="1.3"/><circle cx="45.5" cy="36.3" r="1.3"/></g>
+      <path d="M32 26l1.4 3.1 3.1 1.4-3.1 1.4L32 35l-1.4-3.1-3.1-1.4 3.1-1.4z" fill="#E4D6FF"/>
+    </symbol>
+  </defs>
+</svg>
 <div class="wrap">
   <header class="mast">
     <div class="crest"><img src="logo.png" alt="Boys of Chantilly logo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'C'}))"></div>
@@ -385,6 +456,7 @@
     <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Pecking order</span><span class="short">Pecking</span></button>
     <button role="tab" id="tab-pickem" aria-controls="panel-pickem" data-tab="pickem"><span class="full">Pick 'em</span><span class="short">Pick 'em</span></button>
     <button role="tab" id="tab-standings" aria-controls="panel-standings" data-tab="standings"><span class="full">Standings</span><span class="short">Standings</span></button>
+    <button role="tab" id="tab-awards" aria-controls="panel-awards" data-tab="awards"><span class="full">Awards</span><span class="short">Awards</span></button>
     <button role="tab" id="tab-moves" aria-controls="panel-moves" data-tab="moves"><span class="full">Waivers and trades</span><span class="short">Moves</span></button>
   </nav>
 
@@ -448,6 +520,14 @@
     </section>
   </div>
 
+  <div class="panel" id="panel-awards" role="tabpanel" aria-labelledby="tab-awards" hidden>
+    <section aria-labelledby="awH">
+      <h2 id="awH">Awards</h2>
+      <p class="note">The story of the league, one week at a time. Awards are handed out once a week is final.</p>
+      <div id="awards"></div>
+    </section>
+  </div>
+
   <div class="panel" id="panel-moves" role="tabpanel" aria-labelledby="tab-moves" hidden>
     <section aria-labelledby="txH">
       <h2 id="txH">Waivers and trades</h2>
@@ -461,10 +541,11 @@
 <script>
 (() => {
   const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
-  const TABS = ["scoreboard", "pecking", "pickem", "standings", "moves"];
+  const TABS = ["scoreboard", "pecking", "pickem", "standings", "awards", "moves"];
   const state = {
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
     wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
+    awards: null, awardsErr: null,
     me: (() => { try { return Number(localStorage.getItem("boc-me")) || null; } catch { return null; } })(),
   };
   const voter = (() => {
@@ -761,6 +842,64 @@
     }
   }
 
+  // ---------- Awards ----------
+  const AWARDS = [
+    { key: "overperformer", title: "Biggest overperformer", def: "Beat its ESPN projection by the most" },
+    { key: "letdown", title: "Biggest letdown", def: "Fell furthest below its ESPN projection" },
+    { key: "manager", title: "Manager of the week", def: "Fewest points left on the bench" },
+    { key: "noah", title: "Noah of the week", def: "Highest score in a head-to-head loss" },
+    { key: "srimanth", title: "Srimanth of the week", def: "Lowest score in a head-to-head win" },
+  ];
+  const trophy = (key, sm) => `<svg class="trophy${sm ? " sm" : ""}" role="img" aria-label="${esc(AWARDS.find((a) => a.key === key)?.title || "")}"><use href="#tr-${key}"></use></svg>`;
+  function awardWhy(key, w) {
+    const opp = w.oppId != null ? nameOf(w.oppId) : "";
+    switch (key) {
+      case "overperformer": return `Scored ${fmt(w.actual)}, ${fmt(w.actual - w.projected)} above a ${fmt(w.projected)} projection`;
+      case "letdown": return `Scored ${fmt(w.actual)}, ${fmt(w.projected - w.actual)} below a ${fmt(w.projected)} projection`;
+      case "manager": { const gap = (w.optimal ?? w.actual) - w.actual; return gap < 0.005 ? `Perfect lineup: nothing better was left on the bench (${fmt(w.actual)} points)` : `Left just ${fmt(gap)} points on the bench`; }
+      case "noah": return `Scored ${fmt(w.actual)} and still lost to ${opp} (${fmt(w.oppScore)})`;
+      case "srimanth": return `Scored just ${fmt(w.actual)} and beat ${opp} (${fmt(w.oppScore)})`;
+    }
+    return "";
+  }
+  async function renderAwards() {
+    const box = $("awards");
+    if (!state.awards && !state.awardsErr) {
+      box.innerHTML = `<div class="empty">Handing out trophies…</div>`;
+      try { state.awards = await getJSON("/api/awards"); } catch (e) { state.awardsErr = e.message; }
+    }
+    if (state.awardsErr) { box.innerHTML = `<div class="empty">Couldn't load awards: ${esc(state.awardsErr)}</div>`; return; }
+    const weeks = state.awards.weeks || [];
+    if (!weeks.length) { box.innerHTML = `<div class="empty">The first trophies go out once week 1 is final.</div>`; return; }
+
+    // Trophy case: season totals per team
+    const counts = {};
+    state.league.teams.forEach((t) => (counts[t.id] = {}));
+    weeks.forEach((wk) => AWARDS.forEach((a) => (wk.awards[a.key]?.winners || []).forEach((w) => { const c = counts[w.teamId] ||= {}; c[a.key] = (c[a.key] || 0) + 1; })));
+    const total = (id) => Object.values(counts[id] || {}).reduce((x, y) => x + y, 0);
+    const caseRows = [...state.league.teams].sort((a, b) => total(b.id) - total(a.id) || teamName(a).localeCompare(teamName(b)));
+    const caseHtml = `<h3>Trophy case</h3><div class="case">${caseRows.map((t) => {
+      const c = counts[t.id] || {};
+      const shelf = AWARDS.filter((a) => c[a.key]).map((a) => `<span>${trophy(a.key, true)}${c[a.key] > 1 ? `×${c[a.key]}` : ""}</span>`).join("");
+      return `<div class="ct ${t.id === state.me ? "me" : ""}">${logo(t)}<span class="nm">${esc(teamName(t))}</span><div class="shelf">${shelf || `<span class="empty-shelf">None yet</span>`}</div></div>`;
+    }).join("")}</div>`;
+
+    const weekHtml = [...weeks].reverse().map((wk) => {
+      const hiW = wk.high?.winners?.[0], loW = wk.low?.winners?.[0];
+      const recap = hiW && loW ? `High score ${esc(nameOf(hiW.teamId))} (${fmt(hiW.actual)}). Low score ${esc(nameOf(loW.teamId))} (${fmt(loW.actual)}).` : "";
+      const rows = AWARDS.map((a) => {
+        const r = wk.awards[a.key];
+        if (!r || !r.winners.length) return `<div class="aw none">${trophy(a.key)}<div><div class="title">${a.title}</div><div class="def">${a.def}</div><div class="who">Not awarded this week</div></div></div>`;
+        const who = r.winners.map((w) => `<span class="${w.teamId === state.me ? "me" : ""}">${esc(nameOf(w.teamId))}</span>`).join(" and ");
+        const why = r.winners.length === 1 ? awardWhy(a.key, r.winners[0]) : `Tied: ${r.winners.map((w) => awardWhy(a.key, w)).join("; ")}`;
+        const mine = r.winners.some((w) => w.teamId === state.me);
+        return `<div class="aw">${trophy(a.key)}<div><div class="title">${a.title}</div><div class="def">${a.def}</div><div class="who ${mine ? "me" : ""}">${who}</div><div class="why">${esc(why)}</div></div></div>`;
+      }).join("");
+      return `<article class="wkcard"><header><h3>Week ${wk.week}</h3><div class="recap">${recap}</div></header>${rows}</article>`;
+    }).join("");
+    box.innerHTML = caseHtml + weekHtml;
+  }
+
   // ---------- "I'm" picker and summary ----------
   const ordinal = (n) => { const v = n % 100; return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th"); };
   function fillMePicker() {
@@ -810,6 +949,7 @@
     card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
     if (state.wk) { renderScoreboard(); renderPecking(); renderPicks(); }
     renderMe(); markMe(); renderStandings();
+    if (state.awards) renderAwards();
   });
   $("meClose").onclick = () => { $("meCard").hidden = true; };
 
@@ -849,6 +989,7 @@
     $("leagueSub").textContent = `${L.settings?.name || "League 353576"}, ${L.seasonId || ""} season, ${L.teams.length} teams`;
     fillMePicker();
     renderStandings();
+    if (state.tab === "awards") renderAwards();
     loadWeek(state.currentWeek);
   }
 
@@ -861,6 +1002,7 @@
     if (push) { history.replaceState(null, "", `#${name}`); window.scrollTo({ top: 0 }); }
     if (name === "pecking") requestAnimationFrame(placeMedian);
     if (name === "standings") renderStandings();
+    if (name === "awards" && state.league) renderAwards();
   }
   document.querySelector(".tabs").addEventListener("click", (e) => { const b = e.target.closest("[role=tab]"); if (b) showTab(b.dataset.tab); });
   document.querySelector(".tabs").addEventListener("keydown", (e) => {
