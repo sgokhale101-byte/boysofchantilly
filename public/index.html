@@ -370,7 +370,7 @@
   .aw.none .who { color: var(--muted); font-weight: 400; }
   @media (max-width: 640px) {
     .tabs { grid-template-columns: repeat(6, 1fr); }
-    .tabs button { font-size: 13px; padding: 12px 1px 10px; }
+    .tabs button { font-size: 13px; padding: 8px 1px 6px; line-height: 1.15; display: flex; align-items: center; justify-content: center; text-align: center; }
     .wkcard { padding: 12px; }
     .case { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
     .case .ct { padding: 8px 10px; column-gap: 8px; }
@@ -390,20 +390,20 @@
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
-    <!-- Trophy badges. High awards: purple medal. Low awards: black medal with purple rim. -->
+    <!-- Trophy badges: Overperformer green, Letdown red, Noah black, Manager and Srimanth purple. -->
     <symbol id="tr-overperformer" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
+      <circle cx="32" cy="32" r="31" fill="#16A34A"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#86EFAC" stroke-width="1.5" opacity=".8"/>
       <path d="M22 18h20v8a10 10 0 0 1-20 0z" fill="#fff"/>
       <path d="M22 20.5h-3.5a4.5 4.5 0 0 0 4.2 7.4M42 20.5h3.5a4.5 4.5 0 0 1-4.2 7.4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
       <rect x="30" y="35" width="4" height="6" fill="#fff"/><rect x="24.5" y="41" width="15" height="4.5" rx="1.2" fill="#fff"/>
-      <path d="M32 19.5l-5.5 5.5h3.5v4.5h4v-4.5h3.5z" fill="#6B2FB3"/>
+      <path d="M32 19.5l-5.5 5.5h3.5v4.5h4v-4.5h3.5z" fill="#16A34A"/>
     </symbol>
     <symbol id="tr-letdown" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="31" fill="#000"/><circle cx="32" cy="32" r="29" fill="none" stroke="#B98CFF" stroke-width="2.5"/>
-      <path d="M22 18h20v8a10 10 0 0 1-20 0z" fill="#E4D6FF"/>
-      <path d="M22 20.5h-3.5a4.5 4.5 0 0 0 4.2 7.4M42 20.5h3.5a4.5 4.5 0 0 1-4.2 7.4" fill="none" stroke="#E4D6FF" stroke-width="2.4" stroke-linecap="round"/>
-      <rect x="30" y="35" width="4" height="6" fill="#E4D6FF"/><rect x="24.5" y="41" width="15" height="4.5" rx="1.2" fill="#E4D6FF"/>
-      <path d="M32 31l-5.5-5.5h3.5V21h4v4.5h3.5z" fill="#000"/>
+      <circle cx="32" cy="32" r="31" fill="#DC2626"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#FCA5A5" stroke-width="1.5" opacity=".8"/>
+      <path d="M22 18h20v8a10 10 0 0 1-20 0z" fill="#fff"/>
+      <path d="M22 20.5h-3.5a4.5 4.5 0 0 0 4.2 7.4M42 20.5h3.5a4.5 4.5 0 0 1-4.2 7.4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="30" y="35" width="4" height="6" fill="#fff"/><rect x="24.5" y="41" width="15" height="4.5" rx="1.2" fill="#fff"/>
+      <path d="M32 31l-5.5-5.5h3.5V21h4v4.5h3.5z" fill="#DC2626"/>
     </symbol>
     <symbol id="tr-manager" viewBox="0 0 64 64">
       <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
@@ -413,14 +413,25 @@
     </symbol>
     <symbol id="tr-noah" viewBox="0 0 64 64">
       <circle cx="32" cy="32" r="31" fill="#000"/><circle cx="32" cy="32" r="29" fill="none" stroke="#B98CFF" stroke-width="2.5"/>
-      <path d="M32 46C19 37 16 31 16 25.5a8 8 0 0 1 16-2.5a8 8 0 0 1 16 2.5C48 31 45 37 32 46z" fill="#E4D6FF"/>
-      <path d="M33.5 22.5l-4.5 7 5.5 4-4.5 7" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="32" cy="34" r="14.5" fill="#E4D6FF"/>
+      <circle cx="17.3" cy="34" r="2.6" fill="#E4D6FF"/><circle cx="46.7" cy="34" r="2.6" fill="#E4D6FF"/>
+      <path d="M29.5 20.2c-.6-3.4 2.6-5.4 4.9-3.9 1.7 1.1 1 3.6-.9 3.3" fill="none" stroke="#E4D6FF" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M23.5 31.5q3-3.2 6 0M34.5 31.5q3-3.2 6 0" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M26.5 26.8l3-1M37.5 25.8l3 1" stroke="#000" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="32" cy="41" rx="5" ry="4" fill="#000"/>
+      <ellipse cx="32" cy="43.2" rx="2.8" ry="1.5" fill="#B98CFF"/>
+      <path d="M24.5 33.5c-1.6 2.6-2.3 3.9-2.3 5a2.3 2.3 0 0 0 4.6 0c0-1.1-.7-2.4-2.3-5z" fill="#6B2FB3"/>
+      <path d="M39.5 33.5c-1.6 2.6-2.3 3.9-2.3 5a2.3 2.3 0 0 0 4.6 0c0-1.1-.7-2.4-2.3-5z" fill="#6B2FB3"/>
+      <path d="M14.5 40c-1.4 2.3-2 3.4-2 4.4a2 2 0 0 0 4 0c0-1-.6-2.1-2-4.4zM49.5 40c-1.4 2.3-2 3.4-2 4.4a2 2 0 0 0 4 0c0-1-.6-2.1-2-4.4z" fill="#B98CFF"/>
     </symbol>
     <symbol id="tr-srimanth" viewBox="0 0 64 64">
       <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
-      <path d="M24.5 46C18 40 16.5 31 18.5 24.5C20.5 18 25.5 15 32 15s11.5 3 13.5 9.5C47.5 31 46 40 39.5 46" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/>
-      <g fill="#6B2FB3"><circle cx="18.5" cy="36.3" r="1.3"/><circle cx="18.4" cy="24.8" r="1.3"/><circle cx="24.1" cy="17" r="1.3"/><circle cx="39.9" cy="17" r="1.3"/><circle cx="45.6" cy="24.8" r="1.3"/><circle cx="45.5" cy="36.3" r="1.3"/></g>
-      <path d="M32 26l1.4 3.1 3.1 1.4-3.1 1.4L32 35l-1.4-3.1-3.1-1.4 3.1-1.4z" fill="#E4D6FF"/>
+      <path d="M32 31q2.5 10 11.5 16.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+      <g fill="#fff" stroke="#6B2FB3" stroke-width="1.8" stroke-linejoin="round">
+        <path id="leaf" d="M32 30C28.2 27.2 23.6 24.2 23.6 19.8c0-3.8 4.3-5 6.5-2.6 1 1.1 1.6 2.3 1.9 3.9.3-1.6.9-2.8 1.9-3.9 2.2-2.4 6.5-1.2 6.5 2.6 0 4.4-4.6 7.4-8.4 10.2z"/>
+        <use href="#leaf" transform="rotate(90 32 30)"/><use href="#leaf" transform="rotate(180 32 30)"/><use href="#leaf" transform="rotate(270 32 30)"/>
+      </g>
+      <circle cx="32" cy="30" r="1.6" fill="#6B2FB3"/>
     </symbol>
   </defs>
 </svg>
@@ -460,7 +471,7 @@
 
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
     <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard"><span class="full">Scoreboard</span><span class="short">Scores</span></button>
-    <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Pecking Order</span><span class="short">Pecking</span></button>
+    <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Pecking Order</span><span class="short">Pecking<br>Order</span></button>
     <button role="tab" id="tab-pickem" aria-controls="panel-pickem" data-tab="pickem"><span class="full">Pick 'em</span><span class="short">Pick 'em</span></button>
     <button role="tab" id="tab-standings" aria-controls="panel-standings" data-tab="standings"><span class="full">Standings</span><span class="short">Standings</span></button>
     <button role="tab" id="tab-awards" aria-controls="panel-awards" data-tab="awards"><span class="full">Awards</span><span class="short">Awards</span></button>
@@ -874,11 +885,11 @@
 
   // ---------- Awards ----------
   const AWARDS = [
-    { key: "overperformer", title: "Biggest overperformer", def: "Beat its pre-game projection by the most" },
-    { key: "letdown", title: "Biggest letdown", def: "Fell furthest below its pre-game projection" },
-    { key: "manager", title: "Manager of the week", def: "Fewest points left on the bench" },
-    { key: "noah", title: "Noah of the week", def: "Highest score in a head-to-head loss" },
-    { key: "srimanth", title: "Srimanth of the week", def: "Lowest score in a head-to-head win" },
+    { key: "overperformer", title: "Overperformer", def: "Beat its pre-game projection by the most" },
+    { key: "letdown", title: "Letdown", def: "Fell furthest below its pre-game projection" },
+    { key: "manager", title: "Manager of the Week", def: "Fewest points left on the bench" },
+    { key: "noah", title: "Noah of the Week", def: "Highest score in a head-to-head loss" },
+    { key: "srimanth", title: "Srimanth of the Week", def: "Lowest score in a head-to-head win" },
   ];
   const trophy = (key, sm) => `<svg class="trophy${sm ? " sm" : ""}" role="img" aria-label="${esc(AWARDS.find((a) => a.key === key)?.title || "")}"><use href="#tr-${key}"></use></svg>`;
   function awardWhy(key, w) {
