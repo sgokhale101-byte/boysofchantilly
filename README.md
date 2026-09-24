@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.4.3)
+# Boys of Chantilly dashboard (v1.4.4)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -50,3 +50,8 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Phone tab bar shows "Pecking Order" on two lines.
 - Award names: Overperformer, Letdown, Manager of the Week, Noah of the Week, Srimanth of the Week.
 - Icons: Overperformer green trophy, Letdown red trophy, Noah crying baby, Srimanth four-leaf clover.
+
+## 1.4.4
+- "I'm ___" summary lists the team's trophies with what each means and the weeks won.
+- Trophy case shows the weeks for each trophy (e.g. "Wk 1, 2").
+- Weekly awards have a week dropdown (latest finished week by default, or All weeks).
