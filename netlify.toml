@@ -1,7 +1,8 @@
 # Netlify config for the Boys of Chantilly dashboard.
-# No build step: the site is static HTML plus one serverless function.
+# No build step: static HTML in public/ plus serverless functions.
 [build]
   publish = "public"
 
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild"

@@ -1,14 +1,16 @@
-# Boys of Chantilly dashboard
+# Boys of Chantilly dashboard (v1.2)
 
-Live dashboard for ESPN league 353576: live median board, matchups, standings with median record, and waivers/trades.
+Tabs: Live (live score rank vs. median, top 4 and lowest scorer, matchups), Pick 'em, Standings, Waivers and trades.
 
 ## Layout
-- `public/index.html` – the page (add the league logo as `public/logo.png`)
-- `netlify/functions/espn.mjs` – server-side proxy to ESPN, served at `/api/espn`
-- `netlify.toml` – tells Netlify to publish `public/` and deploy the function
+- `public/index.html` – the page; `public/logo.png` – league logo
+- `netlify/functions/espn.mjs` – ESPN proxy at `/api/espn`
+- `netlify/functions/picks.mjs` – pick 'em votes at `/api/picks`, stored in Netlify Blobs
+- `netlify/lib/espn.mjs` – shared ESPN helpers
+- `package.json` – installs `@netlify/blobs` for the picks function
+- `netlify.toml` – publish `public/`, deploy functions
 
 ## Netlify settings
-- Build command: leave blank. Publish directory: `public` (netlify.toml sets this).
-- Environment variables: `ESPN_S2` and `SWID` (your ESPN login cookies; the league is private).
-  Optional: `ESPN_SEASON` (default 2026), `ESPN_LEAGUE_ID` (default 353576).
-- Deploy from GitHub (or `netlify deploy --prod`). Drag-and-drop deploys don't include functions.
+- Build command blank, publish directory `public`.
+- Environment variables: `ESPN_S2`, `SWID` (required, private league).
+- Pick 'em limits one vote per matchup per browser. Voting closes once either team scores.

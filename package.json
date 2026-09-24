@@ -1,0 +1,8 @@
+{
+  "name": "boys-of-chantilly-dashboard",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.2.0"
+  }
+}
