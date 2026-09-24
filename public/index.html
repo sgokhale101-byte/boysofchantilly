@@ -235,6 +235,114 @@
   .pick .opt .votes { font-size: 13px; color: var(--lilac); }
   td.up { color: var(--violet); } td.down { color: var(--muted); }
   @media (max-width: 640px) { .med .v { font-size: 34px; } }
+
+  /* Tab labels */
+  .short { display: none; }
+
+  /* "I'm" picker */
+  .me-pick { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 0 6px 0 14px; min-height: 40px; }
+  .me-pick span { color: var(--muted); font-size: 14px; }
+  .me-pick select {
+    background: transparent; color: var(--white); border: 0; font: inherit; font-weight: 600; font-size: 15px;
+    padding: 8px 24px 8px 2px; max-width: 190px; cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 12px) 55%, calc(100% - 7px) 55%; background-size: 5px 5px; background-repeat: no-repeat;
+  }
+  .me-pick select option { color: #000; }
+
+  /* Personal summary */
+  .me-card { margin-top: 16px; border: 1px solid var(--royal); border-radius: 14px; padding: 14px 16px; background: linear-gradient(var(--black), var(--black)) padding-box; }
+  .me-card[hidden] { display: none; }
+  .me-card.pop { animation: pop .28s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  .me-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .me-team { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; min-width: 0; }
+  .me-team .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .me-close { background: none; border: 0; color: var(--muted); font-size: 26px; line-height: 1; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; }
+  .me-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+  .me-stats .v { font-family: var(--display); font-weight: 900; font-size: 32px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .me-stats .v.proj { color: var(--violet); }
+  .me-stats .k { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .me-foot { margin-top: 10px; font-size: 14px; color: var(--lilac); }
+  .me-foot:empty { display: none; }
+
+  /* Highlight the viewer's team */
+  .row.me .team .nm, tr.me td .tcell > div > div:first-child, .sb .tm.me .nm, .top4 li.me .nm { color: var(--violet) !important; }
+  tr.me td { background: rgba(107, 47, 179, .14); }
+  .sb.me, .pick.me { border-color: var(--royal); }
+
+  /* Hide-on-phone table columns */
+  @media (max-width: 640px) {
+    body { font-size: 15px; }
+    .wrap { padding: 0 14px calc(84px + env(safe-area-inset-bottom, 0px)); }
+
+    header.mast { padding: 14px 0 12px; gap: 10px; }
+    .crest { padding: 4px 7px; border-radius: 10px; }
+    .crest img { height: 34px; }
+    .mast h1 { font-size: 30px; }
+    .mast .sub { font-size: 12px; margin-top: 2px; }
+    .mast .controls { margin-left: 0; width: 100%; display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+    .mast .status { grid-column: 1 / -1; }
+    .week-nav button { padding: 10px 14px; min-height: 40px; }
+    .week-nav .label { font-size: 18px; min-width: 74px; }
+    .me-pick { min-width: 0; }
+    .me-pick select { max-width: none; width: 100%; min-width: 0; text-overflow: ellipsis; }
+
+    .me-card { margin-top: 10px; padding: 10px 12px; }
+    .me-team { font-size: 15px; }
+    .me-close { width: 34px; height: 34px; font-size: 22px; }
+    .me-stats { gap: 6px; margin-top: 4px; }
+    .me-stats .v { font-size: 21px; }
+    .me-stats .k { font-size: 11.5px; }
+    .me-foot { font-size: 12.5px; margin-top: 6px; }
+    td .tcell .logo-sm { display: none; }
+
+    /* Bottom tab bar, like an app */
+    .tabs {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0; gap: 0; overflow: visible;
+      background: var(--black); border-top: 1px solid var(--line); border-bottom: 0;
+      padding-bottom: env(safe-area-inset-bottom, 0px); display: grid; grid-template-columns: repeat(5, 1fr);
+    }
+    .tabs button { padding: 12px 2px 10px; font-size: 15px; border-bottom: 0; border-top: 3px solid transparent; margin: 0; min-height: 56px; }
+    .tabs button[aria-selected="true"] { border-top-color: var(--violet); }
+    .tabs .full { display: none; } .tabs .short { display: inline; }
+
+    section { margin-top: 26px; }
+    h2 { font-size: 26px; }
+    .note { font-size: 13.5px; margin-bottom: 14px; }
+
+    .row { grid-template-columns: minmax(84px, 118px) 1fr 58px; gap: 8px; padding: 8px 0; }
+    .row .pts { font-size: 19px; }
+
+    .med { padding: 12px; }
+    .sb { padding: 10px 12px; }
+    .sb .tm .cur { font-size: 24px; }
+    details.lu summary, details.how summary { padding: 8px 0; }
+    .lu-grid th:nth-child(5), .lu-grid td:nth-child(5) { display: none; }
+
+    .pick .opt { min-height: 104px; padding: 10px; }
+    .pick .opt .chance b { font-size: 22px; }
+
+    .toggle { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+    .toggle button { padding: 9px 4px; }
+    .toggle .full { display: none; } .toggle .short { display: inline; }
+
+    .table-scroll { overflow-x: visible; }
+    table { min-width: 0; table-layout: fixed; }
+    th, td { padding: 9px 4px; font-size: 14px; }
+    th { font-size: 12px; white-space: normal; }
+    th:nth-child(1), td:nth-child(1) { width: 26px; }
+    td.rank { font-size: 17px; }
+    td .tcell { gap: 8px; min-width: 0; }
+    td .tcell > div { min-width: 0; }
+    td .tcell > div > div:first-child { overflow: hidden; text-overflow: ellipsis; }
+    td:nth-child(2) { white-space: nowrap; overflow: hidden; }
+    td .owner { display: none; }
+    .hide-m { display: none; }
+    th:nth-child(2), td:nth-child(2) { width: auto; }
+    th:not(:nth-child(1)):not(:nth-child(2)), td:not(:nth-child(1)):not(:nth-child(2)) { width: 60px; }
+    th:nth-child(3), td:nth-child(3) { width: 46px; }
+  }
 </style>
 </head>
 <body>
@@ -251,16 +359,33 @@
         <div class="label" id="weekLabel">Week –</div>
         <button id="nextWeek" aria-label="Next week">›</button>
       </div>
+      <label class="me-pick"><span>I'm</span>
+        <select id="mePick" aria-label="Choose your team"><option value="">pick your team</option></select>
+      </label>
       <div class="status"><span class="dot" id="liveDot"></span><span id="updated">–</span></div>
     </div>
   </header>
 
+  <aside class="me-card" id="meCard" hidden aria-live="polite">
+    <div class="me-head">
+      <div class="me-team" id="meTeam"></div>
+      <button class="me-close" id="meClose" aria-label="Hide summary">×</button>
+    </div>
+    <div class="me-stats">
+      <div><div class="v" id="meRecord">–</div><div class="k">Record</div></div>
+      <div><div class="v" id="meRank">–</div><div class="k" id="meRankK">Standing</div></div>
+      <div><div class="v" id="meCur">–</div><div class="k" id="meCurK">Current score</div></div>
+      <div><div class="v proj" id="meProj">–</div><div class="k">Projected</div></div>
+    </div>
+    <div class="me-foot" id="meFoot"></div>
+  </aside>
+
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
-    <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard">Scoreboard</button>
-    <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking">Pecking order</button>
-    <button role="tab" id="tab-pickem" aria-controls="panel-pickem" data-tab="pickem">Pick 'em</button>
-    <button role="tab" id="tab-standings" aria-controls="panel-standings" data-tab="standings">Standings</button>
-    <button role="tab" id="tab-moves" aria-controls="panel-moves" data-tab="moves">Waivers and trades</button>
+    <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard"><span class="full">Scoreboard</span><span class="short">Scores</span></button>
+    <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Pecking order</span><span class="short">Pecking</span></button>
+    <button role="tab" id="tab-pickem" aria-controls="panel-pickem" data-tab="pickem"><span class="full">Pick 'em</span><span class="short">Pick 'em</span></button>
+    <button role="tab" id="tab-standings" aria-controls="panel-standings" data-tab="standings"><span class="full">Standings</span><span class="short">Standings</span></button>
+    <button role="tab" id="tab-moves" aria-controls="panel-moves" data-tab="moves"><span class="full">Waivers and trades</span><span class="short">Moves</span></button>
   </nav>
 
   <div class="banner" id="banner" role="alert" hidden></div>
@@ -314,7 +439,7 @@
       <h2 id="stH">Standings</h2>
       <div class="toggle" role="group" aria-label="Standings view">
         <button data-view="current" aria-pressed="true">Current</button>
-        <button data-view="h2h" aria-pressed="false">Head-to-head</button>
+        <button data-view="h2h" aria-pressed="false"><span class="full">Head-to-head</span><span class="short">H2H</span></button>
         <button data-view="median" aria-pressed="false">Median</button>
         <button data-view="ifman" aria-pressed="false">If man</button>
       </div>
@@ -340,6 +465,7 @@
   const state = {
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
     wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
+    me: (() => { try { return Number(localStorage.getItem("boc-me")) || null; } catch { return null; } })(),
   };
   const voter = (() => {
     try {
@@ -414,15 +540,16 @@
       const g = p.game, st = !g ? "Bye" : g.state === "post" ? "Final" : g.state === "in" ? "Live" : `${g.home ? "vs" : "at"} ${g.opp || ""}`;
       return `<tr><td>${esc(p.slot)}</td><td>${esc(p.name)}</td><td class="${g && g.state === "post" ? "done" : ""}">${fmt(p.actual)}</td><td class="dim">${g && g.state !== "post" ? fmt(p.actual + p.remaining) : "–"}</td><td class="dim">${esc(st)}</td></tr>`;
     }).join("")}</tbody></table></div>`;
-    $("scoreboard").innerHTML = W.matchups.map((m) => {
+    const mineFirst = [...W.matchups].sort((x, y) => ([y.home?.teamId, y.away?.teamId].includes(state.me) ? 1 : 0) - ([x.home?.teamId, x.away?.teamId].includes(state.me) ? 1 : 0));
+    $("scoreboard").innerHTML = mineFirst.map((m) => {
       const { home: h, away: a } = m;
       if (!a) return `<div class="sb"><div class="tm">${logo(teamById(h.teamId))}<div><div class="nm">${esc(nameOf(h.teamId))}</div><div class="meta">Bye</div></div><div><div class="cur">${fmt(h.current)}</div></div></div></div>`;
       const final = decided(m);
-      const row = (s, o) => `<div class="tm ${s.current < o.current ? "trail" : ""}">${logo(teamById(s.teamId))}
+      const row = (s, o) => `<div class="tm ${s.current < o.current ? "trail" : ""}" data-team="${s.teamId}">${logo(teamById(s.teamId))}
           <div style="min-width:0"><div class="nm">${esc(nameOf(s.teamId))}</div><div class="meta">${esc(ownerName(teamById(s.teamId)))}</div></div>
           <div><div class="cur">${fmt(s.current)}</div>${final ? "" : `<div class="pj">Projected ${fmt(s.projected)}</div>`}</div></div>`;
       const hp = h.winProb ?? 0.5;
-      return `<div class="sb">${row(h, a)}${row(a, h)}
+      return `<div class="sb ${[h.teamId, a.teamId].includes(state.me) ? "me" : ""}">${row(h, a)}${row(a, h)}
         ${final ? `<div class="wpl"><span>Final</span></div>` : `<div class="wp" aria-hidden="true"><span style="width:${hp * 100}%"></span><span style="width:${(1 - hp) * 100}%"></span></div>
         <div class="wpl"><span>${esc(teamById(h.teamId)?.abbrev || "")} ${pct(hp)} to win</span><span>${esc(teamById(a.teamId)?.abbrev || "")} ${pct(1 - hp)}</span></div>`}
         <details class="lu"><summary>Lineups</summary><div class="lu-grid">${lineup(h)}${lineup(a)}</div></details></div>`;
@@ -447,7 +574,7 @@
     } else {
       board.parentElement.classList.add("board-pad");
       board.innerHTML = scores.map((s) => `
-        <div class="row ${s.p > med ? "above" : s.p < med ? "below" : ""}">
+        <div class="row ${s.p > med ? "above" : s.p < med ? "below" : ""}" data-team="${s.t?.id}">
           <div class="team">${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span></div>
           <div class="track"><div class="bar" style="width:${(s.p / max) * 100}%"></div></div>
           <div class="pts">${fmt(s.p)}</div>
@@ -461,7 +588,7 @@
       $("low").innerHTML = `<div class="lbl">Fills in once games kick off.</div>`;
       return;
     }
-    $("top4").innerHTML = scores.slice(0, 4).map((s, i) => `<li><span class="place">${i + 1}</span>${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span><span class="sc">${fmt(s.p)}</span></li>`).join("");
+    $("top4").innerHTML = scores.slice(0, 4).map((s, i) => `<li data-team="${s.t?.id}"><span class="place">${i + 1}</span>${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span><span class="sc">${fmt(s.p)}</span></li>`).join("");
     const lo = scores[scores.length - 1];
     $("low").innerHTML = `<div class="who">${logo(lo.t)}<span>${esc(teamName(lo.t))}</span></div><div class="sc">${fmt(lo.p)}</div><div class="gap">${fmt(med - lo.p)} below the median</div>`;
   }
@@ -508,7 +635,7 @@
       else if (P.error) foot = `<div class="foot err">${esc(P.error)}</div>`;
       else if (!voter) foot = `<div class="foot err">This browser is blocking storage, so it can't vote. Try a different browser.</div>`;
       else foot = `<div class="foot">${total} vote${total === 1 ? "" : "s"}${isCurrent ? (kicked ? ", voting closed" : my ? ", you're locked in" : "") : ""}</div>`;
-      return `<div class="pick"><div class="opts">${opt("home", m.home)}${opt("away", m.away)}</div>${foot}</div>`;
+      return `<div class="pick ${[m.home.teamId, m.away.teamId].includes(state.me) ? "me" : ""}"><div class="opts">${opt("home", m.home)}${opt("away", m.away)}</div>${foot}</div>`;
     }).join("");
   }
   $("picks").addEventListener("click", async (e) => {
@@ -561,6 +688,10 @@
   }
   const teamCell = (t) => `<td><div class="tcell">${logo(t)}<div><div>${esc(teamName(t))}</div><div class="owner">${esc(ownerName(t))}</div></div></div></td>`;
 
+  function officialOrder() {
+    return state.league.teams.map((t) => { const o = t.record?.overall || {}; return { t, r: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 }, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0, seed: t.playoffSeed || 99 }; })
+      .sort((a, b) => a.seed - b.seed || winPct(b.r) - winPct(a.r) || b.pf - a.pf);
+  }
   const NOTES = {
     current: "Official standings as ESPN has them, in playoff-seed order.",
     h2h: "Records from head-to-head matchups only.",
@@ -577,16 +708,15 @@
     if (v === "current" && usesMed) $("standNote").textContent = "Official standings as ESPN has them, in playoff-seed order. Each week counts as two games: the head-to-head matchup and the median game.";
     if (v === "ifman") $("standNote").textContent = `What the standings would be if every team had started its best possible lineup every week, against opponents who did the same${usesMed ? ". Includes both the head-to-head and median game each week." : "."}`;
     if (v === "current") {
-      const rows = L.teams.map((t) => { const o = t.record?.overall || {}; return { t, r: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 }, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0, seed: t.playoffSeed || 99 }; });
-      rows.sort((a, b) => a.seed - b.seed || winPct(b.r) - winPct(a.r) || b.pf - a.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.pf)}</td><td>${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
+      const rows = officialOrder();
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.pf)}</td><td class="hide-m">${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "h2h") {
       const rows = L.teams.map((t) => ({ t, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td><td>${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td><td class="hide-m">${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "median") {
       const med = medianRecords();
       const rows = L.teams.map((t) => ({ t, r: med[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Games</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Games</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
     } else {
       if (!state.ifman && !state.ifmanErr) {
         table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every team's best lineup for each completed week…</td></tr></tbody>`;
@@ -601,9 +731,9 @@
       const zero = { w: 0, l: 0, t: 0 };
       const rows = L.teams.map((t) => { const d = state.ifman.teams[t.id] || { h2h: zero, median: zero, optimalPF: 0, actualPF: 0 }; return { t, r: usesMed ? addRec(d.h2h, d.median) : d.h2h, opt: d.optimalPF, act: d.actualPF }; })
         .sort((a, b) => winPct(b.r) - winPct(a.r) || b.opt - a.opt);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Best-lineup points</th><th>Actual points</th><th>Left on bench</th><th>vs. actual standings</th></tr></thead><tbody>${rows.map((x, i) => {
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th class="hide-m">Games</th><th>Best lineup</th><th class="hide-m">Actual points</th><th class="hide-m">Left on bench</th><th>vs. actual</th></tr></thead><tbody>${rows.map((x, i) => {
         const d = h2hRank[x.t.id] - (i + 1);
-        return `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.opt)}</td><td>${fmt(x.act)}</td><td>${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `Up ${d}` : d < 0 ? `Down ${-d}` : "Same"}</td></tr>`;
+        return `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td class="hide-m">${gp(x.r)}</td><td>${fmt(x.opt)}</td><td class="hide-m">${fmt(x.act)}</td><td class="hide-m">${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `↑ ${d}` : d < 0 ? `↓ ${-d}` : "–"}</td></tr>`;
       }).join("")}</tbody>`;
     }
   }
@@ -631,6 +761,58 @@
     }
   }
 
+  // ---------- "I'm" picker and summary ----------
+  const ordinal = (n) => { const v = n % 100; return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th"); };
+  function fillMePicker() {
+    const sel = $("mePick");
+    const teams = [...state.league.teams].sort((a, b) => teamName(a).localeCompare(teamName(b)));
+    sel.innerHTML = `<option value="">pick your team</option>` + teams.map((t) => {
+      const o = ownerName(t);
+      return `<option value="${t.id}" ${t.id === state.me ? "selected" : ""}>${esc(teamName(t))}${o ? ` (${esc(o)})` : ""}</option>`;
+    }).join("");
+    if (state.me && !teamById(state.me)) state.me = null;
+  }
+  function renderMe() {
+    const card = $("meCard");
+    if (!state.me || !state.league) { card.hidden = true; return; }
+    const t = teamById(state.me); if (!t) { card.hidden = true; return; }
+    const order = officialOrder();
+    const idx = order.findIndex((x) => x.t.id === t.id);
+    const row = order[idx];
+    $("meTeam").innerHTML = `${logo(t)}<span class="nm">${esc(teamName(t))}</span>`;
+    $("meRecord").textContent = recStr(row.r);
+    $("meRank").textContent = ordinal(idx + 1);
+    $("meRankK").textContent = `Standing, of ${order.length}`;
+    const m = (state.wk?.matchups || []).find((x) => x.home?.teamId === t.id || x.away?.teamId === t.id);
+    const mine = m && (m.home?.teamId === t.id ? m.home : m.away);
+    const opp = m && (m.home?.teamId === t.id ? m.away : m.home);
+    const final = m && decided(m);
+    $("meCurK").textContent = final ? `Week ${state.week} final` : `Week ${state.week} score`;
+    $("meCur").textContent = mine ? fmt(mine.current) : "–";
+    $("meProj").textContent = mine ? fmt(final ? mine.current : mine.projected) : "–";
+    let foot = "";
+    if (mine && opp) {
+      const on = nameOf(opp.teamId);
+      if (final) foot = `${m.winner === (mine === m.home ? "HOME" : "AWAY") ? "Beat" : m.winner === "TIE" ? "Tied" : "Lost to"} ${on}, ${fmt(mine.current)} to ${fmt(opp.current)}.`;
+      else foot = `Against ${on}: ${pct(mine.winProb)} win chance. ${mine.current >= (state.wk.medians.current || 0) ? "Above" : "Below"} the median right now.`;
+    } else if (mine) foot = "Bye this week.";
+    $("meFoot").textContent = foot;
+    card.hidden = false;
+  }
+  function markMe() {
+    const id = state.me;
+    document.querySelectorAll("[data-team]").forEach((el) => el.classList.toggle("me", Number(el.dataset.team) === id));
+  }
+  $("mePick").addEventListener("change", (e) => {
+    state.me = Number(e.target.value) || null;
+    try { state.me ? localStorage.setItem("boc-me", state.me) : localStorage.removeItem("boc-me"); } catch {}
+    const card = $("meCard");
+    card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
+    if (state.wk) { renderScoreboard(); renderPecking(); renderPicks(); }
+    renderMe(); markMe(); renderStandings();
+  });
+  $("meClose").onclick = () => { $("meCard").hidden = true; };
+
   // ---------- Loading ----------
   async function loadWeek(week, { quiet = false } = {}) {
     if (week !== state.week) { state.picks = null; state.pickErr = {}; }
@@ -642,7 +824,7 @@
       const wk = await getJSON(`/api/week?week=${week}`);
       if (week !== state.week) return;
       state.wk = wk;
-      renderScoreboard(); renderPecking(); renderPicks();
+      renderScoreboard(); renderPecking(); renderPicks(); renderMe(); markMe();
       if (!quiet || state.tab === "pickem") loadPicks();
       const live = weekLive() && wkSides().some((s) => s.current > 0);
       $("liveDot").classList.toggle("live", live);
@@ -655,7 +837,7 @@
   }
   const LEAGUE_VIEWS = ["mSettings", "mTeam", "mStandings", "mMatchupScore", "mStatus"];
   async function refresh() {
-    try { state.league = await espn({ view: LEAGUE_VIEWS }); if (state.tab === "standings") renderStandings(); } catch (e) { showError(e.message); }
+    try { state.league = await espn({ view: LEAGUE_VIEWS }); if (state.tab === "standings") renderStandings(); renderMe(); } catch (e) { showError(e.message); }
     loadWeek(state.week, { quiet: true });
   }
   async function init() {
@@ -665,6 +847,7 @@
     state.currentWeek = L.status?.currentMatchupPeriod || L.scoringPeriodId || 1;
     state.lastWeek = Math.max(state.currentWeek, 1);
     $("leagueSub").textContent = `${L.settings?.name || "League 353576"}, ${L.seasonId || ""} season, ${L.teams.length} teams`;
+    fillMePicker();
     renderStandings();
     loadWeek(state.currentWeek);
   }
@@ -675,7 +858,7 @@
     state.tab = name;
     document.querySelectorAll(".tabs [role=tab]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.tab === name); b.tabIndex = b.dataset.tab === name ? 0 : -1; });
     document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.id !== `panel-${name}`));
-    if (push) history.replaceState(null, "", `#${name}`);
+    if (push) { history.replaceState(null, "", `#${name}`); window.scrollTo({ top: 0 }); }
     if (name === "pecking") requestAnimationFrame(placeMedian);
     if (name === "standings") renderStandings();
   }
