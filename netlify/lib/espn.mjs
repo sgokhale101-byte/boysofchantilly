@@ -20,10 +20,10 @@ export class EspnError extends Error {
 }
 
 // Fetch from ESPN and return parsed JSON, or throw EspnError with a readable message.
-export async function espnFetch(target) {
+export async function espnFetch(target, extraHeaders = {}) {
   let res;
   try {
-    res = await fetch(target, { headers: espnHeaders(), redirect: "manual" });
+    res = await fetch(target, { headers: { ...espnHeaders(), ...extraHeaders }, redirect: "manual" });
   } catch {
     throw new EspnError(502, "Couldn't reach ESPN. Try again in a minute.");
   }

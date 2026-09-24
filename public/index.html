@@ -145,7 +145,8 @@
   .board-inner { position: relative; }
   .board-pad { padding-top: 38px; }
 
-  .logo-sm { width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover; background: var(--royal); display: grid; place-items: center; font-size: 10px; font-weight: 700; overflow: hidden; }
+  .logo-sm { width: 26px; height: 26px; border-radius: 50%; flex: none; background: var(--royal); display: grid; place-items: center; font-size: 10px; font-weight: 700; overflow: hidden; }
+  .logo-sm img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   /* Matchups */
   .matchups { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
@@ -376,9 +377,19 @@
     const m = L.members.find((x) => x.id === id);
     return m ? (m.firstName ? `${m.firstName} ${m.lastName || ""}`.trim() : m.displayName) : "";
   }
+  // Team logo: ESPN's logo first, then public/logos/<ABBREV>.png, then initials.
+  window.bocLogoFail = (img) => {
+    const next = img.dataset.alt;
+    if (next) { img.dataset.alt = ""; img.src = next; return; }
+    const span = img.parentElement; img.remove(); span.textContent = span.dataset.ab || "";
+  };
   function logo(t) {
-    if (t && t.logo) return `<img class="logo-sm" src="${esc(t.logo)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
-    return `<span class="logo-sm">${esc((t && t.abbrev) || "")}</span>`;
+    const ab = (t && t.abbrev) || "";
+    const local = ab ? `logos/${encodeURIComponent(ab.toUpperCase())}.png` : "";
+    const first = (t && t.logo) || local;
+    if (!first) return `<span class="logo-sm">${esc(ab)}</span>`;
+    const alt = t && t.logo ? local : "";
+    return `<span class="logo-sm" data-ab="${esc(ab)}"><img src="${esc(first)}" data-alt="${esc(alt)}" alt="" loading="lazy" onerror="bocLogoFail(this)"></span>`;
   }
   const nameOf = (id) => teamName(teamById(id));
   function median(arr) {
@@ -542,6 +553,12 @@
   }
   const winPct = (r) => { const g = r.w + r.l + r.t; return g ? (r.w + r.t / 2) / g : 0; };
   const recStr = (r) => `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}`;
+  const gp = (r) => r.w + r.l + r.t;
+  const addRec = (a, b) => ({ w: a.w + b.w, l: a.l + b.l, t: a.t + b.t });
+  // ESPN's official record already includes median games when the league plays the median.
+  function leagueUsesMedian(h2h) {
+    return state.league.teams.some((t) => { const o = t.record?.overall || {}; return (o.wins || 0) + (o.losses || 0) + (o.ties || 0) > gp(h2h[t.id]); });
+  }
   const teamCell = (t) => `<td><div class="tcell">${logo(t)}<div><div>${esc(teamName(t))}</div><div class="owner">${esc(ownerName(t))}</div></div></div></td>`;
 
   const NOTES = {
@@ -556,17 +573,20 @@
     $("standNote").textContent = NOTES[v];
     document.querySelectorAll(".toggle [data-view]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === v));
     const h2h = h2hRecords();
+    const usesMed = leagueUsesMedian(h2h);
+    if (v === "current" && usesMed) $("standNote").textContent = "Official standings as ESPN has them, in playoff-seed order. Each week counts as two games: the head-to-head matchup and the median game.";
+    if (v === "ifman") $("standNote").textContent = `What the standings would be if every team had started its best possible lineup every week, against opponents who did the same${usesMed ? ". Includes both the head-to-head and median game each week." : "."}`;
     if (v === "current") {
       const rows = L.teams.map((t) => { const o = t.record?.overall || {}; return { t, r: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 }, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0, seed: t.playoffSeed || 99 }; });
       rows.sort((a, b) => a.seed - b.seed || winPct(b.r) - winPct(a.r) || b.pf - a.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.pf)}</td><td>${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.pf)}</td><td>${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "h2h") {
       const rows = L.teams.map((t) => ({ t, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td><td>${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td><td>${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "median") {
       const med = medianRecords();
       const rows = L.teams.map((t) => ({ t, r: med[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Games</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
     } else {
       if (!state.ifman && !state.ifmanErr) {
         table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every team's best lineup for each completed week…</td></tr></tbody>`;
@@ -576,45 +596,34 @@
       if (state.ifmanErr) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Couldn't load best-lineup standings: ${esc(state.ifmanErr)}</td></tr></tbody>`; return; }
       if (!state.ifman.weeks.length) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Fills in after the first week is final.</td></tr></tbody>`; return; }
       const h2hRank = {};
-      L.teams.map((t) => ({ id: t.id, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf).forEach((x, i) => (h2hRank[x.id] = i + 1));
-      const rows = L.teams.map((t) => { const d = state.ifman.teams[t.id] || { wins: 0, losses: 0, ties: 0, optimalPF: 0, actualPF: 0 }; return { t, r: { w: d.wins, l: d.losses, t: d.ties }, opt: d.optimalPF, act: d.actualPF }; })
+      L.teams.map((t) => { const o = t.record?.overall || {}; return { id: t.id, seed: t.playoffSeed || 99, r: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 }, pf: o.pointsFor || 0 }; })
+        .sort((a, b) => a.seed - b.seed || winPct(b.r) - winPct(a.r) || b.pf - a.pf).forEach((x, i) => (h2hRank[x.id] = i + 1));
+      const zero = { w: 0, l: 0, t: 0 };
+      const rows = L.teams.map((t) => { const d = state.ifman.teams[t.id] || { h2h: zero, median: zero, optimalPF: 0, actualPF: 0 }; return { t, r: usesMed ? addRec(d.h2h, d.median) : d.h2h, opt: d.optimalPF, act: d.actualPF }; })
         .sort((a, b) => winPct(b.r) - winPct(a.r) || b.opt - a.opt);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Best-lineup points</th><th>Actual points</th><th>Left on bench</th><th>vs. head-to-head</th></tr></thead><tbody>${rows.map((x, i) => {
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Best-lineup points</th><th>Actual points</th><th>Left on bench</th><th>vs. actual standings</th></tr></thead><tbody>${rows.map((x, i) => {
         const d = h2hRank[x.t.id] - (i + 1);
-        return `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.opt)}</td><td>${fmt(x.act)}</td><td>${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `Up ${d}` : d < 0 ? `Down ${-d}` : "Same"}</td></tr>`;
+        return `<tr><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.opt)}</td><td>${fmt(x.act)}</td><td>${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `Up ${d}` : d < 0 ? `Down ${-d}` : "Same"}</td></tr>`;
       }).join("")}</tbody>`;
     }
   }
   document.querySelector(".toggle").addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) { state.view = b.dataset.view; renderStandings(); } });
 
   // ---------- Transactions ----------
-  async function loadPlayers() {
-    if (state.players) return state.players;
-    try {
-      const list = await espn({ kind: "players" });
-      state.players = {};
-      (Array.isArray(list) ? list : []).forEach((p) => (state.players[p.id] = p));
-    } catch { state.players = {}; }
-    return state.players;
-  }
   async function renderTx(week) {
     const list = $("tx");
     try {
-      const [data, players] = await Promise.all([espn({ view: ["mTransactions2"], scoringPeriodId: week }), loadPlayers()]);
+      const data = await getJSON(`/api/moves?week=${week}`);
       if (week !== state.week) return;
-      const pname = (id) => { const p = players[id]; return p ? `${p.fullName}${POS[p.defaultPositionId] ? `, ${POS[p.defaultPositionId]}` : ""}` : `Player ${id}`; };
-      const txs = (data.transactions || [])
-        .filter((t) => t.status === "EXECUTED" && ["WAIVER", "FREEAGENT", "TRADE_ACCEPT"].includes(t.type))
-        .sort((a, b) => (b.processDate || b.proposedDate || 0) - (a.processDate || a.proposedDate || 0));
-      if (!txs.length) { list.innerHTML = `<li class="empty" style="display:block;border:0">No completed moves this week.</li>`; return; }
-      list.innerHTML = txs.map((t) => {
-        const when = new Date(t.processDate || t.proposedDate).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-        const kind = t.type === "WAIVER" ? `Waiver${t.bidAmount ? `, $${t.bidAmount}` : ""}` : t.type === "FREEAGENT" ? "Free agent" : "Trade";
-        const items = (t.items || []).filter((i) => i.type !== "LINEUP");
+      const pl = (p) => `${p.name}${p.pos ? `, ${p.pos}` : ""}`;
+      if (!data.moves.length) { list.innerHTML = `<li class="empty" style="display:block;border:0">No completed moves this week.</li>`; return; }
+      list.innerHTML = data.moves.map((t) => {
+        const when = new Date(t.date).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const kind = t.type === "WAIVER" ? `Waiver${t.bid ? `, $${t.bid}` : ""}` : t.type === "FREEAGENT" ? "Free agent" : "Trade";
         const moves = t.type === "TRADE_ACCEPT"
-          ? items.map((i) => `<div class="add">${esc(pname(i.playerId))} to ${esc(nameOf(i.toTeamId))}</div>`).join("")
-          : items.map((i) => i.type === "ADD" ? `<div class="add">Added ${esc(pname(i.playerId))}</div>` : `<div class="drop">Dropped ${esc(pname(i.playerId))}</div>`).join("");
-        const who = t.type === "TRADE_ACCEPT" ? [...new Set(items.flatMap((i) => [i.fromTeamId, i.toTeamId]))].map(nameOf).join(" and ") : nameOf(t.teamId);
+          ? t.items.map((i) => `<div class="add">${esc(pl(i.player))} to ${esc(nameOf(i.toTeamId))}</div>`).join("")
+          : t.items.map((i) => i.type === "ADD" ? `<div class="add">Added ${esc(pl(i.player))}</div>` : `<div class="drop">Dropped ${esc(pl(i.player))}</div>`).join("");
+        const who = t.type === "TRADE_ACCEPT" ? [...new Set(t.items.flatMap((i) => [i.fromTeamId, i.toTeamId]))].filter((id) => id >= 0).map(nameOf).join(" and ") : nameOf(t.teamId);
         return `<li><div class="when">${esc(when)}</div><div><span class="who">${esc(who)}</span><span class="kind">${esc(kind)}</span><div class="moves">${moves}</div></div></li>`;
       }).join("");
     } catch (e) {

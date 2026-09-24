@@ -51,15 +51,23 @@ export default async () => {
     return json(e instanceof EspnError ? e.status : 500, { error: e.message || "Couldn't build the best-lineup standings." });
   }
 
+  // Separate head-to-head and median results, both using best-lineup scores.
   const teams = {};
-  const t = (id) => (teams[id] ||= { wins: 0, losses: 0, ties: 0, optimalPF: 0, actualPF: 0 });
-  weeks.forEach((games) => games.forEach(({ home, away }) => {
-    [home, away].forEach((s) => { if (s) { t(s.teamId).optimalPF += s.optimal; t(s.teamId).actualPF += s.actual; } });
-    if (!home || !away) return;
-    if (home.optimal > away.optimal) { t(home.teamId).wins++; t(away.teamId).losses++; }
-    else if (home.optimal < away.optimal) { t(away.teamId).wins++; t(home.teamId).losses++; }
-    else { t(home.teamId).ties++; t(away.teamId).ties++; }
-  }));
+  const t = (id) => (teams[id] ||= { h2h: { w: 0, l: 0, t: 0 }, median: { w: 0, l: 0, t: 0 }, optimalPF: 0, actualPF: 0 });
+  weeks.forEach((games) => {
+    const sides = [];
+    games.forEach(({ home, away }) => {
+      [home, away].forEach((s) => { if (s) { t(s.teamId).optimalPF += s.optimal; t(s.teamId).actualPF += s.actual; sides.push(s); } });
+      if (!home || !away) return;
+      if (home.optimal > away.optimal) { t(home.teamId).h2h.w++; t(away.teamId).h2h.l++; }
+      else if (home.optimal < away.optimal) { t(away.teamId).h2h.w++; t(home.teamId).h2h.l++; }
+      else { t(home.teamId).h2h.t++; t(away.teamId).h2h.t++; }
+    });
+    const sorted = sides.map((s) => s.optimal).sort((a, b) => a - b);
+    const m = Math.floor(sorted.length / 2);
+    const med = sorted.length % 2 ? sorted[m] : (sorted[m - 1] + sorted[m]) / 2;
+    sides.forEach((s) => { const r = t(s.teamId).median; s.optimal > med ? r.w++ : s.optimal < med ? r.l++ : r.t++; });
+  });
   Object.values(teams).forEach((x) => { x.optimalPF = Math.round(x.optimalPF * 100) / 100; x.actualPF = Math.round(x.actualPF * 100) / 100; });
   return json(200, { weeks: done, teams }, "public, max-age=120");
 };

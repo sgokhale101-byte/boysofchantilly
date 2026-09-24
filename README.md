@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.3)
+# Boys of Chantilly dashboard (v1.3.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -19,3 +19,8 @@ uncertainty set to 0.65 x their remaining projection.
 
 ## Netlify settings
 Build command blank, publish directory `public`. Environment variables `ESPN_S2` and `SWID` required.
+
+## 1.3.1
+- Standings: ESPN's official record already includes median games; If man now counts both head-to-head and median games. Games column added.
+- Waivers and trades: player names resolved server-side at `/api/moves` (league player lookup, then ESPN athlete pages as a fallback).
+- Team logos: ESPN logo, then `public/logos/<ABBREV>.png`, then initials.
