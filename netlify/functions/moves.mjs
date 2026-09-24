@@ -7,6 +7,16 @@ const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(ob
   status, headers: { "content-type": "application/json", "cache-control": cache },
 });
 
+// ESPN team defenses have ids of 16000 + the NFL team number (sometimes negative).
+const NFL = { 1: "Falcons", 2: "Bills", 3: "Bears", 4: "Bengals", 5: "Browns", 6: "Cowboys", 7: "Broncos", 8: "Lions", 9: "Packers", 10: "Titans",
+  11: "Colts", 12: "Chiefs", 13: "Raiders", 14: "Rams", 15: "Dolphins", 16: "Vikings", 17: "Patriots", 18: "Saints", 19: "Giants", 20: "Jets",
+  21: "Eagles", 22: "Cardinals", 23: "Steelers", 24: "Chargers", 25: "49ers", 26: "Seahawks", 27: "Buccaneers", 28: "Commanders", 29: "Panthers",
+  30: "Jaguars", 33: "Ravens", 34: "Texans" };
+function defense(id) {
+  const n = Math.abs(Number(id)) - 16000;
+  return NFL[n] ? { name: `${NFL[n]} D/ST`, pos: "" } : null;
+}
+
 // Look players up by id through the league's player endpoint.
 async function lookupFantasy(ids) {
   const filter = { players: { filterIds: { value: ids }, limit: ids.length } };
@@ -47,7 +57,8 @@ export default async (req) => {
   let names = {};
   if (ids.length) {
     try { names = await lookupFantasy(ids); } catch { names = {}; }
-    const missing = ids.filter((id) => !names[id] && id > 0).slice(0, 25);
+    ids.forEach((id) => { if (!names[id]) { const d = defense(id); if (d) names[id] = d; } });
+    const missing = ids.filter((id) => !names[id] && id > 0).slice(0, 40);
     const found = await Promise.all(missing.map(lookupAthlete));
     missing.forEach((id, i) => { if (found[i]) names[id] = found[i]; });
   }

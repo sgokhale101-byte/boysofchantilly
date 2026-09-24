@@ -378,6 +378,13 @@
     .aw { grid-template-columns: 40px 1fr; gap: 10px; }
     .trophy { width: 40px; height: 40px; }
   }
+
+  /* Pick 'em: voting split after a vote */
+  .pick .opt.voted { justify-content: center; }
+  .pick .opt .split { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(107, 47, 179, .35); transition: width 1.1s cubic-bezier(.2, .8, .2, 1); z-index: 0; }
+  .pick .opt.mine .split { background: rgba(185, 140, 255, .45); }
+  .pick .opt > :not(.split):not(.fill) { position: relative; z-index: 1; }
+  .pick .opt.voted .chance b { font-size: 30px; }
 </style>
 </head>
 <body>
@@ -453,7 +460,7 @@
 
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
     <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard"><span class="full">Scoreboard</span><span class="short">Scores</span></button>
-    <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Pecking order</span><span class="short">Pecking</span></button>
+    <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Pecking Order</span><span class="short">Pecking</span></button>
     <button role="tab" id="tab-pickem" aria-controls="panel-pickem" data-tab="pickem"><span class="full">Pick 'em</span><span class="short">Pick 'em</span></button>
     <button role="tab" id="tab-standings" aria-controls="panel-standings" data-tab="standings"><span class="full">Standings</span><span class="short">Standings</span></button>
     <button role="tab" id="tab-awards" aria-controls="panel-awards" data-tab="awards"><span class="full">Awards</span><span class="short">Awards</span></button>
@@ -481,7 +488,7 @@
 
   <div class="panel" id="panel-pecking" role="tabpanel" aria-labelledby="tab-pecking" hidden>
     <section aria-labelledby="medianH">
-      <h2 id="medianH">Pecking order</h2>
+      <h2 id="medianH">Pecking Order</h2>
       <p class="note">Every team ranked by this week's score. Teams above the median line are winning their second game of the week; teams below it are losing it.</p>
       <div class="board board-pad"><div class="board-inner" id="board"></div></div>
     </section>
@@ -545,7 +552,7 @@
   const state = {
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
     wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
-    awards: null, awardsErr: null,
+    awards: null, awardsErr: null, animated: new Set(),
     me: (() => { try { return Number(localStorage.getItem("boc-me")) || null; } catch { return null; } })(),
   };
   const voter = (() => {
@@ -617,9 +624,13 @@
     $("oddsNote").textContent = !W.odds.nflData
       ? "NFL game data wasn't available this time, so projections are ESPN's alone."
       : W.odds.games ? `Vegas lines found for ${W.odds.games} NFL game${W.odds.games === 1 ? "" : "s"} this week.` : "No Vegas lines are posted for this week yet, so projections are ESPN's alone.";
-    const lineup = (side) => `<div><h4>${esc(nameOf(side.teamId))}</h4><table><thead><tr><th>Slot</th><th>Player</th><th>Pts</th><th>Proj</th><th>Game</th></tr></thead><tbody>${side.starters.map((p) => {
+    // Lineup order: QB, RB, RB, WR, WR, TE, FLEX, DST, K (other slot types slot in sensibly)
+    const SLOT_ORDER = { 0: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 23: 6, 7: 7, 16: 8, 17: 9 };
+    const SLOT_LABEL = { 16: "DST" };
+    const ordered = (list) => [...list].sort((a, b) => (SLOT_ORDER[a.slotId] ?? 50) - (SLOT_ORDER[b.slotId] ?? 50));
+    const lineup = (side) => `<div><h4>${esc(nameOf(side.teamId))}</h4><table><thead><tr><th>Slot</th><th>Player</th><th>Pts</th><th>Proj</th><th>Game</th></tr></thead><tbody>${ordered(side.starters).map((p) => {
       const g = p.game, st = !g ? "Bye" : g.state === "post" ? "Final" : g.state === "in" ? "Live" : `${g.home ? "vs" : "at"} ${g.opp || ""}`;
-      return `<tr><td>${esc(p.slot)}</td><td>${esc(p.name)}</td><td class="${g && g.state === "post" ? "done" : ""}">${fmt(p.actual)}</td><td class="dim">${g && g.state !== "post" ? fmt(p.actual + p.remaining) : "–"}</td><td class="dim">${esc(st)}</td></tr>`;
+      return `<tr><td>${esc(SLOT_LABEL[p.slotId] || p.slot)}</td><td>${esc(p.name)}</td><td class="${g && g.state === "post" ? "done" : ""}">${fmt(p.actual)}</td><td class="dim">${g && g.state !== "post" ? fmt(p.actual + p.remaining) : "–"}</td><td class="dim">${esc(st)}</td></tr>`;
     }).join("")}</tbody></table></div>`;
     const mineFirst = [...W.matchups].sort((x, y) => ([y.home?.teamId, y.away?.teamId].includes(state.me) ? 1 : 0) - ([x.home?.teamId, x.away?.teamId].includes(state.me) ? 1 : 0));
     $("scoreboard").innerHTML = mineFirst.map((m) => {
@@ -700,15 +711,25 @@
       const open = isCurrent && !kicked && !my && voter && !P.error;
       const showVotes = !open;
       const final = decided(m);
+      const voted = Boolean(my);
       const opt = (key, s) => {
         const vp = total ? Math.round((t[key] / total) * 100) : 0;
         const won = final && ((key === "home" && m.winner === "HOME") || (key === "away" && m.winner === "AWAY"));
         const nm = nameOf(s.teamId);
-        return `<button class="opt ${my === key ? "mine" : ""} ${won ? "won" : ""}" data-mid="${m.id}" data-side="${key}" ${open ? "" : "disabled"} aria-label="${esc(open ? `Pick ${nm}` : nm)}">
+        let body;
+        if (voted) {
+          // After voting: only the voting split, filled in with an animation.
+          body = `<span class="chance"><b>${vp}%</b>of votes</span><span class="votes">${my === key ? "Your pick" : "&nbsp;"}</span>`;
+        } else if (final) {
+          body = `<span class="chance">Final score ${fmt(s.current)}</span>${showVotes ? `<span class="votes">${vp}% of votes</span>` : ""}`;
+        } else {
+          body = `<span class="chance"><b>${pct(s.winProb)}</b>win chance</span><span class="chance">Projected ${fmt(s.projected)}</span>${showVotes ? `<span class="votes">${vp}% of votes</span>` : `<span class="votes">Tap to pick</span>`}`;
+        }
+        return `<button class="opt ${voted ? "voted" : ""} ${my === key ? "mine" : ""} ${won ? "won" : ""}" data-mid="${m.id}" data-side="${key}" ${open ? "" : "disabled"} aria-label="${esc(open ? `Pick ${nm}` : nm)}">
+          ${voted ? `<span class="split" data-w="${vp}"></span>` : ""}
           <span class="top">${logo(teamById(s.teamId))}<span class="nm">${esc(nm)}</span></span>
-          ${final ? `<span class="chance">Final score ${fmt(s.current)}</span>` : `<span class="chance"><b>${pct(s.winProb)}</b>win chance</span><span class="chance">Projected ${fmt(s.projected)}</span>`}
-          ${showVotes ? `<span class="votes">${vp}% of votes${my === key ? ", your pick" : ""}</span>` : `<span class="votes">Tap to pick</span>`}
-          <span class="fill" style="width:${showVotes ? vp : 0}%"></span>
+          ${body}
+          ${voted ? "" : `<span class="fill" style="width:${showVotes ? vp : 0}%"></span>`}
         </button>`;
       };
       let foot;
@@ -716,8 +737,17 @@
       else if (P.error) foot = `<div class="foot err">${esc(P.error)}</div>`;
       else if (!voter) foot = `<div class="foot err">This browser is blocking storage, so it can't vote. Try a different browser.</div>`;
       else foot = `<div class="foot">${total} vote${total === 1 ? "" : "s"}${isCurrent ? (kicked ? ", voting closed" : my ? ", you're locked in" : "") : ""}</div>`;
-      return `<div class="pick ${[m.home.teamId, m.away.teamId].includes(state.me) ? "me" : ""}"><div class="opts">${opt("home", m.home)}${opt("away", m.away)}</div>${foot}</div>`;
+      return `<div class="pick ${[m.home.teamId, m.away.teamId].includes(state.me) ? "me" : ""}" data-mid="${m.id}"><div class="opts">${opt("home", m.home)}${opt("away", m.away)}</div>${foot}</div>`;
     }).join("");
+    // Fill the voting split: animate the first time a matchup's split is shown, then keep it still.
+    document.querySelectorAll("#picks .pick").forEach((card) => {
+      const mid = card.dataset.mid;
+      const bars = card.querySelectorAll(".split");
+      if (!bars.length) return;
+      if (state.animated.has(mid)) { bars.forEach((b) => (b.style.width = `${b.dataset.w}%`)); return; }
+      state.animated.add(mid);
+      requestAnimationFrame(() => requestAnimationFrame(() => bars.forEach((b) => (b.style.width = `${b.dataset.w}%`))));
+    });
   }
   $("picks").addEventListener("click", async (e) => {
     const btn = e.target.closest(".opt"); if (!btn || btn.disabled) return;
@@ -790,14 +820,14 @@
     if (v === "ifman") $("standNote").textContent = `What the standings would be if every team had started its best possible lineup every week, against opponents who did the same${usesMed ? ". Includes both the head-to-head and median game each week." : "."}`;
     if (v === "current") {
       const rows = officialOrder();
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.pf)}</td><td class="hide-m">${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.pf)}</td><td class="hide-m">${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "h2h") {
       const rows = L.teams.map((t) => ({ t, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Games</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td><td class="hide-m">${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td><td class="hide-m">${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "median") {
       const med = medianRecords();
       const rows = L.teams.map((t) => ({ t, r: med[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Games</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${gp(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
     } else {
       if (!state.ifman && !state.ifmanErr) {
         table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every team's best lineup for each completed week…</td></tr></tbody>`;
@@ -812,9 +842,9 @@
       const zero = { w: 0, l: 0, t: 0 };
       const rows = L.teams.map((t) => { const d = state.ifman.teams[t.id] || { h2h: zero, median: zero, optimalPF: 0, actualPF: 0 }; return { t, r: usesMed ? addRec(d.h2h, d.median) : d.h2h, opt: d.optimalPF, act: d.actualPF }; })
         .sort((a, b) => winPct(b.r) - winPct(a.r) || b.opt - a.opt);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th class="hide-m">Games</th><th>Best lineup</th><th class="hide-m">Actual points</th><th class="hide-m">Left on bench</th><th>vs. actual</th></tr></thead><tbody>${rows.map((x, i) => {
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Best lineup</th><th class="hide-m">Actual points</th><th class="hide-m">Left on bench</th><th>vs. actual</th></tr></thead><tbody>${rows.map((x, i) => {
         const d = h2hRank[x.t.id] - (i + 1);
-        return `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td class="hide-m">${gp(x.r)}</td><td>${fmt(x.opt)}</td><td class="hide-m">${fmt(x.act)}</td><td class="hide-m">${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `↑ ${d}` : d < 0 ? `↓ ${-d}` : "–"}</td></tr>`;
+        return `<tr class="${x.t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.opt)}</td><td class="hide-m">${fmt(x.act)}</td><td class="hide-m">${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `↑ ${d}` : d < 0 ? `↓ ${-d}` : "–"}</td></tr>`;
       }).join("")}</tbody>`;
     }
   }
@@ -844,8 +874,8 @@
 
   // ---------- Awards ----------
   const AWARDS = [
-    { key: "overperformer", title: "Biggest overperformer", def: "Beat its ESPN projection by the most" },
-    { key: "letdown", title: "Biggest letdown", def: "Fell furthest below its ESPN projection" },
+    { key: "overperformer", title: "Biggest overperformer", def: "Beat its pre-game projection by the most" },
+    { key: "letdown", title: "Biggest letdown", def: "Fell furthest below its pre-game projection" },
     { key: "manager", title: "Manager of the week", def: "Fewest points left on the bench" },
     { key: "noah", title: "Noah of the week", def: "Highest score in a head-to-head loss" },
     { key: "srimanth", title: "Srimanth of the week", def: "Lowest score in a head-to-head win" },
@@ -955,7 +985,7 @@
 
   // ---------- Loading ----------
   async function loadWeek(week, { quiet = false } = {}) {
-    if (week !== state.week) { state.picks = null; state.pickErr = {}; }
+    if (week !== state.week) { state.picks = null; state.pickErr = {}; state.animated = new Set(); }
     state.week = week;
     $("weekLabel").textContent = `Week ${week}`;
     $("prevWeek").disabled = week <= 1;

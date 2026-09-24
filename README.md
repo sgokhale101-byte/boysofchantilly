@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.4)
+# Boys of Chantilly dashboard (v1.4.2)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -37,3 +37,11 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Trophy icons are reusable SVG symbols in index.html: `<svg class="trophy"><use href="#tr-KEY"></use></svg>`,
   keys overperformer, letdown, manager, noah, srimanth.
 - `netlify/lib/season.mjs` loads and caches every finished week (key `weeksum/v1/w<N>`); If man and Awards share it.
+
+## 1.4.2
+- Pre-game projections everywhere are the site's own (ESPN projection x Vegas factor). `/api/week` freezes each player's
+  pre-game projection at kickoff (Blobs key `pregame/v1/w<N>`); Awards compare against those. Weeks the site never saw
+  before kickoff are recomputed from the Vegas lines ESPN still lists (factor 1 if none). Season cache bumped to `weeksum/v2`.
+- Pick 'em: after voting, win chance and projection are replaced by the vote split with a fill animation.
+- Team defenses in Waivers and trades show as "<Team> D/ST" (ids 16000 + NFL team number).
+- Scoreboard lineups ordered QB/RB/RB/WR/WR/TE/FLEX/DST/K. Tab renamed "Pecking Order". Games column removed from Standings.
