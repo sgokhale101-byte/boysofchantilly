@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.4.4)
+# Boys of Chantilly dashboard (v1.5)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -55,3 +55,14 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - "I'm ___" summary lists the team's trophies with what each means and the weeks won.
 - Trophy case shows the weeks for each trophy (e.g. "Wk 1, 2").
 - Weekly awards have a week dropdown (latest finished week by default, or All weeks).
+
+## 1.5
+- Story tab (`/api/story?week=N`): Team of the Week (best lineup from every player's actual points, rostered or free agent,
+  owner = who rostered him that week, flags benched), plus trends: streak + last-3-week scoring vs. weekly median, and
+  week-to-week swing (consistency). Team of the Week cached per finished week (`tow/v1/w<N>`).
+- History tab (`/api/history`): manager profiles keyed by ESPN member id (current and former), average finish, points per game,
+  championships, official / head-to-head / median / If man records, all time or by season; final standings by season.
+  Past seasons cached (`hist/season/v1/<year>`); If man per past season cached week by week (`hist/ifman/v1/<year>/w<N>`).
+  If man is unavailable for seasons where ESPN has no weekly lineups.
+- Phone tab bar: Scores, Pecking Order, Pick 'em, Standings, More (Awards, Story, History, Waivers and trades).
+- `netlify/lib/history.mjs`, `seasonUrl` / `seasonLeague` in `netlify/lib/espn.mjs` (seasons before 2018 use ESPN's leagueHistory endpoint).

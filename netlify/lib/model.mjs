@@ -99,7 +99,8 @@ export function parsePlayer(entry, week) {
 export const isStarter = (p) => !NON_STARTER.has(p.slotId);
 
 // Best possible lineup from actual points. Fills the most restrictive slots first.
-export function optimalPoints(players, lineupSlotCounts) {
+// Returns [{ slotId, player }] for every starting slot that could be filled.
+export function optimalLineup(players, lineupSlotCounts) {
   const slots = [];
   for (const [id, n] of Object.entries(lineupSlotCounts || {})) {
     const sid = Number(id);
@@ -108,16 +109,19 @@ export function optimalPoints(players, lineupSlotCounts) {
   }
   const elig = (sid) => players.filter((p) => p.eligible.includes(sid)).length;
   slots.sort((a, b) => elig(a) - elig(b));
-  const used = new Set(); let total = 0;
+  const used = new Set(), out = [];
   for (const sid of slots) {
     let best = null;
     for (const p of players) {
       if (used.has(p.id) || !p.eligible.includes(sid)) continue;
       if (!best || p.actual > best.actual) best = p;
     }
-    if (best) { used.add(best.id); total += best.actual; }
+    if (best) { used.add(best.id); out.push({ slotId: sid, player: best }); }
   }
-  return Math.round(total * 100) / 100;
+  return out;
+}
+export function optimalPoints(players, lineupSlotCounts) {
+  return Math.round(optimalLineup(players, lineupSlotCounts).reduce((a, x) => a + x.player.actual, 0) * 100) / 100;
 }
 
 // ---------- Probability ----------

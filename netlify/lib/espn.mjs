@@ -46,3 +46,17 @@ export function leagueUrl(views, scoringPeriodId) {
 }
 
 export const sidePoints = (s) => (s ? (s.totalPointsLive ?? s.totalPoints ?? 0) : 0);
+
+// Any season of this league. ESPN serves 2018 and later from the normal endpoint and
+// earlier seasons from leagueHistory (which returns an array).
+export function seasonUrl(year, views, scoringPeriodId) {
+  const qs = new URLSearchParams();
+  views.forEach((v) => qs.append("view", v));
+  if (scoringPeriodId) qs.set("scoringPeriodId", String(scoringPeriodId));
+  if (Number(year) >= 2018) return `${BASE}/${year}/segments/0/leagues/${LEAGUE_ID}?${qs}`;
+  return `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/leagueHistory/${LEAGUE_ID}?seasonId=${year}&${qs}`;
+}
+export async function seasonLeague(year, views, scoringPeriodId) {
+  const j = JSON.parse(await espnFetch(seasonUrl(year, views, scoringPeriodId)));
+  return Array.isArray(j) ? j[0] : j;
+}
