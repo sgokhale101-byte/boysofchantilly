@@ -685,6 +685,10 @@
   :root[data-theme="light"] .pot-live .amt, :root[data-theme="light"] .pot-table td.strong, :root[data-theme="light"] .faab { color: #15803D; }
   :root[data-theme="light"] .tcol.up h3 .arrow, :root[data-theme="light"] .rivals .lbl.cake { color: #15803D; }
   :root[data-theme="light"] .tagx.up, :root[data-theme="light"] .won-tag, :root[data-theme="light"] .rw.done .badge { color: #15803D; border-color: #15803D; }
+
+  .me-special { margin-top: 12px; border: 2px solid #EF4444; border-radius: 12px; padding: 14px 12px; text-align: center;
+    font-family: var(--display); font-weight: 900; font-size: 34px; line-height: 1; letter-spacing: .02em; color: #EF4444; text-transform: uppercase; }
+  .me-special[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -776,6 +780,7 @@
     <div class="me-match" id="meMatch" hidden></div>
     <div class="me-foot" id="meFoot"></div>
     <div class="me-trophies" id="meTrophies"></div>
+    <div class="me-special" id="meSpecial" hidden></div>
   </aside>
 
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
@@ -2006,6 +2011,16 @@
     sel.innerHTML = `<option value="">pick yourself</option>` + teams.map((t) => `<option value="${t.id}" ${t.id === state.me ? "selected" : ""}>${esc(mgr(t.id))}</option>`).join("");
     if (state.me && !teamById(state.me)) state.me = null;
   }
+  // Extra message boxes on the summary card, by manager first name. Add more here.
+  const SPECIAL_CARDS = { alexis: "Fuck Jeremy" };
+  function renderSpecial(t) {
+    const el = $("meSpecial");
+    const m = t && state.league?.members?.find((x) => x.id === (t.primaryOwner || (t.owners || [])[0]));
+    const first = fixName(m?.firstName || m?.displayName || "").trim().split(/\s+/)[0].toLowerCase();
+    const msg = SPECIAL_CARDS[first];
+    el.hidden = !msg;
+    el.textContent = msg || "";
+  }
   function renderMe() {
     const card = $("meCard");
     if (!state.me || !state.league) { card.hidden = true; return; }
@@ -2051,6 +2066,7 @@
     $("meTrophies").innerHTML = state.awardsErr ? `<div class="k">Trophies</div><div class="mt-d">Couldn't load trophies: ${esc(state.awardsErr)}</div>` : !state.awards ? `<div class="k">Trophies</div><div class="mt-d">Loading…</div>` : got.length
       ? `<div class="k">Trophies</div>${got.map((a) => `<div class="mt">${trophy(a.key, true)}<div><div class="mt-t">${a.title}<span class="mt-w">${wkList(mine2[a.key])}</span></div><div class="mt-d">${a.def}</div></div></div>`).join("")}`
       : `<div class="k">Trophies</div><div class="mt-d">None yet. Check the Awards tab for who's collecting.</div>`;
+    renderSpecial(t);
     card.hidden = false;
   }
   function markMe() {
