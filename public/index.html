@@ -438,6 +438,7 @@
   .prof-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
   .prof-stats .v { font-family: var(--display); font-weight: 900; font-size: 32px; line-height: 1; font-variant-numeric: tabular-nums; }
   .prof-stats .k { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .prof-stats .lr { color: var(--lilac); font-size: 12.5px; font-weight: 600; margin-top: 2px; }
   .prof-recs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
   .prof-recs .v { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
   .prof-recs .k { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
@@ -470,7 +471,9 @@
   }
 
   /* Standings cut lines */
-  tr.cut-first td, tr.cut-playoff td { border-bottom: 2px dashed var(--violet); }
+  tr.cut-first td, tr.cut-playoff td { border-bottom: 0; }
+  tr.cut-label td { padding: 0; border-bottom: 2px dashed var(--violet); height: 0; position: relative; text-align: left !important; }
+  tr.cut-label td span { position: absolute; right: 0; top: -9px; font-size: 11px; font-weight: 700; color: var(--violet); background: var(--black); padding: 0 6px; letter-spacing: .02em; white-space: nowrap; }
   .cut-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
   .cut-legend .dash { width: 26px; border-top: 2px dashed var(--violet); flex: none; }
   /* Weekly pot */
@@ -495,7 +498,11 @@
   }
 
   /* Food Chain minnows */
-  .minnows-tag { font-size: 12px; font-weight: 700; color: var(--muted); padding: 10px 0 2px; letter-spacing: .02em; }
+  .median-cut { display: flex; align-items: center; gap: 8px; padding: 6px 0; position: relative; z-index: 1; }
+  .median-cut i { flex: 1; border-top: 2px dashed var(--violet); }
+  .median-cut span { font-size: 11.5px; font-weight: 700; white-space: nowrap; background: var(--black); padding: 0 2px; }
+  .median-cut .up { color: var(--violet); }
+  .median-cut .down { color: var(--muted); }
   /* Power rankings */
   .pw { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
   .pw-head { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 6px; }
@@ -508,6 +515,7 @@
   .pw-rank { font-family: var(--display); font-weight: 900; font-size: 26px; line-height: 1; color: var(--violet); }
   .pw-team { font-weight: 700; }
   .pw-blurb { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .pw strong { color: var(--white); font-weight: 800; } .pw em { font-style: italic; }
   .pw-text { white-space: normal; line-height: 1.6; }
   /* Trade block */
   .tblock { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -655,11 +663,11 @@
   <div class="panel" id="panel-pecking" role="tabpanel" aria-labelledby="tab-pecking" hidden>
     <section aria-labelledby="medianH">
       <h2 id="medianH">Food Chain</h2>
-      <p class="note">Every team ranked by this week's score. Teams above the median line are winning their second game of the week. The Minnows below it are losing theirs.</p>
+      <p class="note">Every team ranked by this week's score. Teams above the dashed line made the median and are winning their second game of the week. The Minnows below it are losing theirs.</p>
       <div class="board board-pad"><div class="board-inner" id="board"></div></div>
     </section>
     <section aria-labelledby="highH">
-      <h2 id="highH">The Sharks and last place</h2>
+      <h2 id="highH">The Sharks and Their Prey</h2>
       <p class="note" id="highNote">The week's four highest-scoring teams and the lowest.</p>
       <div class="highs">
         <div><h3>The Sharks</h3><ol class="top4" id="top4"></ol></div>
@@ -667,7 +675,7 @@
       </div>
     </section>
     <section aria-labelledby="potH">
-      <h2 id="potH">Weekly pot</h2>
+      <h2 id="potH">Weekly Pot</h2>
       <p class="note">The week's highest scorer takes $12. A tie splits it.</p>
       <div class="pot" id="pot"></div>
     </section>
@@ -902,7 +910,8 @@
     } else {
       board.parentElement.classList.add("board-pad");
       let minnowTagged = false;
-      board.innerHTML = scores.map((s) => `${s.p < med && !minnowTagged && (minnowTagged = true) ? `<div class="minnows-tag">The Minnows</div>` : ""}
+      const madeIt = scores.filter((x) => x.p > med).length;
+      board.innerHTML = scores.map((s, i) => `${i === madeIt && madeIt > 0 && madeIt < scores.length && !minnowTagged && (minnowTagged = true) ? `<div class="median-cut"><span class="up">▲ Made the median</span><i></i><span class="down">The Minnows ▼</span></div>` : ""}
         <div class="row ${s.p > med ? "above" : s.p < med ? "below" : ""}" data-team="${s.t?.id}">
           <div class="team">${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span></div>
           <div class="track"><div class="bar" style="width:${(s.p / max) * 100}%"></div></div>
@@ -1049,8 +1058,19 @@
   // Dashed lines: under the regular-season winner (rank 1) and under the last playoff spot.
   const playoffTeams = () => state.league?.settings?.scheduleSettings?.playoffTeamCount || 8;
   const cutClass = (i) => (i === 0 ? "cut-first" : "") + (i + 1 === playoffTeams() ? " cut-playoff" : "");
-  const cutLegend = () => `<p class="note cut-legend"><span class="dash"></span>Dashed lines mark the regular-season leader and the playoff cutoff (top ${playoffTeams()}).</p>`;
-  async function renderStandings() {
+  const cutLegend = () => "";
+  // Labels on the dashed lines, added after each table renders.
+  function labelCuts() {
+    const cols = [...($("standings").querySelector("thead tr")?.children || [])].filter((c) => getComputedStyle(c).display !== "none").length || 4;
+    $("standings").querySelectorAll("tr.cut-first, tr.cut-playoff").forEach((tr) => {
+      const text = tr.classList.contains("cut-first") && !tr.classList.contains("cut-playoff") ? "Regular season winner" : "Cancun on 3";
+      const lab = document.createElement("tr"); lab.className = "cut-label";
+      lab.innerHTML = `<td colspan="${cols}"><span>${text}</span></td>`;
+      tr.after(lab);
+    });
+  }
+  async function renderStandings() { await renderStandingsTable(); labelCuts(); }
+  async function renderStandingsTable() {
     const L = state.league; if (!L) return;
     const v = state.view, table = $("standings");
     $("standNote").textContent = NOTES[v];
@@ -1307,6 +1327,19 @@
     for (const y of need) { await loadIfman(y); if (state.histManager === M.id) renderProfile(M); }
   }
 
+  // Per-manager averages for the chosen scope (all time, or one season).
+  function managerStats(M, year) {
+    const pick = year === "all" ? M.seasons : M.seasons.filter((x) => x.season.year === year);
+    let pf = 0, pa = 0, g = 0; const fin = [];
+    for (const { season, team } of pick) { pf += team.regPF; pa += team.regPA || 0; g += team.regGames; if (season.complete && team.finalRank) fin.push(team.finalRank); }
+    return { ppg: g ? pf / g : null, papg: g && pa ? pa / g : null, avgFinish: fin.length ? fin.reduce((a, b) => a + b, 0) / fin.length : null };
+  }
+  function leagueRank(M, key, better, word) {
+    const all = managers().map((m) => ({ id: m.id, v: managerStats(m, state.histYear)[key] })).filter((x) => x.v != null);
+    const me = all.find((x) => x.id === M.id); if (!me) return "";
+    const pos = all.filter((x) => better(x.v, me.v)).length + 1;
+    return `${pos === 1 ? word[0].toUpperCase() + word.slice(1) : `${ordinal(pos)} ${word}`} of ${all.length}`;
+  }
   function renderProfile(M) {
     const pick = state.histYear === "all" ? M.seasons : M.seasons.filter((x) => x.season.year === state.histYear);
     let h2h = Z(), med = Z(), off = Z(), ifm = Z(), pf = 0, pa = 0, games = 0, titles = 0;
@@ -1336,9 +1369,9 @@
       <div class="prof-head"><div><span class="nm">${esc(M.name)}</span>${M.current ? "" : `<span class="former">Former manager</span>`}</div>
         <div class="sub">${yrs.length} season${yrs.length === 1 ? "" : "s"}, ${span}</div></div>
       <div class="prof-stats">
-        <div><div class="v">${avgFinish ? avgFinish.toFixed(1) : "–"}</div><div class="k">${state.histYear === "all" ? "Average finish" : "Finish"}</div></div>
-        <div><div class="v">${ppg ? ppg.toFixed(1) : "–"}</div><div class="k">Points per game</div></div>
-        <div><div class="v">${papg ? papg.toFixed(1) : "–"}</div><div class="k">Allowed per game</div></div>
+        <div><div class="v">${avgFinish ? avgFinish.toFixed(1) : "–"}</div><div class="k">${state.histYear === "all" ? "Average finish" : "Finish"}</div><div class="lr">${avgFinish ? leagueRank(M, "avgFinish", (a, b) => a < b, "best") : ""}</div></div>
+        <div><div class="v">${ppg ? ppg.toFixed(1) : "–"}</div><div class="k">Points per game</div><div class="lr">${ppg ? leagueRank(M, "ppg", (a, b) => a > b, "highest") : ""}</div></div>
+        <div><div class="v">${papg ? papg.toFixed(1) : "–"}</div><div class="k">Allowed per game</div><div class="lr">${papg ? leagueRank(M, "papg", (a, b) => a > b, "most") : ""}</div></div>
         <div><div class="v">${titles}</div><div class="k">Championship${titles === 1 ? "" : "s"}</div></div>
       </div>
       <div class="prof-recs">
@@ -1391,6 +1424,12 @@
   }
 
   // ---------- Power Rankings ----------
+  // ESPN message board formatting: [b]bold[/b] and [i]italic[/i]. Escapes first, then formats.
+  const bb = (text) => esc(text)
+    .replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>")
+    .replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>")
+    .replace(/\[\/?(b|i)\]/gi, "");
+  const unbb = (text) => String(text || "").replace(/\[\/?(b|i|u)\]/gi, "");
   function matchTeam(text) {
     const low = text.toLowerCase();
     return state.league.teams.find((t) => low.includes(teamName(t).toLowerCase())) ||
@@ -1413,15 +1452,15 @@
     }
     if (state.powerIdx == null || state.powerIdx >= posts.length) state.powerIdx = 0;
     $("powPickWrap").hidden = posts.length < 2;
-    $("powPick").innerHTML = posts.map((p, i) => `<option value="${i}" ${i === state.powerIdx ? "selected" : ""}>${esc(p.title || new Date(p.date).toLocaleDateString([], { month: "short", day: "numeric" }))}</option>`).join("");
+    $("powPick").innerHTML = posts.map((p, i) => `<option value="${i}" ${i === state.powerIdx ? "selected" : ""}>${esc(unbb(p.title) || new Date(p.date).toLocaleDateString([], { month: "short", day: "numeric" }))}</option>`).join("");
     const P = posts[state.powerIdx];
     const when = P.date ? new Date(P.date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "";
-    const head = `<div class="pw-head"><div class="pw-title">${esc(P.title || "Power Rankings")}</div><div class="pw-meta">${esc([P.author, when].filter(Boolean).join(", "))}</div></div>`;
+    const head = `<div class="pw-head"><div class="pw-title">${bb(P.title || "Power Rankings")}</div><div class="pw-meta">${esc([P.author, when].filter(Boolean).join(", "))}</div></div>`;
     let body;
     if (P.ranks) {
-      body = `<ol class="pw-list">${P.ranks.map((r) => { const t = matchTeam(r.title); return `<li class="${t && t.id === state.me ? "me" : ""}"><span class="pw-rank">${r.rank}</span>${t ? logo(t) : `<span class="logo-sm"></span>`}<div><div class="pw-team">${esc(r.title)}</div>${r.blurb ? `<div class="pw-blurb">${esc(r.blurb)}</div>` : ""}</div></li>`; }).join("")}</ol>`;
+      body = `<ol class="pw-list">${P.ranks.map((r) => { const t = matchTeam(unbb(r.title)); return `<li class="${t && t.id === state.me ? "me" : ""}"><span class="pw-rank">${r.rank}</span>${t ? logo(t) : `<span class="logo-sm"></span>`}<div><div class="pw-team">${bb(r.title)}</div>${r.blurb ? `<div class="pw-blurb">${bb(r.blurb)}</div>` : ""}</div></li>`; }).join("")}</ol>`;
     } else {
-      body = `<div class="pw-text">${esc(P.text).replace(/\n/g, "<br>")}</div>`;
+      body = `<div class="pw-text">${bb(P.text).replace(/\n/g, "<br>")}</div>`;
     }
     box.innerHTML = `<article class="pw">${head}${body}</article>`;
   }
@@ -1465,7 +1504,9 @@
     const byPick = Object.fromEntries(D.picks.map((p) => [p.overall, p]));
     const who = (p) => D.teams[p.teamId]?.manager || D.teams[p.teamId]?.name || "";
     const where = (p) => D.auction ? `$${p.bid}` : `${p.round}.${String(p.roundPick).padStart(2, "0")}`;
-    const story = (p) => `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, finished ${p.pos}${p.posFinishRank}${D.complete ? "" : " so far"} with ${fmt(p.points)} points`;
+    const story = (p) => D.complete
+      ? `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, finished ${p.pos}${p.posFinishRank} with ${fmt(p.points)} points`
+      : `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, now ${p.pos}${p.posFinishRank}`;
     const card = (title, cls, list) => `<div class="tcol ${cls}"><h3><span class="arrow">${cls === "up" ? "▲" : "▼"}</span>${title}</h3>${list.length ? list.map((o) => { const p = byPick[o]; return `<div class="ti"><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="why">${esc(who(p))}. ${esc(story(p))}</div></div></div>`; }).join("") : `<div class="why" style="color:var(--muted)">None.</div>`}</div>`;
     $("draftTop").innerHTML = !D.statsAvailable ? `<div class="empty">ESPN didn't return season points for ${y}, so steals and busts can't be worked out.</div>` :
       `<div class="trends">${card(D.complete ? "Steals" : "Steals so far", "up", D.steals)}${card(D.complete ? "Busts" : "Busts so far", "down", D.busts)}</div>`;
@@ -1482,9 +1523,14 @@
     const view = state.draftView;
     const rows = view.startsWith("r") ? D.picks.filter((p) => p.round === Number(view.slice(1))) : D.picks.filter((p) => who(p) === view.slice(2));
     const steal = new Set(D.steals), bust = new Set(D.busts);
-    $("draftTable").innerHTML = `<thead><tr><th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Pts</th><th>Finish</th></tr></thead><tbody>${rows.map((p) => `
+    const posRank = (p, r) => (r ? `${esc(p.pos)}${r}` : "–");
+    const head = D.complete
+      ? `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th>Finished</th><th class="hide-m">Pts</th>`
+      : `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th>Now</th>`;
+    $("draftTable").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${rows.map((p) => `
       <tr class="${p.teamId === state.me && y === draftSeasons()[0] ? "me" : ""}"><td class="strong">${where(p)}</td><td><div>${esc(p.name)}${steal.has(p.overall) ? ` <span class="tagx up">Steal</span>` : ""}${bust.has(p.overall) ? ` <span class="tagx down">Bust</span>` : ""}</div><div class="owner">${esc(p.pos)}${p.keeper ? ", keeper" : ""}</div></td>
-      <td>${view.startsWith("r") ? esc(who(p)) : p.round}</td><td>${p.points == null ? "–" : fmt(p.points)}</td><td>${p.posFinishRank ? `${esc(p.pos)}${p.posFinishRank}` : "–"}</td></tr>`).join("")}</tbody>`;
+      <td>${view.startsWith("r") ? esc(who(p)) : p.round}</td><td>${posRank(p, p.posDraftRank)}</td><td class="strong">${posRank(p, p.posFinishRank)}</td>${D.complete ? `<td class="hide-m">${p.points == null ? "–" : fmt(p.points)}</td>` : ""}</tr>`).join("")}</tbody>`;
+    if (D.namesTotal && D.namesFound < D.namesTotal) $("drNote").textContent += ` ESPN didn't return names for ${D.namesTotal - D.namesFound} of ${D.namesTotal} players.`;
   }
   $("drSeason").onchange = (e) => { state.draftYear = Number(e.target.value); renderDraft(); };
   $("drView").onchange = (e) => { state.draftView = e.target.value; renderDraft(); };

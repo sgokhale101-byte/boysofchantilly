@@ -52,7 +52,7 @@ export const sidePoints = (s) => (s ? (s.totalPointsLive ?? s.totalPoints ?? 0) 
 export function seasonUrl(year, views, scoringPeriodId) {
   const qs = new URLSearchParams();
   views.forEach((v) => qs.append("view", v));
-  if (scoringPeriodId) qs.set("scoringPeriodId", String(scoringPeriodId));
+  if (scoringPeriodId != null) qs.set("scoringPeriodId", String(scoringPeriodId));
   if (Number(year) >= 2018) return `${BASE}/${year}/segments/0/leagues/${LEAGUE_ID}?${qs}`;
   return `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/leagueHistory/${LEAGUE_ID}?seasonId=${year}&${qs}`;
 }

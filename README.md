@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.6)
+# Boys of Chantilly dashboard (v1.6.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -88,3 +88,11 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Story and the "I'm ___" picker use managers' first names instead of team names.
 - Food Chain: the top 4 are The Sharks; teams below the median are labeled The Minnows.
 - Manager of the Week shows start accuracy (points scored / best possible).
+
+## 1.6.1
+- Draft: player lookup now passes scoringPeriodId=0, with fallbacks (season players_wl list, D/ST ids, ESPN athlete pages).
+  Board shows drafted and finished position ranks; the current season shows Drafted vs. Now instead of points. Cache `hist/draft/v2`.
+- History: league rank for average finish, points per game, and points allowed per game (for the chosen scope).
+- Power Rankings: [b]..[/b] bold and [i]..[/i] italic.
+- Standings: dashed lines labeled "Regular season winner" and "Cancun on 3".
+- Food Chain: dashed "Made the median" / "The Minnows" divider on the board; "The Sharks and Their Prey"; "Weekly Pot".
