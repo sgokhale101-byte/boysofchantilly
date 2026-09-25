@@ -72,7 +72,7 @@ async function buildDraft(year) {
   const hp = await seasonHalfPpr(year, ids);
   for (const id of ids) {
     const h = hp.players[id];
-    info[id] = { name: info[id]?.name || h?.name || null, pos: info[id]?.pos || h?.pos || "", points: h?.points ?? null };
+    info[id] = { name: info[id]?.name || h?.name || null, pos: info[id]?.pos || h?.pos || "", points: h?.points ?? null, gp: h?.gp ?? null, adp: h?.adp ?? null };
   }
   // Remaining names: season player list, defenses by id, then ESPN player pages.
   let missing = ids.filter((id) => !info[id]?.name);
@@ -96,46 +96,63 @@ async function buildDraft(year) {
     overall: p.overallPickNumber, round: p.roundId, roundPick: p.roundPickNumber, teamId: p.teamId,
     bid: p.bidAmount || 0, keeper: Boolean(p.keeper),
     playerId: p.playerId, name: info[p.playerId]?.name || `Player ${p.playerId}`, pos: info[p.playerId]?.pos || "",
-    points: info[p.playerId]?.points ?? null,
+    points: info[p.playerId]?.points ?? null, gp: info[p.playerId]?.gp ?? null, adp: info[p.playerId]?.adp ?? null,
   })).sort((a, b) => a.overall - b.overall);
 
-  // Draft rank: order taken at the position (or price paid, at auction).
-  // Finish rank: half-PPR points among every player at the position we have points for
-  // (drafted players plus the season's top 80 at QB, RB, WR, and TE).
+  const complete = Number(year) < Number(SEASON);
+  const MIN_GAMES = 6; // PPG rank needs a real sample
+  // Starter tiers and "big move" thresholds by position.
+  const TIER = { QB: 12, TE: 12, RB: 24, WR: 30 };
+  const JUMP = { QB: 6, TE: 6, RB: 12, WR: 15 };
+
+  // Positional ranks:
+  //   posDraftRank  order taken in this league at the position (price, for auctions)
+  //   posAdpRank    ESPN average draft position at the position (league order if ADP is missing)
+  //   posFinishRank total half-PPR points
+  //   posPpgRank    half-PPR points per game (min 6 games)
+  // Rankings run against every player at the position we have (drafted plus the season's top 80).
   const byPos = {};
   rows.forEach((r) => (byPos[r.pos] ||= []).push(r));
   const universe = {};
-  for (const [id, h] of Object.entries(hp.players)) if (h.points != null && h.pos) (universe[h.pos] ||= new Map()).set(Number(id), h.points);
+  for (const [id, h] of Object.entries(hp.players)) if (h.points != null && h.pos) (universe[h.pos] ||= new Map()).set(Number(id), h);
+  const adpCoverage = rows.filter((r) => r.adp != null).length / Math.max(1, rows.length);
+  const useAdp = adpCoverage >= 0.5;
   for (const [pos, list] of Object.entries(byPos)) {
     [...list].sort((a, b) => auction ? b.bid - a.bid || a.overall - b.overall : a.overall - b.overall).forEach((r, i) => (r.posDraftRank = i + 1));
-    const pts = universe[pos] || new Map();
-    list.forEach((r) => { if (r.points != null) pts.set(r.playerId, r.points); });
-    const order = [...pts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+    [...list].sort((a, b) => useAdp ? (a.adp ?? 999) - (b.adp ?? 999) || a.overall - b.overall : a.posDraftRank - b.posDraftRank).forEach((r, i) => (r.posAdpRank = i + 1));
+    const pool = new Map(universe[pos] || []);
+    list.forEach((r) => { if (r.points != null) pool.set(r.playerId, { points: r.points, gp: r.gp }); });
+    const byTotal = [...pool.entries()].sort((a, b) => b[1].points - a[1].points).map(([id]) => id);
+    const byPpg = [...pool.entries()].filter(([, h]) => h.gp >= MIN_GAMES).sort((a, b) => b[1].points / b[1].gp - a[1].points / a[1].gp).map(([id]) => id);
     list.forEach((r) => {
-      const i = order.indexOf(r.playerId);
+      const i = byTotal.indexOf(r.playerId), j = byPpg.indexOf(r.playerId);
       r.posFinishRank = r.points == null || i < 0 ? null : i + 1;
-      r.value = r.posFinishRank == null ? null : r.posDraftRank - r.posFinishRank;
+      r.posPpgRank = j < 0 ? null : j + 1;
+      r.ppg = r.points != null && r.gp ? Math.round((r.points / r.gp) * 100) / 100 : null;
+      // The yardstick: PPG rank for finished seasons, total points rank for the current one.
+      r.metric = complete ? r.posPpgRank : r.posFinishRank;
     });
   }
-  const eligible = rows.filter((r) => !SKIP.has(r.pos) && r.value != null && r.pos);
-  const teamCount = Object.keys(teams).length || 10;
-  const isEarly = (r) => (auction ? r.posDraftRank <= 12 : r.round <= 4);
-  const steals = [...eligible].filter((r) => r.value > 0).sort((a, b) => b.value - a.value || b.points - a.points).slice(0, 5);
-  const busts = [...eligible].filter((r) => isEarly(r) && r.value < 0).sort((a, b) => a.value - b.value || a.points - b.points).slice(0, 5);
 
-  // Each manager's best steal and worst bust.
-  const perTeam = {};
-  for (const id of Object.keys(teams).map(Number)) {
-    const mine = eligible.filter((r) => r.teamId === id);
-    const st = [...mine].filter((r) => r.value > 0).sort((a, b) => b.value - a.value || b.points - a.points)[0];
-    const bu = [...mine].filter((r) => r.round <= 6 && r.value < 0).sort((a, b) => a.value - b.value || a.points - b.points)[0];
-    perTeam[id] = { steal: st ? st.overall : null, bust: bu ? bu.overall : null };
+  // Tags on the draft board, against where the player went in this league.
+  for (const r of rows) {
+    if (SKIP.has(r.pos) || !TIER[r.pos]) continue;
+    const early = r.posDraftRank <= TIER[r.pos];
+    if (r.metric != null && r.metric <= TIER[r.pos] && r.posDraftRank - r.metric >= JUMP[r.pos]) r.tag = "steal";
+    else if (early && r.metric != null && r.metric - r.posDraftRank >= JUMP[r.pos]) r.tag = "bust";
+    else if (complete && early && r.posDraftRank <= TIER[r.pos] / 2 && r.gp != null && r.gp < MIN_GAMES) { r.tag = "bust"; r.tagNote = "missed most of the season"; }
   }
 
+  // Top 5 steals and busts against ADP. Keepers are left out of finished seasons.
+  const boxable = rows.filter((r) => TIER[r.pos] && r.metric != null && !(complete && r.keeper));
+  const vsAdp = (r) => r.posAdpRank - r.metric;
+  const steals = boxable.filter((r) => vsAdp(r) >= 3 && r.metric <= TIER[r.pos]).sort((a, b) => vsAdp(b) - vsAdp(a) || a.metric - b.metric).slice(0, 5);
+  const busts = boxable.filter((r) => vsAdp(r) <= -3 && r.posAdpRank <= TIER[r.pos]).sort((a, b) => vsAdp(a) - vsAdp(b) || a.posAdpRank - b.posAdpRank).slice(0, 5);
+
   return {
-    year, available: true, auction, complete: Number(year) < Number(SEASON), statsAvailable: rows.filter((r) => r.points != null).length >= rows.length * 0.5,
+    year, available: true, auction, complete, statsAvailable: rows.filter((r) => r.points != null).length >= rows.length * 0.5,
     namesFound, namesTotal: ids.length, scoring: HALF_PPR_NOTE, rankScope: hp.poolOk && hp.pool.length ? "all" : "drafted",
-    perTeam,
+    adpSource: useAdp ? "espn" : "league", minGames: MIN_GAMES,
     rounds: Math.max(...rows.map((r) => r.round || 0)), teams, picks: rows,
     steals: steals.map((r) => r.overall), busts: busts.map((r) => r.overall),
   };
@@ -145,7 +162,7 @@ export default async (req) => {
   const year = Number(new URL(req.url).searchParams.get("season") || SEASON);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return json(400, { error: "Invalid season." });
   const store = getStore({ name: "cache", consistency: "strong" });
-  const key = `hist/draft/v3/${year}`;
+  const key = `hist/draft/v4/${year}`;
   try {
     if (year < Number(SEASON)) {
       const hit = await store.get(key, { type: "json" }).catch(() => null);

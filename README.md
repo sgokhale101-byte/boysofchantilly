@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.6.3)
+# Boys of Chantilly dashboard (v1.6.4)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -111,3 +111,12 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   (busts from rounds 1-6). Cache `hist/draft/v3`.
 - Transactions: trade block moved to the top.
 - Food Chain: the top half of the league (6 of 12) always makes the median, even with ties.
+
+## 1.6.4
+- Draft: finished seasons rank by half-PPR points per game (min 6 games) as "PPG Rank"; the current season by total points.
+  Top-5 steals/busts compare ESPN average draft position at the position (league draft slot if ADP is missing) with that
+  rank, need a 3+ spot swing, and leave out keepers in finished seasons. The per-manager table is gone; the board tags
+  picks instead (steal: finished a starter at the position and 6+ spots (QB/TE) or 12-15 spots (RB/WR) above where he went;
+  bust: an early pick who finished that far below, or a top pick who played fewer than 6 games). Cache `hist/draft/v4`.
+- History: Vijay's merged profile shows as "Wiwi RaRa" (Vijay Rudraraju underneath).
+- Headshots added: Cameron, Nels, Noah, Srimanth, Adam.

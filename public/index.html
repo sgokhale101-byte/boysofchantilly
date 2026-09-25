@@ -532,9 +532,10 @@
     .tblock { grid-template-columns: 1fr; }
     .prof-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .more-sheet { grid-template-columns: 1fr 1fr; }
-    .draft th:nth-child(1), .draft td:nth-child(1) { width: 44px; }
-    .draft th:nth-child(4), .draft td:nth-child(4) { width: 56px; }
-    .draft th:nth-child(5), .draft td:nth-child(5) { width: 50px; }
+    .draft th:nth-child(1), .draft td:nth-child(1) { width: 40px; }
+    .draft th:nth-child(3), .draft td:nth-child(3) { width: 66px; text-align: left; padding-left: 8px; }
+    .draft th:nth-child(4), .draft td:nth-child(4) { width: 58px; }
+    .draft th:nth-child(5), .draft td:nth-child(5), .draft th:nth-child(6), .draft td:nth-child(6) { width: 62px; }
     .draft td:nth-child(2) { white-space: normal; }
     .draft td:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
@@ -773,8 +774,7 @@
       <div class="aw-pick"><h2 id="drH">Draft</h2><label class="me-pick"><span>Season</span><select id="drSeason" aria-label="Choose a draft season"></select></label></div>
       <p class="note" id="drNote">Every draft on record, with the steals and busts. Steals and busts compare where a player went among his position with where he finished at that position. Kickers and defenses are left out.</p>
       <div id="draftTop"></div>
-      <h3>Every manager's steal and bust</h3>
-      <div class="table-scroll"><table id="draftTeams" class="draft-teams"></table></div>
+
       <div class="aw-pick"><h3>Draft board</h3><label class="me-pick"><span>Show</span><select id="drView" aria-label="Choose a round or a manager"></select></label></div>
       <div class="table-scroll"><table id="draftTable" class="draft"></table></div>
     </section>
@@ -845,7 +845,10 @@
     return m ? (m.firstName ? `${m.firstName} ${m.lastName || ""}`.trim() : m.displayName) : "";
   }
   // Manager headshots (public/headshots/<firstname>.jpg), used in place of team logos.
-  const HEADSHOTS = { alexis: "alexis.jpg", jeremy: "jeremy.jpg", sean: "sean.jpg", vivek: "vivek.jpg", shreyas: "shreyas.jpg" };
+  const HEADSHOTS = {
+    alexis: "alexis.jpg", jeremy: "jeremy.jpg", sean: "sean.jpg", vivek: "vivek.jpg", shreyas: "shreyas.jpg",
+    cameron: "cameron.jpg", nels: "nels.jpg", noah: "noah.jpg", srimanth: "srimanth.jpg", adam: "adam.jpg",
+  };
   function headshotFor(t) {
     if (!t || !state.league?.members) return null;
     const m = state.league.members.find((x) => x.id === (t.primaryOwner || (t.owners || [])[0]));
@@ -1314,7 +1317,7 @@
       { year: 2020, team: "Minshew and The Crew", to: "Rohit" },
     ],
     merge: [
-      { match: /^vijay\s+r/i, name: "Vijay Rudraraju" },
+      { match: /^vijay\s+r/i, name: "Vijay Rudraraju", nickname: "Wiwi RaRa" },
       { match: /^vivek\s+iyer\b/i, name: "Vivek Iyer" },
     ],
   };
@@ -1331,7 +1334,7 @@
     if (target) return identityForName(target);
     const raw = season.members[team.memberId]?.name || "Unknown manager";
     const mr = mergeRule(raw);
-    if (mr) return { key: `merge:${mr.name}`, name: mr.name };
+    if (mr) return { key: `merge:${mr.name}`, name: mr.nickname || mr.name, realName: mr.nickname ? mr.name : null };
     return { key: team.memberId, name: raw };
   }
   function identityForName(target) {
@@ -1340,7 +1343,7 @@
       for (const [id, m] of Object.entries(season.members)) {
         if (!m.name || !m.name.toLowerCase().startsWith(t)) continue;
         const mr = mergeRule(m.name);
-        return mr ? { key: `merge:${mr.name}`, name: mr.name } : { key: id, name: m.name };
+        return mr ? { key: `merge:${mr.name}`, name: mr.nickname || mr.name, realName: mr.nickname ? mr.name : null } : { key: id, name: m.name };
       }
     }
     const mr = mergeRule(target);
@@ -1354,7 +1357,7 @@
     for (const season of [...state.hist.seasons].sort((a, b) => a.year - b.year)) {
       for (const t of season.teams) {
         const who = identity(season, t);
-        const m = (out[who.key] ||= { id: who.key, name: who.name, seasons: [] });
+        const m = (out[who.key] ||= { id: who.key, name: who.name, realName: who.realName || null, seasons: [] });
         if (who.name !== "Unknown manager") m.name = who.name; // latest known name wins
         m.seasons.push({ season, team: t });
         if (season.year === currentYear) m.current = true;
@@ -1441,7 +1444,7 @@
     if (ifMissing) foot.push(`If man isn't available for ${ifMissing} season${ifMissing === 1 ? "" : "s"}, because ESPN didn't keep lineups that far back.`);
     if (state.histYear === "all" && !finishes.length) foot.push("Average finish starts counting after a full season.");
     $("profile").innerHTML = `<div class="prof">
-      <div class="prof-head"><div class="prof-who">${headshotByName(M.name) ? `<img class="prof-face" src="${headshotByName(M.name)}" alt="">` : ""}<div><span class="nm">${esc(M.name)}</span>${M.current ? "" : `<span class="former">Former manager</span>`}</div></div>
+      <div class="prof-head"><div class="prof-who">${headshotByName(M.name) ? `<img class="prof-face" src="${headshotByName(M.name)}" alt="">` : ""}<div><span class="nm">${esc(M.name)}</span>${M.current ? "" : `<span class="former">Former manager</span>`}${M.realName ? `<div class="sub">${esc(M.realName)}</div>` : ""}</div></div>
         <div class="sub">${yrs.length} season${yrs.length === 1 ? "" : "s"}, ${span}</div></div>
       <div class="prof-stats">
         <div><div class="v">${avgFinish ? avgFinish.toFixed(1) : "–"}</div><div class="k">${state.histYear === "all" ? "Average finish" : "Finish"}</div><div class="lr">${avgFinish ? leagueRank(M, "avgFinish", (a, b) => a < b, "best") : ""}</div></div>
@@ -1570,27 +1573,23 @@
     $("drSeason").innerHTML = years.map((y) => `<option value="${y}" ${y === state.draftYear ? "selected" : ""}>${y}</option>`).join("");
     const y = state.draftYear;
     if (!state.drafts[y]) {
-      $("draftTop").innerHTML = `<div class="empty">Pulling the ${y} draft and working out half-PPR finishes…</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; $("draftTeams").innerHTML = "";
+      $("draftTop").innerHTML = `<div class="empty">Pulling the ${y} draft and working out half-PPR finishes…</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = "";
       try { state.drafts[y] = await getJSON(`/api/draft?season=${y}`); } catch (e) { state.drafts[y] = { available: false, reason: e.message }; }
       if (state.draftYear !== y) return;
     }
     const D = state.drafts[y];
-    if (!D.available) { $("draftTop").innerHTML = `<div class="empty">No draft to show for ${y}. ${esc(D.reason || "")}</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; $("draftTeams").innerHTML = ""; return; }
+    if (!D.available) { $("draftTop").innerHTML = `<div class="empty">No draft to show for ${y}. ${esc(D.reason || "")}</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; return; }
     const byPick = Object.fromEntries(D.picks.map((p) => [p.overall, p]));
     const who = (p) => { const t = D.teams[p.teamId] || {}; const a = assignedTo(y, t.name); return (a ? a.split(" ")[0] : t.manager) || t.name || ""; };
     const where = (p) => D.auction ? `$${p.bid}` : `${p.round}.${String(p.roundPick).padStart(2, "0")}`;
+    const adpWord = D.adpSource === "espn" ? "ADP" : "Drafted";
     const story = (p) => D.complete
-      ? `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, finished ${p.pos}${p.posFinishRank} with ${fmt(p.points)} points`
-      : `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, now ${p.pos}${p.posFinishRank}`;
+      ? `${adpWord} ${p.pos}${p.posAdpRank}, finished ${p.pos}${p.posPpgRank} in points per game (${fmt(p.ppg)})`
+      : `${adpWord} ${p.pos}${p.posAdpRank}, now ${p.pos}${p.posFinishRank}`;
     const card = (title, cls, list) => `<div class="tcol ${cls}"><h3><span class="arrow">${cls === "up" ? "▲" : "▼"}</span>${title}</h3>${list.length ? list.map((o) => { const p = byPick[o]; return `<div class="ti"><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="why">${esc(who(p))}. ${esc(story(p))}</div></div></div>`; }).join("") : `<div class="why" style="color:var(--muted)">None.</div>`}</div>`;
     $("draftTop").innerHTML = !D.statsAvailable ? `<div class="empty">Couldn't find season stats for ${y}, so steals and busts can't be worked out.</div>` :
-      `<div class="trends">${card(D.complete ? "Steals" : "Steals so far", "up", D.steals)}${card(D.complete ? "Busts" : "Busts so far", "down", D.busts)}</div>`;
-    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Rankings use half-PPR points${D.complete ? "" : " so far this season"}, ranked against ${D.rankScope === "all" ? "every player at the position, drafted or not" : "drafted players at the position"}. Steals and busts compare where a player went among his position with where he finished. Kickers and defenses are left out.`;
-    const pt = D.perTeam || {};
-    const cell = (o, cls) => { if (o == null) return `<span class="dim">–</span>`; const p = byPick[o]; const v = p.value ?? (p.posDraftRank - p.posFinishRank); return `<div class="dt-p">${esc(p.name)} <span class="tagx ${cls}">${v > 0 ? "+" : ""}${v} spot${Math.abs(v) === 1 ? "" : "s"}</span></div><div class="owner">${esc(p.pos)}${p.posDraftRank} to ${esc(p.pos)}${p.posFinishRank}, ${esc(where(p))}</div>`; };
-    const teamIds = Object.keys(D.teams).map(Number).sort((a, b) => (who({ teamId: a }) || "").localeCompare(who({ teamId: b }) || ""));
-    $("draftTeams").innerHTML = D.statsAvailable ? `<thead><tr><th>Manager</th><th>Best steal</th><th>Biggest bust</th></tr></thead><tbody>${teamIds.map((id) => `<tr class="${id === state.me && y === draftSeasons()[0] ? "me" : ""}"><td class="strong">${esc(who({ teamId: id }))}</td><td>${cell(pt[id]?.steal, "up")}</td><td>${cell(pt[id]?.bust, "down")}</td></tr>`).join("")}</tbody>` : "";
-
+      `<div class="trends">${card(D.complete ? "Biggest steals" : "Steals so far", "up", D.steals)}${card(D.complete ? "Biggest busts" : "Busts so far", "down", D.busts)}</div>`;
+    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Rankings use half-PPR ${D.complete ? `points per game (minimum ${D.minGames} games), so injuries don't sink a player's rank` : "points so far this season"}, against ${D.rankScope === "all" ? "every player at the position, drafted or not" : "drafted players at the position"}. The top 5 compare each player's ${D.adpSource === "espn" ? "ESPN average draft position" : "draft slot"} at his position with where he finished${D.complete ? ", and leave out keepers" : ""}. Board tags compare where he went in this draft. Kickers and defenses are left out.`;
     // Board: by round or by manager
     const mgrs = [...new Set(Object.values(D.teams).map((t) => t.manager).filter(Boolean))].sort();
     const opts = [...Array.from({ length: D.rounds }, (_, i) => [`r${i + 1}`, `Round ${i + 1}`]), ...mgrs.map((m) => [`m:${m}`, m])];
@@ -1601,14 +1600,16 @@
     $("drView").innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}" ${v === state.draftView ? "selected" : ""}>${esc(l)}</option>`).join("");
     const view = state.draftView;
     const rows = view.startsWith("r") ? D.picks.filter((p) => p.round === Number(view.slice(1))) : D.picks.filter((p) => who(p) === view.slice(2));
-    const steal = new Set(D.steals), bust = new Set(D.busts);
     const posRank = (p, r) => (r ? `${esc(p.pos)}${r}` : "–");
     const head = D.complete
-      ? `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th>Finished</th><th class="hide-m">Pts</th>`
+      ? `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th class="hide-m">Finished</th><th>PPG Rank</th>`
       : `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th>Now</th>`;
+    const tag = (p) => p.tag === "steal" ? ` <span class="tagx up">Steal</span>` : p.tag === "bust" ? ` <span class="tagx down" ${p.tagNote ? `title="${esc(p.tagNote)}"` : ""}>Bust${p.tagNote ? ", injured" : ""}</span>` : "";
     $("draftTable").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${rows.map((p) => `
-      <tr class="${p.teamId === state.me && y === draftSeasons()[0] ? "me" : ""}"><td class="strong">${where(p)}</td><td><div>${esc(p.name)}${steal.has(p.overall) ? ` <span class="tagx up">Steal</span>` : ""}${bust.has(p.overall) ? ` <span class="tagx down">Bust</span>` : ""}</div><div class="owner">${esc(p.pos)}${p.keeper ? ", keeper" : ""}</div></td>
-      <td>${view.startsWith("r") ? esc(who(p)) : p.round}</td><td>${posRank(p, p.posDraftRank)}</td><td class="strong">${posRank(p, p.posFinishRank)}</td>${D.complete ? `<td class="hide-m">${p.points == null ? "–" : fmt(p.points)}</td>` : ""}</tr>`).join("")}</tbody>`;
+      <tr class="${p.teamId === state.me && y === draftSeasons()[0] ? "me" : ""}"><td class="strong">${where(p)}</td><td><div>${esc(p.name)}${tag(p)}</div><div class="owner">${esc(p.pos)}${p.keeper ? ", keeper" : ""}</div></td>
+      <td>${view.startsWith("r") ? esc(who(p)) : p.round}</td><td>${posRank(p, p.posDraftRank)}</td>${D.complete
+        ? `<td class="hide-m">${posRank(p, p.posFinishRank)}</td><td class="strong">${posRank(p, p.posPpgRank)}${p.ppg != null ? `<div class="owner">${fmt(p.ppg)}/g</div>` : ""}</td>`
+        : `<td class="strong">${posRank(p, p.posFinishRank)}</td>`}</tr>`).join("")}</tbody>`;
     if (D.namesTotal && D.namesFound < D.namesTotal) $("drNote").textContent += ` ESPN didn't return names for ${D.namesTotal - D.namesFound} of ${D.namesTotal} players.`;
   }
   $("drSeason").onchange = (e) => { state.draftYear = Number(e.target.value); renderDraft(); };

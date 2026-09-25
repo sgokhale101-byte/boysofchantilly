@@ -30,6 +30,20 @@ export function halfPprFromRaw(stats) {
   return any ? r2(pts) : null;
 }
 
+// Games played: ESPN stat 210 on the season line, else weeks with a stat line.
+export function gamesPlayed(p, year) {
+  const raw = seasonRaw(p, year);
+  const gp = raw ? Number(raw[210]) : NaN;
+  if (Number.isFinite(gp) && gp > 0) return gp;
+  const weeks = new Set();
+  for (const s of p.stats || []) {
+    if (s.statSourceId !== 0 || !(s.scoringPeriodId > 0)) continue;
+    if (s.seasonId != null && Number(s.seasonId) !== Number(year)) continue;
+    if (s.stats && Object.keys(s.stats).length) weeks.add(s.scoringPeriodId);
+  }
+  return weeks.size || null;
+}
+
 // Season totals (actual, full season) from an ESPN fantasy player object.
 export function seasonRaw(p, year) {
   for (const s of p.stats || []) {
@@ -59,23 +73,25 @@ const STAT_NAMES = {
   receptions: 0.5, receivingYards: 0.1, receivingTouchdowns: 6,
   fumblesLost: -2,
 };
+const GP_NAMES = ["gamesPlayed"];
 async function athleteSeason(id, year) {
   try {
     const r = await fetch(`https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/${id}/stats?season=${year}&seasontype=2`, { headers: { Accept: "application/json" } });
     if (!r.ok) return null;
     const j = await r.json();
-    let pts = 0, any = false; const seen = new Set();
+    let pts = 0, any = false, gp = null; const seen = new Set();
     for (const cat of j.categories || []) {
       const names = cat.names || [];
       const row = (cat.statistics || []).find((x) => Number(x.season?.year) === Number(year)) || null;
       if (!row) continue;
       names.forEach((n, i) => {
-        if (!(n in STAT_NAMES) || seen.has(n)) return;
         const v = Number(String(row.stats?.[i] ?? "").replace(/,/g, ""));
+        if (GP_NAMES.includes(n) && Number.isFinite(v)) gp = Math.max(gp || 0, v);
+        if (!(n in STAT_NAMES) || seen.has(n)) return;
         if (Number.isFinite(v)) { pts += v * STAT_NAMES[n]; any = true; seen.add(n); }
       });
     }
-    return any ? r2(pts) : null;
+    return any ? { points: r2(pts), gp } : null;
   } catch { return null; }
 }
 
@@ -86,7 +102,12 @@ export async function seasonHalfPpr(year, ids) {
   const take = (p) => {
     const pts = halfPprFromRaw(seasonRaw(p, year));
     const prev = out[p.id] || {};
-    out[p.id] = { name: prev.name || p.fullName || null, pos: prev.pos || POS[p.defaultPositionId] || "", points: pts ?? prev.points ?? null };
+    const adp = Number(p.ownership?.averageDraftPosition);
+    out[p.id] = {
+      name: prev.name || p.fullName || null, pos: prev.pos || POS[p.defaultPositionId] || "",
+      points: pts ?? prev.points ?? null, gp: gamesPlayed(p, year) ?? prev.gp ?? null,
+      adp: Number.isFinite(adp) && adp > 0 ? adp : prev.adp ?? null,
+    };
   };
   let publicOk = true;
   for (let i = 0; i < ids.length; i += 50) {
@@ -110,8 +131,14 @@ export async function seasonHalfPpr(year, ids) {
   const missing = ids.filter((id) => id > 0 && out[id]?.points == null);
   for (let i = 0; i < missing.length; i += 20) {
     const chunk = missing.slice(i, i + 20);
-    const pts = await Promise.all(chunk.map((id) => athleteSeason(id, year)));
-    chunk.forEach((id, k) => { if (pts[k] != null) out[id] = { ...(out[id] || { name: null, pos: "" }), points: pts[k] }; });
+    const res = await Promise.all(chunk.map((id) => athleteSeason(id, year)));
+    chunk.forEach((id, k) => { if (res[k]) out[id] = { ...(out[id] || { name: null, pos: "" }), points: res[k].points, gp: out[id]?.gp ?? res[k].gp }; });
+  }
+  const noGp = ids.filter((id) => id > 0 && out[id]?.points != null && !out[id]?.gp).slice(0, 60);
+  for (let i = 0; i < noGp.length; i += 20) {
+    const chunk = noGp.slice(i, i + 20);
+    const res = await Promise.all(chunk.map((id) => athleteSeason(id, year)));
+    chunk.forEach((id, k) => { if (res[k]?.gp) out[id].gp = res[k].gp; });
   }
   return { players: out, pool: [...pool], poolOk, publicOk };
 }
