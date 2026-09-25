@@ -193,8 +193,9 @@ export async function computeWeek(week) {
 
   if (snapChanged) await savePregame(week, snap);
   const sides = matchups.flatMap((m) => [m.home, m.away]).filter(Boolean);
+  const started = Object.values(nfl.byTeam).some((g) => g.state !== "pre") || sides.some((x) => x.current > 0);
   return {
-    week, currentWeek: league.status?.currentMatchupPeriod ?? null,
+    week, currentWeek: league.status?.currentMatchupPeriod ?? null, started,
     medians: { current: r2(median(sides.map((s) => s.current))), projected: r2(median(sides.map((s) => s.projected))) },
     odds: { games: nfl.oddsGames, nflData: nfl.available },
     matchups,

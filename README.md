@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.8)
+# Boys of Chantilly dashboard (v1.8.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -151,3 +151,11 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   - Historian: History, Draft, Story
   Edit MODES in index.html to change them.
 - Summary card shows the current matchup: both scores, projections, live/final status, and win chance.
+
+## 1.8.1
+- Phone tables: name columns truncate, number columns size to their content; season totals of 1,000+ show one decimal.
+  Checked every tab at 360px and 390px, dark and light, with no clipped cells or sideways scrolling.
+- Pick 'em: voting closes for the whole week at the first NFL kickoff (server-checked via ESPN's NFL scoreboard);
+  everyone sees results after that. One vote per matchup per phone and per person ("I'm" pick). "Won" label replaces the check mark.
+- Historian mode: History, Draft, Hall of Fame. Base and Historian hide the week picker and always show the current week.
+- Light mode toggle (remembered per browser).

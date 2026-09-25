@@ -108,7 +108,7 @@
   .pick .opt .nm { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pick .opt .pct { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
   .pick .opt .tag { font-size: 12px; color: var(--lilac); }
-  .pick .opt.won .nm::after { content: " \2713"; color: var(--violet); }
+  .won-tag { flex: none; font-size: 11px; font-weight: 800; color: #22C55E; border: 1px solid #22C55E; border-radius: 999px; padding: 0 7px; margin-left: 4px; }
   .pick .foot { font-size: 12px; color: var(--muted); margin-top: 8px; }
   .pick .foot.err { color: var(--lilac); }
 
@@ -328,21 +328,15 @@
     .toggle button { padding: 9px 4px; }
     .toggle .full { display: none; } .toggle .short { display: inline; }
 
-    .table-scroll { overflow-x: visible; }
-    table { min-width: 0; table-layout: fixed; }
-    th, td { padding: 9px 4px; font-size: 14px; }
-    th { font-size: 12px; white-space: normal; }
-    th:nth-child(1), td:nth-child(1) { width: 26px; }
+
     td.rank { font-size: 17px; }
     td .tcell { gap: 8px; min-width: 0; }
     td .tcell > div { min-width: 0; }
     td .tcell > div > div:first-child { overflow: hidden; text-overflow: ellipsis; }
-    td:nth-child(2) { white-space: nowrap; overflow: hidden; }
+
     td .owner { display: none; }
     .hide-m { display: none; }
-    th:nth-child(2), td:nth-child(2) { width: auto; }
-    th:not(:nth-child(1)):not(:nth-child(2)), td:not(:nth-child(1)):not(:nth-child(2)) { width: 60px; }
-    th:nth-child(3), td:nth-child(3) { width: 46px; }
+
   }
 
   /* Awards */
@@ -457,11 +451,7 @@
     .tabs .more-sheet .full { display: inline; } .tabs .more-sheet .short { display: none; }
     .trends { grid-template-columns: 1fr; }
     .tow-total .v { font-size: 34px; }
-    .tow th:nth-child(1), .tow td:nth-child(1) { width: 42px; }
-    .tow th:nth-child(3), .tow td:nth-child(3) { width: 48px; }
-    .tow th:nth-child(4), .tow td:nth-child(4) { width: 34%; }
-    .tow td:nth-child(2) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tow td.owner-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     .prof-head .nm { font-size: 24px; }
     .prof-stats .v { font-size: 26px; }
     .prof-recs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -492,9 +482,7 @@
   .pot-total { color: var(--muted); font-size: 13px; }
   .faab { margin-top: 4px; font-size: 13px; color: #22C55E; font-weight: 600; }
   @media (max-width: 640px) {
-    .pot-table th:nth-child(1), .pot-table td:nth-child(1) { width: auto; }
-    .pot-table th:nth-child(2), .pot-table td:nth-child(2) { width: 90px; }
-    .pot-table th:nth-child(3), .pot-table td:nth-child(3) { width: 76px; }
+
   }
 
   /* Food Chain minnows */
@@ -532,12 +520,8 @@
     .tblock { grid-template-columns: 1fr; }
     .prof-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .more-sheet { grid-template-columns: 1fr 1fr; }
-    .draft th:nth-child(1), .draft td:nth-child(1) { width: 40px; }
-    .draft th:nth-child(3), .draft td:nth-child(3) { width: 66px; text-align: left; padding-left: 8px; }
-    .draft th:nth-child(4), .draft td:nth-child(4) { width: 58px; }
-    .draft th:nth-child(5), .draft td:nth-child(5), .draft th:nth-child(6), .draft td:nth-child(6) { width: 62px; }
-    .draft td:nth-child(2) { white-space: normal; }
-    .draft td:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
   }
 
   .logo-sm.face { background: var(--line); }
@@ -634,9 +618,77 @@
     .tabs { grid-template-columns: repeat(var(--tabcols, 5), 1fr) !important; }
     .me-match .sc { font-size: 26px; }
   }
+
+  /* ---------- Phone tables: names shrink with "…", numbers always get the room they need ---------- */
+  @media (max-width: 640px) {
+    .table-scroll { overflow-x: visible; }
+    table { min-width: 0; width: 100%; table-layout: auto; }
+    th, td { padding: 9px 5px; font-size: 13.5px; white-space: nowrap; }
+    th { font-size: 11.5px; line-height: 1.2; white-space: normal; vertical-align: bottom; }
+    th:first-child, td:first-child { padding-left: 2px; }
+    th:last-child, td:last-child { padding-right: 2px; }
+    /* the name column (2nd) takes whatever is left and truncates */
+    td:nth-child(2), th:nth-child(2) { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    td:nth-child(2) .tcell > div, td:nth-child(2) > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    td.rank { font-size: 16px; width: 1%; }
+    /* weekly pot: team is the 1st column */
+    .pot-table td:nth-child(1), .pot-table th:nth-child(1) { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .pot-table td:nth-child(2), .pot-table th:nth-child(2) { width: auto; max-width: none; white-space: normal; min-width: 64px; }
+    .pot-table td .tcell > div { overflow: hidden; text-overflow: ellipsis; }
+    /* draft board: player names may wrap to two lines */
+    .draft td:nth-child(2) { white-space: normal; }
+    .draft td:nth-child(2) > div { white-space: nowrap; }
+    .draft .owner { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Team of the Week */
+    .tow td.owner-cell { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+    /* scoreboard lineups */
+    .lu-grid table { table-layout: fixed; }
+    .lu-grid td:nth-child(2), .lu-grid th:nth-child(2) { width: auto; max-width: none; }
+    .lu-grid th:nth-child(3), .lu-grid th:nth-child(4) { width: 50px; }
+    .lu-grid th:first-child { width: 44px; }
+  }
+  @media (max-width: 380px) {
+    th, td { font-size: 12.5px; padding: 8px 4px; }
+    .me-stats .v, .prof-stats .v { font-size: 22px; }
+    .prof-recs .v { font-size: 22px; }
+    .hrow .val { font-size: 17px; }
+    .tabs button, .more-btn { font-size: 12px !important; }
+  }
+
+  /* ---------- Header: no week picker in Base / Historian ---------- */
+  .mast .controls.no-week .week-nav { display: none; }
+  .mast .controls.no-status .status { display: none; }
+  .theme-btn { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  @media (max-width: 640px) {
+    .mast .controls.no-week { grid-template-columns: 1fr auto; }
+    .mast .controls .status { grid-column: 1; }
+    .theme-btn { justify-self: end; padding: 5px 10px; font-size: 12px; }
+    .mast .controls.no-week .me-pick { grid-column: 1 / -1; }
+    .mast .controls.no-status .theme-btn { grid-column: 1 / -1; justify-self: end; }
+  }
+
+  /* ---------- Light mode ---------- */
+  :root[data-theme="light"] {
+    --black: #FFFFFF; --white: #16101F; --muted: #5E546E; --line: #E2D8EF;
+    --lilac: #5B2A86; --violet: #6B2FB3; --royal: #6B2FB3;
+    color-scheme: light;
+  }
+  :root { --on-accent: #FFFFFF; }
+  .median-tag, .toggle button[aria-pressed="true"], .modes button[aria-pressed="true"], .more-sheet button[aria-selected="true"], .logo-sm { color: var(--on-accent) !important; }
+  :root[data-theme="light"] .me-pick select option { color: #16101F; }
+  :root[data-theme="light"] .row .bar { background: #E2D8EF; }
+  :root[data-theme="light"] .row.above .bar { background: var(--royal); }
+  :root[data-theme="light"] .more-sheet { box-shadow: 0 -8px 30px rgba(40, 20, 70, .18); }
+  :root[data-theme="light"] .face-zoom { background: rgba(255,255,255,.9); }
+  :root[data-theme="light"] .crest { box-shadow: 0 0 0 1px var(--line); }
+  :root[data-theme="light"] tr.me td { background: rgba(107, 47, 179, .08); }
+  :root[data-theme="light"] .pot-live .amt, :root[data-theme="light"] .pot-table td.strong, :root[data-theme="light"] .faab { color: #15803D; }
+  :root[data-theme="light"] .tcol.up h3 .arrow, :root[data-theme="light"] .rivals .lbl.cake { color: #15803D; }
+  :root[data-theme="light"] .tagx.up, :root[data-theme="light"] .won-tag, :root[data-theme="light"] .rw.done .badge { color: #15803D; border-color: #15803D; }
 </style>
 </head>
 <body>
+<script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("boc-theme")||"dark")}catch(e){}</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <!-- Trophy badges: Overperformer green, Letdown red, Noah black, Manager and Srimanth purple. -->
@@ -706,6 +758,7 @@
         <select id="mePick" aria-label="Choose your team"><option value="">pick your team</option></select>
       </label>
       <div class="status"><span class="dot" id="liveDot"></span><span id="updated">–</span></div>
+      <button class="theme-btn" id="themeBtn" aria-label="Switch light or dark mode">☀️ Light</button>
     </div>
   </header>
 
@@ -922,6 +975,8 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (n) => (Math.round((n || 0) * 100) / 100).toFixed(2);
   const pct = (p) => `${Math.round((p || 0) * 100)}%`;
+  // Season totals: one decimal once they reach four digits, so phone columns stay readable.
+  const fmtTot = (n) => (Math.abs(n || 0) >= 1000 ? (Math.round((n || 0) * 10) / 10).toFixed(1) : fmt(n));
 
   async function getJSON(url, opts) {
     const res = await fetch(url, opts);
@@ -1087,18 +1142,20 @@
   function renderPicks() {
     const games = (state.wk?.matchups || []).filter((m) => m.away);
     const P = state.picks || { tallies: {}, mine: {} };
+    const weekStarted = Boolean(state.wk?.started) || wkSides().some((x) => x.current > 0);
     const isCurrent = state.week === state.currentWeek;
     $("pickNote").textContent = isCurrent
-      ? "Tap the team you think wins each matchup. You get one vote per matchup, and voting on a game closes once either team scores."
+      ? ((state.wk?.started || wkSides().some((x) => x.current > 0)) ? "Voting closed when the week's first game kicked off. Here's how everyone voted." : "Tap the team you think wins each matchup. One vote per matchup per phone and per person, and voting closes for every matchup when the week's first game kicks off. Everyone's votes show once it does.")
       : state.week < state.currentWeek ? `How everyone voted in week ${state.week}. Checkmarks show who actually won.` : "Voting opens when this week becomes the current week.";
     if (!games.length) { $("picks").innerHTML = `<div class="empty">No matchups scheduled this week.</div>`; return; }
     $("picks").innerHTML = games.map((m) => {
       const t = P.tallies[m.id] || { home: 0, away: 0 };
       const total = t.home + t.away;
       const my = P.mine[m.id];
-      const kicked = m.home.current > 0 || m.away.current > 0;
+      // Voting closes for every matchup at the week's first kickoff; results show to everyone after that.
+      const kicked = weekStarted || !isCurrent;
       const open = isCurrent && !kicked && !my && voter && !P.error;
-      const showVotes = !open;
+      const showVotes = kicked || Boolean(my);
       const final = decided(m);
       const voted = Boolean(my);
       const opt = (key, s) => {
@@ -1114,9 +1171,9 @@
         } else {
           body = `<span class="chance"><b>${pct(s.winProb)}</b>win chance</span><span class="chance">Projected ${fmt(s.projected)}</span>${showVotes ? `<span class="votes">${vp}% of votes</span>` : `<span class="votes">Tap to pick</span>`}`;
         }
-        return `<button class="opt ${voted ? "voted" : ""} ${my === key ? "mine" : ""} ${won ? "won" : ""}" data-mid="${m.id}" data-side="${key}" ${open ? "" : "disabled"} aria-label="${esc(open ? `Pick ${nm}` : nm)}">
+        return `<button class="opt ${voted ? "voted" : ""} ${my === key ? "mine" : ""}" data-mid="${m.id}" data-side="${key}" ${open ? "" : "disabled"} aria-label="${esc(open ? `Pick ${nm}` : nm)}">
           ${voted ? `<span class="split" data-w="${vp}"></span>` : ""}
-          <span class="top">${logo(teamById(s.teamId))}<span class="nm">${esc(nm)}</span></span>
+          <span class="top">${logo(teamById(s.teamId))}<span class="nm">${esc(nm)}</span>${won ? `<span class="won-tag">Won</span>` : ""}</span>
           ${body}
           ${voted ? "" : `<span class="fill" style="width:${showVotes ? vp : 0}%"></span>`}
         </button>`;
@@ -1125,7 +1182,7 @@
       if (state.pickErr[m.id]) foot = `<div class="foot err">${esc(state.pickErr[m.id])}</div>`;
       else if (P.error) foot = `<div class="foot err">${esc(P.error)}</div>`;
       else if (!voter) foot = `<div class="foot err">This browser is blocking storage, so it can't vote. Try a different browser.</div>`;
-      else foot = `<div class="foot">${total} vote${total === 1 ? "" : "s"}${isCurrent ? (kicked ? ", voting closed" : my ? ", you're locked in" : "") : ""}</div>`;
+      else foot = `<div class="foot">${total} vote${total === 1 ? "" : "s"}${isCurrent ? (kicked ? ", voting closed" : my ? ", you're locked in" : "") : ""}${final ? ". Won marks who actually won." : ""}</div>`;
       return `<div class="pick ${[m.home.teamId, m.away.teamId].includes(state.me) ? "me" : ""}" data-mid="${m.id}"><div class="opts">${opt("home", m.home)}${opt("away", m.away)}</div>${foot}</div>`;
     }).join("");
     // Fill the voting split: animate the first time a matchup's split is shown, then keep it still.
@@ -1145,7 +1202,7 @@
     $("picks").querySelectorAll(`.opt[data-mid="${mid}"]`).forEach((b) => (b.disabled = true));
     delete state.pickErr[mid];
     try {
-      const data = await getJSON("/api/picks", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ week: state.week, matchupId: mid, choice: side, voter }) });
+      const data = await getJSON("/api/picks", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ week: state.week, matchupId: mid, choice: side, voter, person: state.me || null }) });
       state.picks.mine[mid] = side;
       state.picks.tallies[mid] = data.tally;
     } catch (err) { state.pickErr[mid] = err.message; }
@@ -1225,14 +1282,14 @@
     if (v === "ifman") $("standNote").textContent = `What the standings would be if every team had started its best possible lineup every week, against opponents who did the same${usesMed ? ". Includes both the head-to-head and median game each week." : "."}`;
     if (v === "current") {
       const rows = officialOrder();
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.pf)}</td><td class="hide-m">${fmt(x.pa)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.pf)}</td><td class="hide-m">${fmtTot(x.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "h2h") {
       const rows = L.teams.map((t) => ({ t, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td><td class="hide-m">${fmt(x.r.pa)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.r.pf)}</td><td class="hide-m">${fmtTot(x.r.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "median") {
       const med = medianRecords();
       const rows = L.teams.map((t) => ({ t, r: med[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.r.pf)}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.r.pf)}</td></tr>`).join("")}</tbody>`;
     } else {
       if (!state.ifman && !state.ifmanErr) {
         table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every team's best lineup for each completed week…</td></tr></tbody>`;
@@ -1249,7 +1306,7 @@
         .sort((a, b) => winPct(b.r) - winPct(a.r) || b.opt - a.opt);
       table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Best lineup</th><th class="hide-m">Actual points</th><th class="hide-m">Left on bench</th><th>vs. actual</th></tr></thead><tbody>${rows.map((x, i) => {
         const d = h2hRank[x.t.id] - (i + 1);
-        return `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmt(x.opt)}</td><td class="hide-m">${fmt(x.act)}</td><td class="hide-m">${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `↑ ${d}` : d < 0 ? `↓ ${-d}` : "–"}</td></tr>`;
+        return `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.opt)}</td><td class="hide-m">${fmtTot(x.act)}</td><td class="hide-m">${fmt(x.opt - x.act)}</td><td class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? `↑ ${d}` : d < 0 ? `↓ ${-d}` : "–"}</td></tr>`;
       }).join("")}</tbody>`;
     }
   }
@@ -1625,7 +1682,7 @@
     const rows = [...S.teams].sort((a, b) => S.complete ? (a.finalRank || 99) - (b.finalRank || 99) : (a.seed || 99) - (b.seed || 99));
     $("seasonTable").innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((t, i) => {
       const who = identity(S, t), mgr = fixName(who.name);
-      return `<tr class="${who.key === state.histManager ? "me" : ""}"><td class="rank">${S.complete && t.finalRank ? t.finalRank : i + 1}</td><td><div class="tcell"><div><div>${esc(t.teamName)}</div><div class="owner">${esc(mgr)}</div></div></div></td><td class="strong">${recStr(t.official)}</td><td>${fmt(t.regPF)}</td><td>${t.regPA != null ? fmt(t.regPA) : "–"}</td></tr>`;
+      return `<tr class="${who.key === state.histManager ? "me" : ""}"><td class="rank">${S.complete && t.finalRank ? t.finalRank : i + 1}</td><td><div class="tcell"><div><div>${esc(t.teamName)}</div><div class="owner">${esc(mgr)}</div></div></div></td><td class="strong">${recStr(t.official)}</td><td>${fmtTot(t.regPF)}</td><td>${t.regPA != null ? fmtTot(t.regPA) : "–"}</td></tr>`;
     }).join("")}</tbody>`;
   }
   $("histManager").onchange = (e) => { state.histManager = e.target.value; state.histYear = "all"; renderHistory(); };
@@ -2070,16 +2127,30 @@
     loadWeek(state.currentWeek);
   }
 
+  // ---------- Light / dark mode ----------
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    $("themeBtn").textContent = t === "light" ? "🌙 Dark" : "☀️ Light";
+    try { localStorage.setItem("boc-theme", t); } catch {}
+  }
+  $("themeBtn").onclick = () => applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light");
+  applyTheme((() => { try { return localStorage.getItem("boc-theme") || "dark"; } catch { return "dark"; } })());
+
   // ---------- Modes: which tabs sit in the phone tab bar (the rest go under More) ----------
   const MODES = {
     sundays: ["pecking", "pickem", "scoreboard"],
     base: ["standings", "story", "awards", "pickem"],
-    historian: ["history", "draft", "story"],
+    historian: ["history", "draft", "hof"],
   };
   let mode = (() => { try { const m = localStorage.getItem("boc-mode"); return MODES[m] ? m : "base"; } catch { return "base"; } })();
   let moreTabs = TABS.filter((t) => !MODES[mode].includes(t));
+  const WEEKLESS = new Set(["base", "historian"]);
   function applyMode(m, { jump = true } = {}) {
     mode = MODES[m] ? m : "base";
+    // Base and Historian always show the current week, so the week picker goes away.
+    document.querySelector(".mast .controls").classList.toggle("no-week", WEEKLESS.has(mode));
+    document.querySelector(".mast .controls").classList.toggle("no-status", mode === "historian");
+    if (WEEKLESS.has(mode) && state.currentWeek && state.week !== state.currentWeek) loadWeek(state.currentWeek);
     try { localStorage.setItem("boc-mode", mode); } catch {}
     document.querySelectorAll(".modes [data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === mode));
     const nav = document.querySelector(".tabs"), wrap = nav.querySelector(".more-wrap"), sheet = $("moreSheet");

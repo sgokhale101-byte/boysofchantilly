@@ -1,9 +1,11 @@
 // Pick 'em votes, served at /api/picks. Stored in Netlify Blobs.
 //   GET  /api/picks?week=3&voter=<id>  -> tallies for the week + this voter's picks
 //   POST /api/picks {week, matchupId, choice: "home"|"away", voter}
-// One vote per voter per matchup; voting closes once either team has points.
+// One vote per phone (voter id) and one per person (the "I'm" pick, when set) on each matchup.
+// Voting closes for the whole week once the week's first NFL game kicks off.
 import { getStore } from "@netlify/blobs";
 import { EspnError, espnFetch, leagueUrl, sidePoints } from "../lib/espn.mjs";
+import { nflWeek } from "../lib/model.mjs";
 
 const json = (status, obj) => new Response(JSON.stringify(obj), {
   status, headers: { "content-type": "application/json", "cache-control": "no-store" },
@@ -68,11 +70,18 @@ export default async (req) => {
   if (week !== current) return json(409, { error: "Voting is only open for the current week." });
   const game = (league.schedule || []).find((g) => g.id === matchupId && g.matchupPeriodId === week);
   if (!game || !game.away) return json(404, { error: "That matchup isn't on this week's schedule." });
-  if (sidePoints(game.home) > 0 || sidePoints(game.away) > 0) return json(409, { error: "Voting for this matchup closed when it kicked off." });
+  const weekGames = (league.schedule || []).filter((g) => g.matchupPeriodId === week);
+  const nfl = await nflWeek(week);
+  const kicked = Object.values(nfl.byTeam).some((g) => g.state !== "pre") || weekGames.some((g) => sidePoints(g.home) > 0 || sidePoints(g.away) > 0);
+  if (kicked) return json(409, { error: "Voting closed when the week's first game kicked off." });
 
   const voterKey = `voter/${voter}/w${week}/m${matchupId}`;
-  if (await s.get(voterKey)) return json(409, { error: "You've already voted on this matchup." });
+  if (await s.get(voterKey)) return json(409, { error: "This phone already voted on this matchup." });
+  const person = Number(body.person);
+  const personKey = Number.isInteger(person) && person > 0 ? `person/w${week}/m${matchupId}/${person}` : null;
+  if (personKey && (await s.get(personKey))) return json(409, { error: "Someone already voted as you on this matchup." });
   await s.set(voterKey, choice);
+  if (personKey) await s.set(personKey, "1");
   await s.set(`tally/w${week}/m${matchupId}/${choice}/${voter}`, "1");
 
   const t = await tallies(s, week);
