@@ -538,6 +538,11 @@
     .draft td:nth-child(2) { white-space: normal; }
     .draft td:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
+
+  .logo-sm.face { background: var(--line); }
+  .prof-who { display: flex; align-items: center; gap: 12px; }
+  .prof-face { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--royal); flex: none; }
+  .me-team .logo-sm { width: 34px; height: 34px; }
 </style>
 </head>
 <body>
@@ -826,6 +831,15 @@
     const m = L.members.find((x) => x.id === id);
     return m ? (m.firstName ? `${m.firstName} ${m.lastName || ""}`.trim() : m.displayName) : "";
   }
+  // Manager headshots (public/headshots/<firstname>.jpg), used in place of team logos.
+  const HEADSHOTS = { alexis: "alexis.jpg", jeremy: "jeremy.jpg", sean: "sean.jpg", vivek: "vivek.jpg", shreyas: "shreyas.jpg" };
+  function headshotFor(t) {
+    if (!t || !state.league?.members) return null;
+    const m = state.league.members.find((x) => x.id === (t.primaryOwner || (t.owners || [])[0]));
+    const first = (m?.firstName || m?.displayName || "").trim().split(/\s+/)[0].toLowerCase();
+    return HEADSHOTS[first] ? `headshots/${HEADSHOTS[first]}` : null;
+  }
+  const headshotByName = (name) => { const f = String(name || "").trim().split(/\s+/)[0].toLowerCase(); return HEADSHOTS[f] ? `headshots/${HEADSHOTS[f]}` : null; };
   // Team logo: ESPN's logo first, then public/logos/<ABBREV>.png, then initials.
   window.bocLogoFail = (img) => {
     const next = img.dataset.alt;
@@ -833,6 +847,8 @@
     const span = img.parentElement; img.remove(); span.textContent = span.dataset.ab || "";
   };
   function logo(t) {
+    const hs = headshotFor(t);
+    if (hs) return `<span class="logo-sm face" data-ab="${esc((t && t.abbrev) || "")}"><img src="${hs}" alt="" loading="lazy" onerror="bocLogoFail(this)"></span>`;
     const ab = (t && t.abbrev) || "";
     const local = ab ? `logos/${encodeURIComponent(ab.toUpperCase())}.png` : "";
     const first = (t && t.logo) || local;
@@ -1274,14 +1290,59 @@
         col("", "✦", "Most unpredictable", wild, (t) => `Scores swing about ${fmt(t.swing)} week to week`) : "");
   }
 
+  // ---------- Manager cleanup rules (history and draft) ----------
+  // assign: a team (optionally in one season) belongs to this manager.
+  // merge: profiles whose ESPN name matches become one person.
+  const MANAGER_RULES = {
+    assign: [
+      { year: 2018, team: "This Team Has Been Seized", to: "Jeremy S" },
+      { team: "Property of TMA", to: "Jeremy S" },
+      { year: 2020, team: "Dez Nuts", to: "Mahat" },
+      { year: 2020, team: "Minshew and The Crew", to: "Rohit" },
+    ],
+    merge: [
+      { match: /^vijay\s+r/i, name: "Vijay Rudraraju" },
+      { match: /^vivek\s+iyer\b/i, name: "Vivek Iyer" },
+    ],
+  };
+  const normTeam = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  function assignedTo(year, teamName) {
+    const n = normTeam(teamName);
+    const r = MANAGER_RULES.assign.find((a) => normTeam(a.team) === n && (a.year == null || a.year === year));
+    return r ? r.to : null;
+  }
+  const mergeRule = (name) => MANAGER_RULES.merge.find((m) => m.match.test(name || ""));
+  // Who a season's team belongs to: { key, name }
+  function identity(season, team) {
+    const target = assignedTo(season.year, team.teamName);
+    if (target) return identityForName(target);
+    const raw = season.members[team.memberId]?.name || "Unknown manager";
+    const mr = mergeRule(raw);
+    if (mr) return { key: `merge:${mr.name}`, name: mr.name };
+    return { key: team.memberId, name: raw };
+  }
+  function identityForName(target) {
+    const t = target.toLowerCase().replace(/\.$/, "");
+    for (const season of [...state.hist.seasons].reverse()) {
+      for (const [id, m] of Object.entries(season.members)) {
+        if (!m.name || !m.name.toLowerCase().startsWith(t)) continue;
+        const mr = mergeRule(m.name);
+        return mr ? { key: `merge:${mr.name}`, name: mr.name } : { key: id, name: m.name };
+      }
+    }
+    const mr = mergeRule(target);
+    return mr ? { key: `merge:${mr.name}`, name: mr.name } : { key: `name:${target}`, name: target };
+  }
+
   // ---------- History ----------
   function managers() {
     const out = {};
     const currentYear = Math.max(...state.hist.seasons.map((x) => x.year));
-    for (const season of state.hist.seasons) {
+    for (const season of [...state.hist.seasons].sort((a, b) => a.year - b.year)) {
       for (const t of season.teams) {
-        const m = (out[t.memberId] ||= { id: t.memberId, name: season.members[t.memberId]?.name || "Unknown manager", seasons: [] });
-        m.name = season.members[t.memberId]?.name || m.name; // latest name wins
+        const who = identity(season, t);
+        const m = (out[who.key] ||= { id: who.key, name: who.name, seasons: [] });
+        if (who.name !== "Unknown manager") m.name = who.name; // latest known name wins
         m.seasons.push({ season, team: t });
         if (season.year === currentYear) m.current = true;
       }
@@ -1311,8 +1372,9 @@
     if (state.histErr) { $("profile").innerHTML = `<div class="empty">Couldn't load league history: ${esc(state.histErr)}</div>`; return; }
     const ms = managers();
     if (!state.histManager) {
-      const mine = state.me && state.hist.seasons[state.hist.seasons.length - 1].teams.find((t) => t.teamId === state.me);
-      state.histManager = mine ? mine.memberId : ms[0]?.id;
+      const latest = [...state.hist.seasons].sort((a, b) => b.year - a.year)[0];
+      const mine = state.me && latest.teams.find((t) => t.teamId === state.me);
+      state.histManager = mine ? identity(latest, mine).key : ms[0]?.id;
     }
     $("histManager").innerHTML = ms.map((m) => `<option value="${esc(m.id)}" ${m.id === state.histManager ? "selected" : ""}>${esc(m.name)}${m.current ? "" : " (former)"}</option>`).join("");
     const M = ms.find((m) => m.id === state.histManager) || ms[0];
@@ -1366,7 +1428,7 @@
     if (ifMissing) foot.push(`If man isn't available for ${ifMissing} season${ifMissing === 1 ? "" : "s"}, because ESPN didn't keep lineups that far back.`);
     if (state.histYear === "all" && !finishes.length) foot.push("Average finish starts counting after a full season.");
     $("profile").innerHTML = `<div class="prof">
-      <div class="prof-head"><div><span class="nm">${esc(M.name)}</span>${M.current ? "" : `<span class="former">Former manager</span>`}</div>
+      <div class="prof-head"><div class="prof-who">${headshotByName(M.name) ? `<img class="prof-face" src="${headshotByName(M.name)}" alt="">` : ""}<div><span class="nm">${esc(M.name)}</span>${M.current ? "" : `<span class="former">Former manager</span>`}</div></div>
         <div class="sub">${yrs.length} season${yrs.length === 1 ? "" : "s"}, ${span}</div></div>
       <div class="prof-stats">
         <div><div class="v">${avgFinish ? avgFinish.toFixed(1) : "–"}</div><div class="k">${state.histYear === "all" ? "Average finish" : "Finish"}</div><div class="lr">${avgFinish ? leagueRank(M, "avgFinish", (a, b) => a < b, "best") : ""}</div></div>
@@ -1393,8 +1455,8 @@
     $("seasNote").textContent = S.complete ? `Final order after the ${S.year} playoffs. Records are ESPN's official records${S.usesMedian ? ", which include the weekly median game" : ""}.` : `The ${S.year} season is still going, so this is the current order.`;
     const rows = [...S.teams].sort((a, b) => S.complete ? (a.finalRank || 99) - (b.finalRank || 99) : (a.seed || 99) - (b.seed || 99));
     $("seasonTable").innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((t, i) => {
-      const mgr = S.members[t.memberId]?.name || "";
-      return `<tr class="${t.memberId === state.histManager ? "me" : ""}"><td class="rank">${S.complete && t.finalRank ? t.finalRank : i + 1}</td><td><div class="tcell"><div><div>${esc(t.teamName)}</div><div class="owner">${esc(mgr)}</div></div></div></td><td class="strong">${recStr(t.official)}</td><td>${fmt(t.regPF)}</td><td>${t.regPA != null ? fmt(t.regPA) : "–"}</td></tr>`;
+      const who = identity(S, t), mgr = who.name;
+      return `<tr class="${who.key === state.histManager ? "me" : ""}"><td class="rank">${S.complete && t.finalRank ? t.finalRank : i + 1}</td><td><div class="tcell"><div><div>${esc(t.teamName)}</div><div class="owner">${esc(mgr)}</div></div></div></td><td class="strong">${recStr(t.official)}</td><td>${fmt(t.regPF)}</td><td>${t.regPA != null ? fmt(t.regPA) : "–"}</td></tr>`;
     }).join("")}</tbody>`;
   }
   $("histManager").onchange = (e) => { state.histManager = e.target.value; state.histYear = "all"; renderHistory(); };
@@ -1502,7 +1564,7 @@
     const D = state.drafts[y];
     if (!D.available) { $("draftTop").innerHTML = `<div class="empty">No draft to show for ${y}. ${esc(D.reason || "")}</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; return; }
     const byPick = Object.fromEntries(D.picks.map((p) => [p.overall, p]));
-    const who = (p) => D.teams[p.teamId]?.manager || D.teams[p.teamId]?.name || "";
+    const who = (p) => { const t = D.teams[p.teamId] || {}; const a = assignedTo(y, t.name); return (a ? a.split(" ")[0] : t.manager) || t.name || ""; };
     const where = (p) => D.auction ? `$${p.bid}` : `${p.round}.${String(p.roundPick).padStart(2, "0")}`;
     const story = (p) => D.complete
       ? `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, finished ${p.pos}${p.posFinishRank} with ${fmt(p.points)} points`

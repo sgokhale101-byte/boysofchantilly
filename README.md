@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.6.1)
+# Boys of Chantilly dashboard (v1.6.2)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -96,3 +96,10 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Power Rankings: [b]..[/b] bold and [i]..[/i] italic.
 - Standings: dashed lines labeled "Regular season winner" and "Cancun on 3".
 - Food Chain: dashed "Made the median" / "The Minnows" divider on the board; "The Sharks and Their Prey"; "Weekly Pot".
+
+## 1.6.2
+- Manager cleanup rules (MANAGER_RULES in index.html): team-to-manager assignments ("This Team Has Been Seized" 2018 and
+  "Property of TMA" -> Jeremy S; "Dez Nuts" 2020 -> Mahat; "Minshew and The Crew" 2020 -> Rohit) and merges (both Vijay R's
+  -> Vijay Rudraraju; both Vivek Iyer profiles). Team names match ignoring case and punctuation. Applies to History and Draft.
+- Manager headshots in public/headshots/<firstname>.jpg (alexis, jeremy, sean, vivek, shreyas) replace the team logo
+  circle everywhere, and appear on History profiles. Add a file and a HEADSHOTS entry for more.
