@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.8.3)
+# Boys of Chantilly dashboard (v1.8.4)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -168,3 +168,9 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   (final score once the matchup ends).
 - iPhone Safari: buttons drop the built-in styling and selected tabs, modes, and toggles set their text color explicitly,
   so selected labels stay visible in light mode.
+
+## 1.8.4
+- Home screen icon: public/icons (apple-touch-icon 180, 192, 512, favicon 32; 1024 master) and manifest.webmanifest
+  (name "Boys of Chantilly", home screen label "Chantilly", opens full screen).
+- Hall of Fame and Record watch rank seasons by median points per game.
+- Summary card and Food Chain board show starters left to play (and live on the card) with projected points left.

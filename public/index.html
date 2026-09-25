@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Boys of Chantilly</title>
-<link rel="icon" href="logo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Chantilly">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#12061F">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -698,6 +705,11 @@
   .more-sheet button[aria-selected="true"], .more-sheet button[aria-selected="true"] span,
   .modes button[aria-pressed="true"], .toggle button[aria-pressed="true"], .toggle button[aria-pressed="true"] span { color: var(--on-accent) !important; opacity: 1 !important; }
   .pick .opt:disabled { opacity: 1; color: inherit; }
+
+  .row .team .left { color: var(--muted); font-size: 11.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .team .nm { display: block; }
+  .me-match .lf { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  @media (max-width: 640px) { .row { padding: 7px 0; } .row .team .left { font-size: 10.5px; } }
 </style>
 </head>
 <body>
@@ -888,7 +900,7 @@
   <div class="panel" id="panel-hof" role="tabpanel" aria-labelledby="tab-hof" hidden>
     <section aria-labelledby="hofH">
       <div class="aw-pick"><h2 id="hofH">Hall of Fame</h2><label class="me-pick"><span>Year</span><select id="hofYear" aria-label="All time or one season"></select></label></div>
-      <details class="explain"><summary>Explain It</summary><p class="note">League records across every season on record. Scores, weeks, and streaks count regular-season games. Streaks follow a manager across seasons. Median streaks start in 2022. Season PPG lists use finished seasons. Player performances use your league's scoring and include bench players, marked as benched. The dropdown changes the scores and player performances; season and streak records are all time.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">League records across every season on record. Scores, weeks, and streaks count regular-season games. Streaks follow a manager across seasons. Median streaks start in 2022. Season lists rank finished seasons by median points per game (the middle weekly score), so one huge or tiny week doesn't swing a season. Player performances use your league's scoring and include bench players, marked as benched. The dropdown changes the scores and player performances; season and streak records are all time.</p></details>
       <div class="hof" id="hof"></div>
     </section>
   </div>
@@ -909,7 +921,7 @@
     </section>
     <section aria-labelledby="rwH">
       <h2 id="rwH">Record watch</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">This season against the Hall of Fame: scores that already cracked the all-time top 10, teams on pace for a top-10 (or bottom-10) PPG season, and active streaks closing in on the record.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">This season against the Hall of Fame: scores that already cracked the all-time top 10, teams on pace for a top-10 (or bottom-10) season by median points per game, and active streaks closing in on the record.</p></details>
       <div class="rwatch" id="rwatch"></div>
     </section>
     <section aria-labelledby="trendH">
@@ -1105,13 +1117,20 @@
   }
 
   // ---------- Pecking order ----------
+  // Starters still to play (or playing now) and their projected points left.
+  function leftFor(side) {
+    const st = (side?.starters || []).filter((p) => p.game && p.game.state !== "post");
+    return { left: st.length, playing: st.filter((p) => p.game.state === "in").length, pts: st.reduce((a, p) => a + (p.remaining || 0), 0) };
+  }
+  const leftText = (l, short) => l.left ? `${l.left} left${!short && l.playing ? ` (${l.playing} live)` : ""}, ${l.pts.toFixed(1)} proj` : "All done";
   function placeMedian() {
     const track = document.querySelector("#board .track"), line = $("mline");
     if (!track || !line) return;
     line.style.left = `${track.offsetLeft + track.offsetWidth * state.medFrac}px`;
   }
   function renderPecking() {
-    const scores = wkSides().map((s) => ({ t: teamById(s.teamId), p: s.current })).sort((a, b) => b.p - a.p);
+    const scores = wkSides().map((s) => ({ t: teamById(s.teamId), p: s.current, left: leftFor(s) })).sort((a, b) => b.p - a.p);
+    const showLeft = weekLive();
     const med = state.wk ? state.wk.medians.current : 0;
     const max = Math.max(1, ...scores.map((s) => s.p)) * 1.04;
     const started = scores.some((s) => s.p > 0);
@@ -1125,7 +1144,7 @@
       const madeIt = Math.floor(scores.length / 2); // top half of the league makes the median
       board.innerHTML = scores.map((s, i) => `${i === madeIt && madeIt > 0 && !minnowTagged && (minnowTagged = true) ? `<div class="median-cut"><span class="up">▲ Made the median</span><i></i><span class="down">The Minnows ▼</span></div>` : ""}
         <div class="row ${i < madeIt ? "above" : "below"}" data-team="${s.t?.id}">
-          <div class="team">${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span></div>
+          <div class="team">${logo(s.t)}<div style="min-width:0"><div class="nm">${esc(teamName(s.t))}</div>${showLeft ? `<div class="left">${esc(leftText(s.left, true))}</div>` : ""}</div></div>
           <div class="track"><div class="bar" style="width:${(s.p / max) * 100}%"></div></div>
           <div class="pts">${fmt(s.p)}</div>
         </div>`).join("") + `<div class="median-line" id="mline"><span class="median-tag">Median ${fmt(med)}</span></div>`;
@@ -1883,7 +1902,9 @@
     for (const season of seasons) for (const t of season.teams) {
       if (!t.regGames) continue;
       const who = identity(season, t);
-      const row = { year: season.year, ppg: t.regPF / t.regGames, games: t.regGames, key: who.key, name: fixName(who.name), teamName: t.teamName };
+      // Median of the team's weekly scores (falls back to the average if the game log is missing).
+      const wk = (t.games || []).map((g) => g.pts);
+      const row = { year: season.year, ppg: wk.length ? median(wk) : t.regPF / t.regGames, games: t.regGames, key: who.key, name: fixName(who.name), teamName: t.teamName };
       if (season.complete) seasonsPpg.push(row); else if (season.year === currentYear && t.regGames >= 2) pace.push(row);
     }
     // Streak runs per manager
@@ -1934,8 +1955,8 @@
     const streakRow = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}${x.active ? ` <span class="live">active</span>` : ""}</div><div class="sub">${esc(span(x))}</div></div><span class="val">${x.len}</span></div>`;
     let html = hofList(`Highest scores${state.hofYear === "all" ? ", all time" : `, ${state.hofYear}`}`, "🔥", top, scoreRow)
       + hofList(`Lowest scores${state.hofYear === "all" ? ", all time" : `, ${state.hofYear}`}`, "🧊", low, scoreRow)
-      + hofList("Best seasons (PPG)", "👑", bestS, seasonRow)
-      + hofList("Worst seasons (PPG)", "🪦", worstS, seasonRow)
+      + hofList("Best seasons (median PPG)", "👑", bestS, seasonRow)
+      + hofList("Worst seasons (median PPG)", "🪦", worstS, seasonRow)
       + hofList("Longest winning streaks (H2H)", "📈", longest(R.h2hRuns, "W"), streakRow)
       + hofList("Longest losing streaks (H2H)", "📉", longest(R.h2hRuns, "L"), streakRow)
       + hofList("Longest median win streaks (2022 on)", "📈", longest(R.medRuns, "W"), streakRow)
@@ -1983,8 +2004,8 @@
     const best = [...R.seasonsPpg].sort((a, b) => b.ppg - a.ppg), worst = [...R.seasonsPpg].sort((a, b) => a.ppg - b.ppg);
     for (const p of R.pace) {
       const rb = best.filter((x) => x.ppg > p.ppg).length + 1, rw = worst.filter((x) => x.ppg < p.ppg).length + 1;
-      if (rb <= 10) items.push({ kind: "pace", key: p.key, sort: rb, text: `<b>${esc(p.name)}</b> is averaging <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rb} best season ever${best[0] ? ` (record: ${best[0].ppg.toFixed(1)}, ${esc(best[0].name)} ${best[0].year})` : ""}.` });
-      else if (rw <= 10) items.push({ kind: "pace", key: p.key, sort: rw, text: `<b>${esc(p.name)}</b> is averaging <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rw} worst season ever.` });
+      if (rb <= 10) items.push({ kind: "pace", key: p.key, sort: rb, text: `<b>${esc(p.name)}</b> has a median of <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rb} best season ever${best[0] ? ` (record: ${best[0].ppg.toFixed(1)}, ${esc(best[0].name)} ${best[0].year})` : ""}.` });
+      else if (rw <= 10) items.push({ kind: "pace", key: p.key, sort: rw, text: `<b>${esc(p.name)}</b> has a median of <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rw} worst season ever.` });
     }
     const streakNote = (runs, label) => {
       for (const type of ["W", "L"]) {
@@ -2058,9 +2079,9 @@
       const lead = mine.current > opp.current ? "me" : mine.current < opp.current ? "opp" : "";
       const status = final ? (iWon ? "FINAL, WON" : m.winner === "TIE" ? "FINAL, TIED" : "FINAL, LOST") : (mine.current + opp.current > 0 ? "LIVE" : "UPCOMING");
       mm.innerHTML = `<div class="mm">
-          <div class="side ${lead === "me" ? "lead" : lead ? "trail" : ""}"><div style="min-width:0"><div class="nm">${esc(mgr(t.id))}</div><div class="sc">${fmt(mine.current)}</div>${final ? "" : `<div class="pj">Proj ${fmt(mine.projected)}</div>`}</div></div>
+          <div class="side ${lead === "me" ? "lead" : lead ? "trail" : ""}"><div style="min-width:0"><div class="nm">${esc(mgr(t.id))}</div><div class="sc">${fmt(mine.current)}</div>${final ? "" : `<div class="pj">Proj ${fmt(mine.projected)}</div><div class="lf">${esc(leftText(leftFor(mine)))}</div>`}</div></div>
           <div class="mid">${status}</div>
-          <div class="side opp ${lead === "opp" ? "lead" : lead ? "trail" : ""}"><div style="min-width:0"><div class="nm">${esc(on)}</div><div class="sc">${fmt(opp.current)}</div>${final ? "" : `<div class="pj">Proj ${fmt(opp.projected)}</div>`}</div>${logo(teamById(opp.teamId))}</div>
+          <div class="side opp ${lead === "opp" ? "lead" : lead ? "trail" : ""}"><div style="min-width:0"><div class="nm">${esc(on)}</div><div class="sc">${fmt(opp.current)}</div>${final ? "" : `<div class="pj">Proj ${fmt(opp.projected)}</div><div class="lf">${esc(leftText(leftFor(opp)))}</div>`}</div>${logo(teamById(opp.teamId))}</div>
         </div>
         ${final ? "" : `<div class="wp" aria-hidden="true"><span style="width:${(mine.winProb ?? 0.5) * 100}%"></span><span style="width:${(1 - (mine.winProb ?? 0.5)) * 100}%"></span></div><div class="wpl"><span>${pct(mine.winProb)} to win</span><span>${pct(opp.winProb)}</span></div>`}`;
       mm.hidden = false;
