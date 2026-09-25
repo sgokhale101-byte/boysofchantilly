@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.7)
+# Boys of Chantilly dashboard (v1.8)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -142,3 +142,12 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Draft: Round and Manager dropdowns; current season adds a Current column (total-points position rank).
 - History: current managers' Cakewalk / Their Daddy / Rival are other current managers. 2018 "This Team Has Been Seized" -> Srimanth.
 - "Trade Block" capitalized. Noah's photo replaced.
+
+## 1.8
+- Modes (header switch, remembered per browser; default Base). Each mode sets the phone tab bar; everything else is under More.
+  Desktop shows every tab with the mode's tabs first. Switching jumps to the mode's first tab if the current tab isn't in it.
+  - Sundays: Food Chain, Pick 'em, Scores
+  - Base: Standings, Story, Awards, Pick 'em
+  - Historian: History, Draft, Story
+  Edit MODES in index.html to change them.
+- Summary card shows the current matchup: both scores, projections, live/final status, and win chance.

@@ -609,6 +609,31 @@
     .hof { grid-template-columns: 1fr; }
     .m-only { display: inline; }
   }
+
+  /* Modes */
+  .modes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .modes button { background: none; border: 0; border-radius: 999px; padding: 7px 12px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .modes button[aria-pressed="true"] { background: var(--royal); color: var(--white); }
+  /* Matchup score in the summary card */
+  .me-card.has-match .me-scorecell { display: none; }
+  .me-card.has-match .me-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .me-match { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .me-match .mm { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+  .me-match .side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .me-match .side.opp { justify-content: flex-end; text-align: right; }
+  .me-match .nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .me-match .sc { font-family: var(--display); font-weight: 900; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .me-match .side.lead .sc { color: var(--white); } .me-match .side.trail .sc { color: var(--muted); }
+  .me-match .mid { color: var(--muted); font-size: 12px; font-weight: 700; text-align: center; }
+  .me-match .pj { color: var(--violet); font-size: 12.5px; }
+  .me-match .wp { margin-top: 8px; }
+  @media (max-width: 640px) {
+    .mast .controls { grid-template-columns: auto 1fr; }
+    .modes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); order: -1; }
+    .modes button { padding: 8px 4px; }
+    .tabs { grid-template-columns: repeat(var(--tabcols, 5), 1fr) !important; }
+    .me-match .sc { font-size: 26px; }
+  }
 </style>
 </head>
 <body>
@@ -672,6 +697,11 @@
         <div class="label" id="weekLabel">Week –</div>
         <button id="nextWeek" aria-label="Next week">›</button>
       </div>
+      <div class="modes" role="group" aria-label="Mode">
+        <button data-mode="sundays" aria-pressed="false">Sundays</button>
+        <button data-mode="base" aria-pressed="false">Base</button>
+        <button data-mode="historian" aria-pressed="false">Historian</button>
+      </div>
       <label class="me-pick"><span>I'm</span>
         <select id="mePick" aria-label="Choose your team"><option value="">pick your team</option></select>
       </label>
@@ -687,9 +717,10 @@
     <div class="me-stats">
       <div><div class="v" id="meRecord">–</div><div class="k">Record</div></div>
       <div><div class="v" id="meRank">–</div><div class="k" id="meRankK">Standing</div></div>
-      <div><div class="v" id="meCur">–</div><div class="k" id="meCurK">Current score</div></div>
-      <div><div class="v proj" id="meProj">–</div><div class="k">Projected</div></div>
+      <div class="me-scorecell"><div class="v" id="meCur">–</div><div class="k" id="meCurK">Current score</div></div>
+      <div class="me-scorecell"><div class="v proj" id="meProj">–</div><div class="k">Projected</div></div>
     </div>
+    <div class="me-match" id="meMatch" hidden></div>
     <div class="me-foot" id="meFoot"></div>
     <div class="me-trophies" id="meTrophies"></div>
   </aside>
@@ -1937,11 +1968,26 @@
     $("meCur").textContent = mine ? fmt(mine.current) : "–";
     $("meProj").textContent = mine ? fmt(final ? mine.current : mine.projected) : "–";
     let foot = "";
+    const mm = $("meMatch");
     if (mine && opp) {
       const on = mgr(opp.teamId);
-      if (final) foot = `${m.winner === (mine === m.home ? "HOME" : "AWAY") ? "Beat" : m.winner === "TIE" ? "Tied" : "Lost to"} ${on}, ${fmt(mine.current)} to ${fmt(opp.current)}.`;
-      else foot = `Against ${on}: ${pct(mine.winProb)} win chance. ${mine.current >= (state.wk.medians.current || 0) ? "Above" : "Below"} the median right now.`;
-    } else if (mine) foot = "Bye this week.";
+      const iWon = m.winner === (mine === m.home ? "HOME" : "AWAY");
+      const lead = mine.current > opp.current ? "me" : mine.current < opp.current ? "opp" : "";
+      const status = final ? (iWon ? "FINAL, WON" : m.winner === "TIE" ? "FINAL, TIED" : "FINAL, LOST") : (mine.current + opp.current > 0 ? "LIVE" : "UPCOMING");
+      mm.innerHTML = `<div class="mm">
+          <div class="side ${lead === "me" ? "lead" : lead ? "trail" : ""}"><div style="min-width:0"><div class="nm">${esc(mgr(t.id))}</div><div class="sc">${fmt(mine.current)}</div>${final ? "" : `<div class="pj">Proj ${fmt(mine.projected)}</div>`}</div></div>
+          <div class="mid">${status}</div>
+          <div class="side opp ${lead === "opp" ? "lead" : lead ? "trail" : ""}"><div style="min-width:0"><div class="nm">${esc(on)}</div><div class="sc">${fmt(opp.current)}</div>${final ? "" : `<div class="pj">Proj ${fmt(opp.projected)}</div>`}</div>${logo(teamById(opp.teamId))}</div>
+        </div>
+        ${final ? "" : `<div class="wp" aria-hidden="true"><span style="width:${(mine.winProb ?? 0.5) * 100}%"></span><span style="width:${(1 - (mine.winProb ?? 0.5)) * 100}%"></span></div><div class="wpl"><span>${pct(mine.winProb)} to win</span><span>${pct(opp.winProb)}</span></div>`}`;
+      mm.hidden = false;
+      $("meCard").classList.add("has-match");
+      foot = final ? "" : `${mine.current >= (state.wk.medians.current || 0) ? "Above" : "Below"} the median right now (${fmt(state.wk.medians.current)}).`;
+    } else {
+      mm.hidden = true;
+      $("meCard").classList.remove("has-match");
+      if (mine) foot = "Bye this week.";
+    }
     $("meFoot").textContent = foot;
     const mine2 = trophiesByTeam()[t.id] || {};
     const got = AWARDS.filter((a) => mine2[a.key]);
@@ -2024,6 +2070,29 @@
     loadWeek(state.currentWeek);
   }
 
+  // ---------- Modes: which tabs sit in the phone tab bar (the rest go under More) ----------
+  const MODES = {
+    sundays: ["pecking", "pickem", "scoreboard"],
+    base: ["standings", "story", "awards", "pickem"],
+    historian: ["history", "draft", "story"],
+  };
+  let mode = (() => { try { const m = localStorage.getItem("boc-mode"); return MODES[m] ? m : "base"; } catch { return "base"; } })();
+  let moreTabs = TABS.filter((t) => !MODES[mode].includes(t));
+  function applyMode(m, { jump = true } = {}) {
+    mode = MODES[m] ? m : "base";
+    try { localStorage.setItem("boc-mode", mode); } catch {}
+    document.querySelectorAll(".modes [data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === mode));
+    const nav = document.querySelector(".tabs"), wrap = nav.querySelector(".more-wrap"), sheet = $("moreSheet");
+    const primary = MODES[mode];
+    moreTabs = TABS.filter((t) => !primary.includes(t));
+    primary.forEach((t) => nav.insertBefore($(`tab-${t}`), wrap));
+    moreTabs.forEach((t) => sheet.appendChild($(`tab-${t}`)));
+    nav.style.setProperty("--tabcols", primary.length + 1);
+    if (jump && !primary.includes(state.tab)) showTab(primary[0]);
+    else $("moreBtn").classList.toggle("active", moreTabs.includes(state.tab));
+  }
+  document.querySelector(".modes").addEventListener("click", (e) => { const b = e.target.closest("[data-mode]"); if (b) applyMode(b.dataset.mode); });
+
   // ---------- Tabs ----------
   function showTab(name, push = true) {
     if (name === "foodchain" || name === "live") name = "pecking";
@@ -2042,7 +2111,7 @@
     if (name === "power" && state.league) renderPower();
     if (name === "draft" && state.league) renderDraft();
     if (name === "moves" && state.league) renderTradeBlock();
-    $("moreBtn").classList.toggle("active", MORE_TABS.includes(name));
+    $("moreBtn").classList.toggle("active", moreTabs.includes(name));
     $("moreBtn").textContent = "More";
     document.querySelector(".tabs").classList.remove("more-open");
     $("moreBtn").setAttribute("aria-expanded", "false");
@@ -2068,7 +2137,8 @@
   $("nextWeek").onclick = () => state.week < state.lastWeek && loadWeek(state.week + 1);
   window.addEventListener("resize", placeMedian, { passive: true });
 
-  showTab(location.hash.slice(1) || "scoreboard", false);
+  applyMode(mode, { jump: false });
+  showTab(location.hash.slice(1) || MODES[mode][0], false);
   init();
 })();
 </script>
