@@ -380,6 +380,7 @@
   .pick .opt.mine .split { background: rgba(185, 140, 255, .45); }
   .pick .opt > :not(.split):not(.fill) { position: relative; z-index: 1; }
   .pick .opt.voted .chance b { font-size: 30px; }
+  .pick .opt .real { font-size: 12.5px; color: var(--muted); font-weight: 600; }
 
   /* Trophy chips with weeks */
   .case .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--lilac); }
@@ -689,6 +690,14 @@
   .me-special { margin-top: 12px; border: 2px solid #EF4444; border-radius: 12px; padding: 14px 12px; text-align: center;
     font-family: var(--display); font-weight: 900; font-size: 34px; line-height: 1; letter-spacing: .02em; color: #EF4444; text-transform: uppercase; }
   .me-special[hidden] { display: none; }
+
+  /* iPhone Safari: turn off its built-in button look so the site's colors always win */
+  button { -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
+  button, button * { -webkit-text-fill-color: currentColor; }
+  .tabs button[aria-selected="true"], .tabs button[aria-selected="true"] span { color: var(--white) !important; opacity: 1 !important; }
+  .more-sheet button[aria-selected="true"], .more-sheet button[aria-selected="true"] span,
+  .modes button[aria-pressed="true"], .toggle button[aria-pressed="true"], .toggle button[aria-pressed="true"] span { color: var(--on-accent) !important; opacity: 1 !important; }
+  .pick .opt:disabled { opacity: 1; color: inherit; }
 </style>
 </head>
 <body>
@@ -1163,24 +1172,26 @@
       const showVotes = kicked || Boolean(my);
       const final = decided(m);
       const voted = Boolean(my);
+      const locked = kicked && isCurrent;
+      const splitView = voted || locked || (!isCurrent && total > 0);
       const opt = (key, s) => {
         const vp = total ? Math.round((t[key] / total) * 100) : 0;
         const won = final && ((key === "home" && m.winner === "HOME") || (key === "away" && m.winner === "AWAY"));
         const nm = nameOf(s.teamId);
         let body;
-        if (voted) {
-          // After voting: only the voting split, filled in with an animation.
-          body = `<span class="chance"><b>${vp}%</b>of votes</span><span class="votes">${my === key ? "Your pick" : "&nbsp;"}</span>`;
+        if (splitView) {
+          // Results: the vote split is the big number; the real win chance (or final score) sits below it.
+          const below = final ? `Final score ${fmt(s.current)}` : locked ? `Real odds: ${pct(s.winProb)}` : "";
+          body = `<span class="chance"><b>${vp}%</b>of votes</span>${below ? `<span class="real">${below}</span>` : ""}<span class="votes">${my === key ? "Your pick" : "&nbsp;"}</span>`;
         } else if (final) {
-          body = `<span class="chance">Final score ${fmt(s.current)}</span>${showVotes ? `<span class="votes">${vp}% of votes</span>` : ""}`;
+          body = `<span class="chance">Final score ${fmt(s.current)}</span>`;
         } else {
-          body = `<span class="chance"><b>${pct(s.winProb)}</b>win chance</span><span class="chance">Projected ${fmt(s.projected)}</span>${showVotes ? `<span class="votes">${vp}% of votes</span>` : `<span class="votes">Tap to pick</span>`}`;
+          body = `<span class="chance"><b>${pct(s.winProb)}</b>win chance</span><span class="chance">Projected ${fmt(s.projected)}</span><span class="votes">${open ? "Tap to pick" : "&nbsp;"}</span>`;
         }
-        return `<button class="opt ${voted ? "voted" : ""} ${my === key ? "mine" : ""}" data-mid="${m.id}" data-side="${key}" ${open ? "" : "disabled"} aria-label="${esc(open ? `Pick ${nm}` : nm)}">
-          ${voted ? `<span class="split" data-w="${vp}"></span>` : ""}
+        return `<button class="opt ${splitView ? "voted" : ""} ${my === key ? "mine" : ""}" data-mid="${m.id}" data-side="${key}" ${open ? "" : "disabled"} aria-label="${esc(open ? `Pick ${nm}` : nm)}">
+          ${splitView ? `<span class="split" data-w="${vp}"></span>` : ""}
           <span class="top">${logo(teamById(s.teamId))}<span class="nm">${esc(nm)}</span>${won ? `<span class="won-tag">Won</span>` : ""}</span>
           ${body}
-          ${voted ? "" : `<span class="fill" style="width:${showVotes ? vp : 0}%"></span>`}
         </button>`;
       };
       let foot;

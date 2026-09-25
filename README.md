@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.8.2)
+# Boys of Chantilly dashboard (v1.8.3)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -162,3 +162,9 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 
 ## 1.8.2
 - Summary card shows a special message box by manager first name (SPECIAL_CARDS in index.html). Alexis: "Fuck Jeremy".
+
+## 1.8.3
+- Pick 'em: once voting locks, the big number is the vote split and the model's real win chance ("Real odds") sits below it
+  (final score once the matchup ends).
+- iPhone Safari: buttons drop the built-in styling and selected tabs, modes, and toggles set their text color explicitly,
+  so selected labels stay visible in light mode.
