@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.5.1)
+# Boys of Chantilly dashboard (v1.6)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -74,3 +74,17 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   spent total; bids from later moves added back). Finished periods cached (`tx/v1/p<N>`).
 - Standings: dashed lines under rank 1 (regular-season leader) and under the last playoff spot (ESPN's playoff team count, default 8).
 - Summary card shows when trophies are loading or failed to load.
+
+## 1.6
+- Power Rankings tab (`/api/power`): message board posts by the member named in POWER_AUTHOR (default "Saffa") that
+  mention power rankings. "1. Team - blurb" lines become a ranked list; otherwise the post is shown as written. If nothing
+  matches, the tab shows what ESPN returned (post types, authors) for troubleshooting.
+- Trade block on Transactions (`/api/tradeblock`): reads each team's `tradeBlock` from ESPN; own players = on the block,
+  other teams' players = interested.
+- Draft tab (`/api/draft?season=YYYY`): picks by round or by manager, season points, and steals/busts by position rank
+  (draft order, or price for auctions, vs. points finish; K and D/ST excluded; busts limited to the first four rounds).
+  Finished seasons cached (`hist/draft/v1/<year>`).
+- History: points allowed (per game in profiles, season totals in final standings). Season cache bumped to `hist/season/v2`.
+- Story and the "I'm ___" picker use managers' first names instead of team names.
+- Food Chain: the top 4 are The Sharks; teams below the median are labeled The Minnows.
+- Manager of the Week shows start accuracy (points scored / best possible).

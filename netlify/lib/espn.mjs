@@ -56,7 +56,7 @@ export function seasonUrl(year, views, scoringPeriodId) {
   if (Number(year) >= 2018) return `${BASE}/${year}/segments/0/leagues/${LEAGUE_ID}?${qs}`;
   return `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/leagueHistory/${LEAGUE_ID}?seasonId=${year}&${qs}`;
 }
-export async function seasonLeague(year, views, scoringPeriodId) {
-  const j = JSON.parse(await espnFetch(seasonUrl(year, views, scoringPeriodId)));
+export async function seasonLeague(year, views, scoringPeriodId, extraHeaders = {}) {
+  const j = JSON.parse(await espnFetch(seasonUrl(year, views, scoringPeriodId), extraHeaders));
   return Array.isArray(j) ? j[0] : j;
 }

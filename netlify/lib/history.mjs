@@ -34,7 +34,7 @@ export async function seasonSummary(year) {
       finalRank: t.rankCalculatedFinal || t.rankFinal || null,
       seed: t.playoffSeed || null,
       official: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 },
-      h2h: rec(), median: rec(), regPF: 0, regGames: 0,
+      h2h: rec(), median: rec(), regPF: 0, regPA: 0, regGames: 0,
     };
   }
   const byWeek = {};
@@ -48,7 +48,7 @@ export async function seasonSummary(year) {
       if (!g.away) continue;
       const h = teams[g.home.teamId], a = teams[g.away.teamId]; if (!h || !a) continue;
       const hp = g.home.totalPoints || 0, ap = g.away.totalPoints || 0;
-      h.regPF += hp; a.regPF += ap; h.regGames++; a.regGames++;
+      h.regPF += hp; a.regPF += ap; h.regPA += ap; a.regPA += hp; h.regGames++; a.regGames++;
       scores.push([h, hp], [a, ap]);
       if (g.winner === "HOME") { h.h2h.w++; a.h2h.l++; } else if (g.winner === "AWAY") { a.h2h.w++; h.h2h.l++; } else { h.h2h.t++; a.h2h.t++; }
     }
@@ -56,7 +56,7 @@ export async function seasonSummary(year) {
     scores.forEach(([t, p]) => (p > med ? t.median.w++ : p < med ? t.median.l++ : t.median.t++));
   }
   const list = Object.values(teams);
-  list.forEach((t) => (t.regPF = r2(t.regPF)));
+  list.forEach((t) => { t.regPF = r2(t.regPF); t.regPA = r2(t.regPA); });
   const games = (r) => r.w + r.l + r.t;
   const usesMedian = list.some((t) => games(t.official) > games(t.h2h));
   const complete = Number(year) < Number(SEASON) && weeksDone >= Object.keys(byWeek).length;
@@ -69,7 +69,7 @@ export async function seasonSummary(year) {
 }
 
 export async function seasonSummaryCached(year) {
-  const key = `hist/season/v1/${year}`;
+  const key = `hist/season/v2/${year}`;
   if (Number(year) < Number(SEASON)) {
     const hit = await store().get(key, { type: "json" }).catch(() => null);
     if (hit) return hit;

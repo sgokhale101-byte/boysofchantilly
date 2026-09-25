@@ -435,7 +435,7 @@
   .prof-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
   .prof-head .nm { font-family: var(--display); font-weight: 800; font-size: 28px; }
   .prof-head .sub { color: var(--muted); font-size: 13px; }
-  .prof-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+  .prof-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
   .prof-stats .v { font-family: var(--display); font-weight: 900; font-size: 32px; line-height: 1; font-variant-numeric: tabular-nums; }
   .prof-stats .k { color: var(--muted); font-size: 13px; margin-top: 4px; }
   .prof-recs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
@@ -492,6 +492,43 @@
     .pot-table th:nth-child(1), .pot-table td:nth-child(1) { width: auto; }
     .pot-table th:nth-child(2), .pot-table td:nth-child(2) { width: 90px; }
     .pot-table th:nth-child(3), .pot-table td:nth-child(3) { width: 76px; }
+  }
+
+  /* Food Chain minnows */
+  .minnows-tag { font-size: 12px; font-weight: 700; color: var(--muted); padding: 10px 0 2px; letter-spacing: .02em; }
+  /* Power rankings */
+  .pw { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .pw-head { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 6px; }
+  .pw-title { font-family: var(--display); font-weight: 800; font-size: 24px; }
+  .pw-meta { color: var(--muted); font-size: 13px; }
+  .pw-list { list-style: none; margin: 0; padding: 0; }
+  .pw-list li { display: grid; grid-template-columns: 32px auto 1fr; gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .pw-list li:last-child { border-bottom: 0; }
+  .pw-list li.me .pw-team { color: var(--violet); }
+  .pw-rank { font-family: var(--display); font-weight: 900; font-size: 26px; line-height: 1; color: var(--violet); }
+  .pw-team { font-weight: 700; }
+  .pw-blurb { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .pw-text { white-space: normal; line-height: 1.6; }
+  /* Trade block */
+  .tblock { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .tb-team { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .tb-team:first-of-type { border-top: 0; }
+  .tb-team .nm { font-weight: 700; } .tb-team.me .nm { color: var(--violet); }
+  .tb-p { font-size: 14px; } .tb-own { color: var(--muted); font-size: 12.5px; }
+  /* Draft */
+  .draft td .owner { display: block; }
+  .tagx { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-left: 4px; }
+  .tagx.up { color: #22C55E; border: 1px solid #22C55E; } .tagx.down { color: #EF4444; border: 1px solid #EF4444; }
+  #draftTop { margin-bottom: 20px; }
+  @media (max-width: 640px) {
+    .tblock { grid-template-columns: 1fr; }
+    .prof-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .more-sheet { grid-template-columns: 1fr 1fr; }
+    .draft th:nth-child(1), .draft td:nth-child(1) { width: 44px; }
+    .draft th:nth-child(4), .draft td:nth-child(4) { width: 56px; }
+    .draft th:nth-child(5), .draft td:nth-child(5) { width: 50px; }
+    .draft td:nth-child(2) { white-space: normal; }
+    .draft td:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
 </style>
 </head>
@@ -586,9 +623,11 @@
     <div class="more-wrap">
       <button class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="moreSheet">More</button>
       <div class="more-sheet" id="moreSheet">
+        <button role="tab" id="tab-power" aria-controls="panel-power" data-tab="power"><span class="full">Power Rankings</span><span class="short">Power Rankings</span></button>
         <button role="tab" id="tab-awards" aria-controls="panel-awards" data-tab="awards"><span class="full">Awards</span><span class="short">Awards</span></button>
         <button role="tab" id="tab-story" aria-controls="panel-story" data-tab="story"><span class="full">Story</span><span class="short">Story</span></button>
         <button role="tab" id="tab-history" aria-controls="panel-history" data-tab="history"><span class="full">History</span><span class="short">History</span></button>
+        <button role="tab" id="tab-draft" aria-controls="panel-draft" data-tab="draft"><span class="full">Draft</span><span class="short">Draft</span></button>
         <button role="tab" id="tab-moves" aria-controls="panel-moves" data-tab="moves"><span class="full">Transactions</span><span class="short">Transactions</span></button>
       </div>
     </div>
@@ -616,14 +655,14 @@
   <div class="panel" id="panel-pecking" role="tabpanel" aria-labelledby="tab-pecking" hidden>
     <section aria-labelledby="medianH">
       <h2 id="medianH">Food Chain</h2>
-      <p class="note">Every team ranked by this week's score. Teams above the median line are winning their second game of the week; teams below it are losing it.</p>
+      <p class="note">Every team ranked by this week's score. Teams above the median line are winning their second game of the week. The Minnows below it are losing theirs.</p>
       <div class="board board-pad"><div class="board-inner" id="board"></div></div>
     </section>
     <section aria-labelledby="highH">
-      <h2 id="highH">Top 4 and last place</h2>
+      <h2 id="highH">The Sharks and last place</h2>
       <p class="note" id="highNote">The week's four highest-scoring teams and the lowest.</p>
       <div class="highs">
-        <div><h3>Top 4</h3><ol class="top4" id="top4"></ol></div>
+        <div><h3>The Sharks</h3><ol class="top4" id="top4"></ol></div>
         <div><h3>Last place</h3><div class="low" id="low"></div></div>
       </div>
     </section>
@@ -657,6 +696,14 @@
       <p class="note" id="standNote"></p>
       <div class="table-scroll"><table id="standings"></table></div>
       <div id="cutLegend"></div>
+    </section>
+  </div>
+
+  <div class="panel" id="panel-power" role="tabpanel" aria-labelledby="tab-power" hidden>
+    <section aria-labelledby="powH">
+      <div class="aw-pick"><h2 id="powH">Power Rankings</h2><label class="me-pick" id="powPickWrap" hidden><span>Show</span><select id="powPick" aria-label="Choose a power rankings post"></select></label></div>
+      <p class="note">Straight from Saffa's posts on the league message board.</p>
+      <div id="power"></div>
     </section>
   </div>
 
@@ -698,11 +745,26 @@
     </section>
   </div>
 
+  <div class="panel" id="panel-draft" role="tabpanel" aria-labelledby="tab-draft" hidden>
+    <section aria-labelledby="drH">
+      <div class="aw-pick"><h2 id="drH">Draft</h2><label class="me-pick"><span>Season</span><select id="drSeason" aria-label="Choose a draft season"></select></label></div>
+      <p class="note" id="drNote">Every draft on record, with the steals and busts. Steals and busts compare where a player went among his position with where he finished at that position. Kickers and defenses are left out.</p>
+      <div id="draftTop"></div>
+      <div class="aw-pick"><h3>Draft board</h3><label class="me-pick"><span>Show</span><select id="drView" aria-label="Choose a round or a manager"></select></label></div>
+      <div class="table-scroll"><table id="draftTable" class="draft"></table></div>
+    </section>
+  </div>
+
   <div class="panel" id="panel-moves" role="tabpanel" aria-labelledby="tab-moves" hidden>
     <section aria-labelledby="txH">
       <h2 id="txH">Transactions</h2>
       <p class="note">Completed adds, drops, and trades for the selected week, with each team's FAAB left after the move.</p>
       <ul class="tx" id="tx"></ul>
+    </section>
+    <section aria-labelledby="tbH">
+      <h2 id="tbH">Trade block</h2>
+      <p class="note">Players managers have put on the block, and players they've marked themselves as interested in.</p>
+      <div class="tblock" id="tblock"></div>
     </section>
   </div>
 
@@ -711,12 +773,12 @@
 <script>
 (() => {
   const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
-  const TABS = ["scoreboard", "pecking", "pickem", "standings", "awards", "story", "history", "moves"];
-  const MORE_TABS = ["awards", "story", "history", "moves"];
+  const TABS = ["scoreboard", "pecking", "pickem", "standings", "power", "awards", "story", "history", "draft", "moves"];
+  const MORE_TABS = ["power", "awards", "story", "history", "draft", "moves"];
   const state = {
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
     wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
-    story: {}, storyWeek: null, hist: null, histErr: null, histIfman: {}, histManager: null, histYear: "all", histSeason: null,
+    story: {}, storyWeek: null, power: null, powerErr: null, powerIdx: null, drafts: {}, draftYear: null, draftView: null, hist: null, histErr: null, histIfman: {}, histManager: null, histYear: "all", histSeason: null,
     awards: null, awardsErr: null, awardsLoading: null, awardWeek: null, animated: new Set(),
     me: (() => { try { return Number(localStorage.getItem("boc-me")) || null; } catch { return null; } })(),
   };
@@ -771,6 +833,15 @@
     return `<span class="logo-sm" data-ab="${esc(ab)}"><img src="${esc(first)}" data-alt="${esc(alt)}" alt="" loading="lazy" onerror="bocLogoFail(this)"></span>`;
   }
   const nameOf = (id) => teamName(teamById(id));
+  // Manager's first name for a team (adds a last initial if two managers share a first name).
+  function mgr(id) {
+    const t = teamById(id); if (!t || !state.league?.members) return teamName(t);
+    const m = state.league.members.find((x) => x.id === (t.primaryOwner || (t.owners || [])[0]));
+    if (!m) return teamName(t);
+    const first = m.firstName || m.displayName || teamName(t);
+    const dup = state.league.members.filter((x) => (x.firstName || x.displayName) === first).length > 1;
+    return dup && m.lastName ? `${first} ${m.lastName[0]}.` : first;
+  }
   function median(arr) {
     const a = [...arr].sort((x, y) => x - y); if (!a.length) return 0;
     const m = Math.floor(a.length / 2);
@@ -830,7 +901,8 @@
       board.innerHTML = `<div class="empty">No points scored yet this week. The board fills in once games kick off.</div>`;
     } else {
       board.parentElement.classList.add("board-pad");
-      board.innerHTML = scores.map((s) => `
+      let minnowTagged = false;
+      board.innerHTML = scores.map((s) => `${s.p < med && !minnowTagged && (minnowTagged = true) ? `<div class="minnows-tag">The Minnows</div>` : ""}
         <div class="row ${s.p > med ? "above" : s.p < med ? "below" : ""}" data-team="${s.t?.id}">
           <div class="team">${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span></div>
           <div class="track"><div class="bar" style="width:${(s.p / max) * 100}%"></div></div>
@@ -839,7 +911,7 @@
       state.medFrac = med / max;
       requestAnimationFrame(placeMedian);
     }
-    $("highNote").textContent = weekLive() ? "The four highest-scoring teams so far, and the lowest. These update as games finish." : "The week's four highest-scoring teams and the lowest.";
+    $("highNote").textContent = weekLive() ? "The Sharks are the four highest-scoring teams so far. These update as games finish." : "The Sharks are the week's four highest-scoring teams.";
     if (!started) {
       $("top4").innerHTML = `<li><span class="nm" style="color:var(--muted);font-weight:400">Fills in once games kick off.</span></li>`;
       $("low").innerHTML = `<div class="lbl">Fills in once games kick off.</div>`;
@@ -1057,7 +1129,8 @@
     switch (key) {
       case "overperformer": return `Scored ${fmt(w.actual)}, ${fmt(w.actual - w.projected)} above a ${fmt(w.projected)} projection`;
       case "letdown": return `Scored ${fmt(w.actual)}, ${fmt(w.projected - w.actual)} below a ${fmt(w.projected)} projection`;
-      case "manager": { const gap = (w.optimal ?? w.actual) - w.actual; return gap < 0.005 ? `Perfect lineup: nothing better was left on the bench (${fmt(w.actual)} points)` : `Left just ${fmt(gap)} points on the bench`; }
+      case "manager": { const opt = w.optimal ?? w.actual; const gap = opt - w.actual; const acc = opt > 0 ? Math.min(100, (w.actual / opt) * 100) : 100;
+        return `Start accuracy ${acc >= 99.95 ? "100" : acc.toFixed(1)}%: ${gap < 0.005 ? `perfect lineup, ${fmt(w.actual)} points` : `scored ${fmt(w.actual)} of a possible ${fmt(opt)}`}`; }
       case "noah": return `Scored ${fmt(w.actual)} and still lost to ${opp} (${fmt(w.oppScore)})`;
       case "srimanth": return `Scored just ${fmt(w.actual)} and beat ${opp} (${fmt(w.oppScore)})`;
     }
@@ -1142,7 +1215,7 @@
       const gap = T.total - T.topTeamScore;
       $("tow").innerHTML = `<div class="tow-total"><span class="v">${fmt(T.total)}</span><span class="k">points, ${fmt(gap)} more than the week's best real score (${fmt(T.topTeamScore)})</span></div>
         <div class="table-scroll"><table class="tow"><thead><tr><th>Slot</th><th>Player</th><th>Pts</th><th>Owned by</th></tr></thead><tbody>${rows.map((p) => {
-          const own = p.ownerTeamId == null ? `<span class="fa">Free agent</span>` : `${esc(nameOf(p.ownerTeamId))}${p.started ? "" : `<span class="bench">benched</span>`}`;
+          const own = p.ownerTeamId == null ? `<span class="fa">Free agent</span>` : `${esc(mgr(p.ownerTeamId))}${p.started ? "" : `<span class="bench">benched</span>`}`;
           return `<tr class="${p.ownerTeamId === state.me ? "me" : ""}"><td>${SLOT_NAME[p.slotId] || ""}</td><td>${esc(p.name)}</td><td class="strong">${fmt(p.points)}</td><td class="owner-cell">${own}</td></tr>`;
         }).join("")}</tbody></table></div>
         ${T.freeAgentsIncluded ? "" : `<p class="note" style="margin-top:8px">Free agents couldn't be loaded this time, so this lineup only uses rostered players.</p>`}`;
@@ -1167,7 +1240,7 @@
   }
   function renderTrends(list) {
     if (!list.length) { $("trends").innerHTML = ""; return; }
-    const item = (t, tag) => `<div class="ti ${t.teamId === state.me ? "me" : ""}">${logo(teamById(t.teamId))}<div style="min-width:0"><div class="nm">${esc(nameOf(t.teamId))}</div><div class="why">${esc(tag)}</div></div>${spark(t.scores)}</div>`;
+    const item = (t, tag) => `<div class="ti ${t.teamId === state.me ? "me" : ""}">${logo(teamById(t.teamId))}<div style="min-width:0"><div class="nm">${esc(mgr(t.teamId))}</div><div class="why">${esc(tag)}</div></div>${spark(t.scores)}</div>`;
     const up = [...list].filter((t) => t.trend > 0).sort((a, b) => b.trend - a.trend).slice(0, 3);
     const down = [...list].filter((t) => t.trend < 0).sort((a, b) => a.trend - b.trend).slice(0, 3);
     const withSwing = list.filter((t) => t.swing != null);
@@ -1236,12 +1309,12 @@
 
   function renderProfile(M) {
     const pick = state.histYear === "all" ? M.seasons : M.seasons.filter((x) => x.season.year === state.histYear);
-    let h2h = Z(), med = Z(), off = Z(), ifm = Z(), pf = 0, games = 0, titles = 0;
+    let h2h = Z(), med = Z(), off = Z(), ifm = Z(), pf = 0, pa = 0, games = 0, titles = 0;
     const finishes = [];
     let ifSeasons = 0, ifPending = 0, ifMissing = 0;
     for (const { season, team } of pick) {
       h2h = add3(h2h, team.h2h); med = add3(med, team.median); off = add3(off, team.official);
-      pf += team.regPF; games += team.regGames;
+      pf += team.regPF; pa += team.regPA || 0; games += team.regGames;
       if (season.complete && team.finalRank) { finishes.push(team.finalRank); if (team.finalRank === 1) titles++; }
       const im = state.histIfman[season.year];
       if (!im || !im.complete) ifPending++;
@@ -1250,6 +1323,7 @@
     }
     const avgFinish = finishes.length ? finishes.reduce((a, b) => a + b, 0) / finishes.length : null;
     const ppg = games ? pf / games : null;
+    const papg = games ? pa / games : null;
     const yrs = M.seasons.map((x) => x.season.year).sort((a, b) => a - b);
     const span = yrs.length > 1 ? `${yrs[0]} to ${yrs[yrs.length - 1]}` : `${yrs[0]}`;
     const teamsBy = [...pick].sort((a, b) => b.season.year - a.season.year).map((x) => `${x.season.year}: ${esc(x.team.teamName)}${x.season.complete && x.team.finalRank ? ` (${ordinal(x.team.finalRank)})` : x.season.complete ? "" : " (in progress)"}`).join("<br>");
@@ -1264,6 +1338,7 @@
       <div class="prof-stats">
         <div><div class="v">${avgFinish ? avgFinish.toFixed(1) : "–"}</div><div class="k">${state.histYear === "all" ? "Average finish" : "Finish"}</div></div>
         <div><div class="v">${ppg ? ppg.toFixed(1) : "–"}</div><div class="k">Points per game</div></div>
+        <div><div class="v">${papg ? papg.toFixed(1) : "–"}</div><div class="k">Allowed per game</div></div>
         <div><div class="v">${titles}</div><div class="k">Championship${titles === 1 ? "" : "s"}</div></div>
       </div>
       <div class="prof-recs">
@@ -1284,9 +1359,9 @@
     const S = seasons.find((x) => x.year === state.histSeason);
     $("seasNote").textContent = S.complete ? `Final order after the ${S.year} playoffs. Records are ESPN's official records${S.usesMedian ? ", which include the weekly median game" : ""}.` : `The ${S.year} season is still going, so this is the current order.`;
     const rows = [...S.teams].sort((a, b) => S.complete ? (a.finalRank || 99) - (b.finalRank || 99) : (a.seed || 99) - (b.seed || 99));
-    $("seasonTable").innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th></tr></thead><tbody>${rows.map((t, i) => {
+    $("seasonTable").innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((t, i) => {
       const mgr = S.members[t.memberId]?.name || "";
-      return `<tr class="${t.memberId === state.histManager ? "me" : ""}"><td class="rank">${S.complete && t.finalRank ? t.finalRank : i + 1}</td><td><div class="tcell"><div><div>${esc(t.teamName)}</div><div class="owner">${esc(mgr)}</div></div></div></td><td class="strong">${recStr(t.official)}</td><td>${fmt(t.regPF)}</td></tr>`;
+      return `<tr class="${t.memberId === state.histManager ? "me" : ""}"><td class="rank">${S.complete && t.finalRank ? t.finalRank : i + 1}</td><td><div class="tcell"><div><div>${esc(t.teamName)}</div><div class="owner">${esc(mgr)}</div></div></div></td><td class="strong">${recStr(t.official)}</td><td>${fmt(t.regPF)}</td><td>${t.regPA != null ? fmt(t.regPA) : "–"}</td></tr>`;
     }).join("")}</tbody>`;
   }
   $("histManager").onchange = (e) => { state.histManager = e.target.value; state.histYear = "all"; renderHistory(); };
@@ -1315,15 +1390,111 @@
     box.innerHTML = live + leader + log + (weeks.length ? `<div class="pot-total">Paid out so far: ${money(weeks.length * POT)}</div>` : "");
   }
 
+  // ---------- Power Rankings ----------
+  function matchTeam(text) {
+    const low = text.toLowerCase();
+    return state.league.teams.find((t) => low.includes(teamName(t).toLowerCase())) ||
+      state.league.teams.find((t) => { const n = mgr(t.id).toLowerCase(); return n.length > 2 && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(low); }) || null;
+  }
+  async function renderPower() {
+    const box = $("power");
+    if (!state.power && !state.powerErr) {
+      box.innerHTML = `<div class="empty">Checking the message board…</div>`;
+      try { state.power = await getJSON("/api/power"); } catch (e) { state.powerErr = e.message; }
+    }
+    if (state.powerErr) { box.innerHTML = `<div class="empty">Couldn't read the message board: ${esc(state.powerErr)}</div>`; return; }
+    const posts = state.power.posts || [];
+    if (!posts.length) {
+      const d = state.power.diagnostic || {};
+      box.innerHTML = `<div class="empty">No power rankings found on the message board yet.</div>
+        <details class="how"><summary>What ESPN returned</summary><p>${esc(`${d.topicsReturned ?? 0} message board items. Post types: ${(d.postTypes || []).join(", ") || "none"}. Matched author: ${(d.authorMatched || []).join(", ") || "nobody named Saffa"}. Authors seen: ${(d.authorsSeen || []).join(", ") || "none"}.`)}</p></details>`;
+      $("powPickWrap").hidden = true;
+      return;
+    }
+    if (state.powerIdx == null || state.powerIdx >= posts.length) state.powerIdx = 0;
+    $("powPickWrap").hidden = posts.length < 2;
+    $("powPick").innerHTML = posts.map((p, i) => `<option value="${i}" ${i === state.powerIdx ? "selected" : ""}>${esc(p.title || new Date(p.date).toLocaleDateString([], { month: "short", day: "numeric" }))}</option>`).join("");
+    const P = posts[state.powerIdx];
+    const when = P.date ? new Date(P.date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "";
+    const head = `<div class="pw-head"><div class="pw-title">${esc(P.title || "Power Rankings")}</div><div class="pw-meta">${esc([P.author, when].filter(Boolean).join(", "))}</div></div>`;
+    let body;
+    if (P.ranks) {
+      body = `<ol class="pw-list">${P.ranks.map((r) => { const t = matchTeam(r.title); return `<li class="${t && t.id === state.me ? "me" : ""}"><span class="pw-rank">${r.rank}</span>${t ? logo(t) : `<span class="logo-sm"></span>`}<div><div class="pw-team">${esc(r.title)}</div>${r.blurb ? `<div class="pw-blurb">${esc(r.blurb)}</div>` : ""}</div></li>`; }).join("")}</ol>`;
+    } else {
+      body = `<div class="pw-text">${esc(P.text).replace(/\n/g, "<br>")}</div>`;
+    }
+    box.innerHTML = `<article class="pw">${head}${body}</article>`;
+  }
+  $("powPick").onchange = (e) => { state.powerIdx = Number(e.target.value); renderPower(); };
+
+  // ---------- Trade block ----------
+  async function renderTradeBlock() {
+    const box = $("tblock");
+    box.innerHTML = `<div class="empty">Checking the trade block…</div>`;
+    let d;
+    try { d = await getJSON("/api/tradeblock"); } catch (e) { box.innerHTML = `<div class="empty">Couldn't load the trade block: ${esc(e.message)}</div>`; return; }
+    if (!d.fieldSeen) { box.innerHTML = `<div class="empty">ESPN didn't include trade block info for this league.</div>`; return; }
+    if (!d.available.length && !d.interested.length) { box.innerHTML = `<div class="empty">Nobody has anything on the block right now.</div>`; return; }
+    const pl = (p) => `${esc(p.name)}${p.pos ? `, ${esc(p.pos)}` : ""}`;
+    const group = (list, key) => { const g = {}; list.forEach((x) => (g[x[key]] ||= []).push(x)); return g; };
+    const avail = group(d.available, "teamId");
+    const intr = group(d.interested, "teamId");
+    const col = (title, g, line) => `<div class="tcol"><h3>${title}</h3>${Object.keys(g).length ? Object.entries(g).map(([id, xs]) => `<div class="tb-team ${Number(id) === state.me ? "me" : ""}">${logo(teamById(Number(id)))}<div><div class="nm">${esc(mgr(Number(id)))}</div>${xs.map(line).join("")}</div></div>`).join("") : `<div class="why" style="color:var(--muted)">Nobody.</div>`}</div>`;
+    box.innerHTML = col("On the block", avail, (x) => `<div class="tb-p">${pl(x.player)}</div>`) +
+      col("Interested in", intr, (x) => `<div class="tb-p">${pl(x.player)}${x.ownerTeamId != null ? ` <span class="tb-own">from ${esc(mgr(x.ownerTeamId))}</span>` : ""}</div>`);
+  }
+
+  // ---------- Draft ----------
+  function draftSeasons() {
+    const L = state.league;
+    const cur = Number(L.seasonId) || new Date().getFullYear();
+    return [...new Set([cur, ...((L.status?.previousSeasons || []).map(Number))])].sort((a, b) => b - a);
+  }
+  async function renderDraft() {
+    const years = draftSeasons();
+    if (!state.draftYear) state.draftYear = years[0];
+    $("drSeason").innerHTML = years.map((y) => `<option value="${y}" ${y === state.draftYear ? "selected" : ""}>${y}</option>`).join("");
+    const y = state.draftYear;
+    if (!state.drafts[y]) {
+      $("draftTop").innerHTML = `<div class="empty">Pulling the ${y} draft…</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = "";
+      try { state.drafts[y] = await getJSON(`/api/draft?season=${y}`); } catch (e) { state.drafts[y] = { available: false, reason: e.message }; }
+      if (state.draftYear !== y) return;
+    }
+    const D = state.drafts[y];
+    if (!D.available) { $("draftTop").innerHTML = `<div class="empty">No draft to show for ${y}. ${esc(D.reason || "")}</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; return; }
+    const byPick = Object.fromEntries(D.picks.map((p) => [p.overall, p]));
+    const who = (p) => D.teams[p.teamId]?.manager || D.teams[p.teamId]?.name || "";
+    const where = (p) => D.auction ? `$${p.bid}` : `${p.round}.${String(p.roundPick).padStart(2, "0")}`;
+    const story = (p) => `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, finished ${p.pos}${p.posFinishRank}${D.complete ? "" : " so far"} with ${fmt(p.points)} points`;
+    const card = (title, cls, list) => `<div class="tcol ${cls}"><h3><span class="arrow">${cls === "up" ? "▲" : "▼"}</span>${title}</h3>${list.length ? list.map((o) => { const p = byPick[o]; return `<div class="ti"><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="why">${esc(who(p))}. ${esc(story(p))}</div></div></div>`; }).join("") : `<div class="why" style="color:var(--muted)">None.</div>`}</div>`;
+    $("draftTop").innerHTML = !D.statsAvailable ? `<div class="empty">ESPN didn't return season points for ${y}, so steals and busts can't be worked out.</div>` :
+      `<div class="trends">${card(D.complete ? "Steals" : "Steals so far", "up", D.steals)}${card(D.complete ? "Busts" : "Busts so far", "down", D.busts)}</div>`;
+    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Steals and busts compare where a player went among his position with where he finished at that position${D.complete ? "" : " so far this season"}. Kickers and defenses are left out.`;
+
+    // Board: by round or by manager
+    const mgrs = [...new Set(Object.values(D.teams).map((t) => t.manager).filter(Boolean))].sort();
+    const opts = [...Array.from({ length: D.rounds }, (_, i) => [`r${i + 1}`, `Round ${i + 1}`]), ...mgrs.map((m) => [`m:${m}`, m])];
+    if (!state.draftView || !opts.some(([v]) => v === state.draftView)) {
+      const mine = state.me != null && D.teams[state.me]?.manager;
+      state.draftView = "r1";
+    }
+    $("drView").innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}" ${v === state.draftView ? "selected" : ""}>${esc(l)}</option>`).join("");
+    const view = state.draftView;
+    const rows = view.startsWith("r") ? D.picks.filter((p) => p.round === Number(view.slice(1))) : D.picks.filter((p) => who(p) === view.slice(2));
+    const steal = new Set(D.steals), bust = new Set(D.busts);
+    $("draftTable").innerHTML = `<thead><tr><th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Pts</th><th>Finish</th></tr></thead><tbody>${rows.map((p) => `
+      <tr class="${p.teamId === state.me && y === draftSeasons()[0] ? "me" : ""}"><td class="strong">${where(p)}</td><td><div>${esc(p.name)}${steal.has(p.overall) ? ` <span class="tagx up">Steal</span>` : ""}${bust.has(p.overall) ? ` <span class="tagx down">Bust</span>` : ""}</div><div class="owner">${esc(p.pos)}${p.keeper ? ", keeper" : ""}</div></td>
+      <td>${view.startsWith("r") ? esc(who(p)) : p.round}</td><td>${p.points == null ? "–" : fmt(p.points)}</td><td>${p.posFinishRank ? `${esc(p.pos)}${p.posFinishRank}` : "–"}</td></tr>`).join("")}</tbody>`;
+  }
+  $("drSeason").onchange = (e) => { state.draftYear = Number(e.target.value); renderDraft(); };
+  $("drView").onchange = (e) => { state.draftView = e.target.value; renderDraft(); };
+
   // ---------- "I'm" picker and summary ----------
   const ordinal = (n) => { const v = n % 100; return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th"); };
   function fillMePicker() {
     const sel = $("mePick");
-    const teams = [...state.league.teams].sort((a, b) => teamName(a).localeCompare(teamName(b)));
-    sel.innerHTML = `<option value="">pick your team</option>` + teams.map((t) => {
-      const o = ownerName(t);
-      return `<option value="${t.id}" ${t.id === state.me ? "selected" : ""}>${esc(teamName(t))}${o ? ` (${esc(o)})` : ""}</option>`;
-    }).join("");
+    const teams = [...state.league.teams].sort((a, b) => mgr(a.id).localeCompare(mgr(b.id)));
+    sel.innerHTML = `<option value="">pick yourself</option>` + teams.map((t) => `<option value="${t.id}" ${t.id === state.me ? "selected" : ""}>${esc(mgr(t.id))}</option>`).join("");
     if (state.me && !teamById(state.me)) state.me = null;
   }
   function renderMe() {
@@ -1333,7 +1504,7 @@
     const order = officialOrder();
     const idx = order.findIndex((x) => x.t.id === t.id);
     const row = order[idx];
-    $("meTeam").innerHTML = `${logo(t)}<span class="nm">${esc(teamName(t))}</span>`;
+    $("meTeam").innerHTML = `${logo(t)}<span class="nm">${esc(mgr(t.id))}</span>`;
     $("meRecord").textContent = recStr(row.r);
     $("meRank").innerHTML = `${ordinal(idx + 1)}<small class="of">/${order.length}</small>`;
     $("meRankK").textContent = "Standing";
@@ -1346,7 +1517,7 @@
     $("meProj").textContent = mine ? fmt(final ? mine.current : mine.projected) : "–";
     let foot = "";
     if (mine && opp) {
-      const on = nameOf(opp.teamId);
+      const on = mgr(opp.teamId);
       if (final) foot = `${m.winner === (mine === m.home ? "HOME" : "AWAY") ? "Beat" : m.winner === "TIE" ? "Tied" : "Lost to"} ${on}, ${fmt(mine.current)} to ${fmt(opp.current)}.`;
       else foot = `Against ${on}: ${pct(mine.winProb)} win chance. ${mine.current >= (state.wk.medians.current || 0) ? "Above" : "Below"} the median right now.`;
     } else if (mine) foot = "Bye this week.";
@@ -1413,6 +1584,9 @@
     if (state.tab === "awards") renderAwards();
     if (state.tab === "story") renderStory();
     if (state.tab === "history") renderHistory();
+    if (state.tab === "power") renderPower();
+    if (state.tab === "draft") renderDraft();
+    if (state.tab === "moves") renderTradeBlock();
     ensureAwards().then(() => { renderMe(); renderPot(); });
     loadWeek(state.currentWeek);
   }
@@ -1431,6 +1605,9 @@
     if (name === "awards" && state.league) renderAwards();
     if (name === "story" && state.league) renderStory();
     if (name === "history" && state.league) renderHistory();
+    if (name === "power" && state.league) renderPower();
+    if (name === "draft" && state.league) renderDraft();
+    if (name === "moves" && state.league) renderTradeBlock();
     $("moreBtn").classList.toggle("active", MORE_TABS.includes(name));
     $("moreBtn").textContent = "More";
     document.querySelector(".tabs").classList.remove("more-open");
