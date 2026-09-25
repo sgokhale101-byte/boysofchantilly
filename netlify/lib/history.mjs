@@ -40,9 +40,10 @@ export async function seasonSummary(year) {
   const byWeek = {};
   for (const g of L.schedule || []) if (g.matchupPeriodId <= reg) (byWeek[g.matchupPeriodId] ||= []).push(g);
   let weeksDone = 0;
-  for (const games of Object.values(byWeek)) {
+  const doneWeeks = [];
+  for (const [wk, games] of Object.entries(byWeek)) {
     if (!games.every(decided)) continue;
-    weeksDone++;
+    weeksDone++; doneWeeks.push(Number(wk));
     const scores = [];
     for (const g of games) {
       if (!g.away) continue;
@@ -64,7 +65,7 @@ export async function seasonSummary(year) {
   const usesMedian = list.some((t) => games(t.official) > games(t.h2h));
   const complete = Number(year) < Number(SEASON) && weeksDone >= Object.keys(byWeek).length;
   return {
-    year: Number(year), complete, usesMedian, regularSeasonWeeks: reg,
+    year: Number(year), complete, usesMedian, regularSeasonWeeks: reg, doneWeeks: doneWeeks.sort((a, b) => a - b),
     slotCounts: L.settings?.rosterSettings?.lineupSlotCounts || null,
     previousSeasons: L.status?.previousSeasons || null,
     members, teams: list,
@@ -72,7 +73,7 @@ export async function seasonSummary(year) {
 }
 
 export async function seasonSummaryCached(year) {
-  const key = `hist/season/v3/${year}`;
+  const key = `hist/season/v4/${year}`;
   if (Number(year) < Number(SEASON)) {
     const hit = await store().get(key, { type: "json" }).catch(() => null);
     if (hit) return hit;
@@ -90,43 +91,59 @@ export async function allSeasons() {
   return [...past.filter(Boolean), current].sort((a, b) => a.year - b.year);
 }
 
+// One finished week of any season: best-lineup scores per team and the week's top individual
+// performances (every rostered player, starters and bench). Cached per week.
+async function weekDetail(year, w, slotCounts) {
+  const key = `hist/week/v1/${year}/w${w}`;
+  const hit = await store().get(key, { type: "json" }).catch(() => null);
+  if (hit) return hit;
+  const L = await seasonLeague(year, ["mMatchupScore", "mScoreboard"], w);
+  const rows = [], perf = [];
+  for (const g of (L.schedule || []).filter((x) => x.matchupPeriodId === w)) {
+    for (const [s, o] of [[g.home, g.away], [g.away, g.home]]) {
+      if (!s) continue;
+      const players = rosterOf(s).map((e) => parsePlayer(e, w));
+      rows.push({ teamId: s.teamId, oppId: o ? o.teamId : null, optimal: players.length && slotCounts ? Math.max(r2(s.totalPoints), optimalPoints(players, slotCounts)) : null });
+      for (const p of players) if (p.actual > 0) perf.push({ name: p.name, pos: p.pos, pts: r2(p.actual), teamId: s.teamId, started: p.slotId !== 20 && p.slotId !== 21, week: w });
+    }
+  }
+  const out = { rows, tops: perf.sort((a, b) => b.pts - a.pts).slice(0, 15) };
+  await store().setJSON(key, out).catch(() => {});
+  return out;
+}
+
+// Runs weekDetail over a season's finished weeks, stopping at the deadline (later calls pick up from the cache).
+async function seasonWeeks(year, deadline) {
+  const summary = await seasonSummaryCached(year);
+  const weeks = Number(year) === Number(SEASON) ? summary.doneWeeks || [] : Array.from({ length: summary.regularSeasonWeeks }, (_, i) => i + 1);
+  const results = {};
+  const pending = [...weeks];
+  while (pending.length && Date.now() < deadline) {
+    const batch = pending.splice(0, 5);
+    await Promise.all(batch.map(async (w) => { results[w] = await weekDetail(year, w, summary.slotCounts); }));
+  }
+  return { summary, weeks, results, done: Object.keys(results).length === weeks.length };
+}
+
 // "If man" results for one season: best lineups, head-to-head and median.
-// Past weeks are cached one at a time so a slow first run picks up where it left off.
 export async function seasonIfMan(year, deadline) {
   if (Number(year) === Number(SEASON)) {
     const s = await loadSeason();
     return { year: Number(year), complete: true, available: true, teams: tally(s.weeks.map((w) => w.teams.map((t) => ({ teamId: t.teamId, oppId: t.oppId, optimal: t.optimal })))) };
   }
-  const summary = await seasonSummaryCached(year);
+  const { summary, weeks, results, done } = await seasonWeeks(year, deadline);
   if (!summary.slotCounts) return { year: Number(year), complete: true, available: false, teams: {} };
-  const weeks = Array.from({ length: summary.regularSeasonWeeks }, (_, i) => i + 1);
-  const results = {};
-  let pending = [...weeks];
-  while (pending.length) {
-    if (Date.now() > deadline) break;
-    const batch = pending.splice(0, 5);
-    await Promise.all(batch.map(async (w) => {
-      const key = `hist/ifman/v1/${year}/w${w}`;
-      let rows = await store().get(key, { type: "json" }).catch(() => null);
-      if (!rows) {
-        const L = await seasonLeague(year, ["mMatchupScore", "mScoreboard"], w);
-        rows = [];
-        for (const g of (L.schedule || []).filter((x) => x.matchupPeriodId === w)) {
-          for (const [s, o] of [[g.home, g.away], [g.away, g.home]]) {
-            if (!s) continue;
-            const players = rosterOf(s).map((e) => parsePlayer(e, w));
-            rows.push({ teamId: s.teamId, oppId: o ? o.teamId : null, optimal: players.length ? Math.max(r2(s.totalPoints), optimalPoints(players, summary.slotCounts)) : null });
-          }
-        }
-        await store().setJSON(key, rows).catch(() => {});
-      }
-      results[w] = rows;
-    }));
-  }
-  const done = Object.keys(results).length === weeks.length;
-  const all = weeks.map((w) => results[w]).filter(Boolean);
+  const all = weeks.map((w) => results[w]?.rows).filter(Boolean);
   const available = all.length > 0 && all.every((rows) => rows.length && rows.every((r) => r.optimal != null));
   return { year: Number(year), complete: done, available: done ? available : null, teams: done && available ? tally(all) : {} };
+}
+
+// Top individual performances for one season (finished weeks only).
+export async function seasonPlayers(year, deadline) {
+  const { weeks, results, done } = await seasonWeeks(year, deadline);
+  const tops = weeks.flatMap((w) => results[w]?.tops || []).sort((a, b) => b.pts - a.pts).slice(0, 25);
+  const available = done ? tops.length > 0 : null;
+  return { year: Number(year), complete: done, available, tops };
 }
 
 function tally(weeks) {

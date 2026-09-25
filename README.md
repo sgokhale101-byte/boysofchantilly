@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.6.5)
+# Boys of Chantilly dashboard (v1.7)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -130,3 +130,15 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - "William" shows as "Will" everywhere.
 - Headshots re-cropped wider at 320px, shown larger, tap to enlarge. Added Will and Saffa (matched by any word of the
   ESPN first or display name).
+
+## 1.7
+- Hall of Fame tab: top/bottom 10 weekly scores (all time or by year), top/bottom 10 season PPG (finished seasons),
+  longest H2H win/loss streaks and median streaks (2022 on), following managers across seasons, and top individual player
+  performances (league scoring, bench included) via `/api/history?part=players&season=Y`.
+- `netlify/lib/history.mjs`: one cached week detail (`hist/week/v1/<year>/w<N>`) now feeds both If man and player records.
+  Season summaries list finished weeks (`hist/season/v4`).
+- Story: Record watch (this season's all-time scores, top-10 PPG pace, active streaks vs. the record).
+- Section explanations moved into "Explain It" dropdowns.
+- Draft: Round and Manager dropdowns; current season adds a Current column (total-points position rank).
+- History: current managers' Cakewalk / Their Daddy / Rival are other current managers. 2018 "This Team Has Been Seized" -> Srimanth.
+- "Trade Block" capitalized. Noah's photo replaced.
