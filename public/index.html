@@ -543,6 +543,16 @@
   .prof-who { display: flex; align-items: center; gap: 12px; }
   .prof-face { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--royal); flex: none; }
   .me-team .logo-sm { width: 34px; height: 34px; }
+
+  .draft-teams { margin-bottom: 22px; }
+  .draft-teams th, .draft-teams td { text-align: left !important; vertical-align: top; }
+  .draft-teams .dt-p { font-weight: 600; }
+  .draft-teams .dim { color: var(--muted); }
+  @media (max-width: 640px) {
+    .draft-teams th:nth-child(1), .draft-teams td:nth-child(1) { width: 70px; }
+    .draft-teams th:not(:nth-child(1)), .draft-teams td:not(:nth-child(1)) { width: auto; white-space: normal; }
+    .draft-teams td .owner { display: block; }
+  }
 </style>
 </head>
 <body>
@@ -763,22 +773,25 @@
       <div class="aw-pick"><h2 id="drH">Draft</h2><label class="me-pick"><span>Season</span><select id="drSeason" aria-label="Choose a draft season"></select></label></div>
       <p class="note" id="drNote">Every draft on record, with the steals and busts. Steals and busts compare where a player went among his position with where he finished at that position. Kickers and defenses are left out.</p>
       <div id="draftTop"></div>
+      <h3>Every manager's steal and bust</h3>
+      <div class="table-scroll"><table id="draftTeams" class="draft-teams"></table></div>
       <div class="aw-pick"><h3>Draft board</h3><label class="me-pick"><span>Show</span><select id="drView" aria-label="Choose a round or a manager"></select></label></div>
       <div class="table-scroll"><table id="draftTable" class="draft"></table></div>
     </section>
   </div>
 
   <div class="panel" id="panel-moves" role="tabpanel" aria-labelledby="tab-moves" hidden>
-    <section aria-labelledby="txH">
-      <h2 id="txH">Transactions</h2>
-      <p class="note">Completed adds, drops, and trades for the selected week, with each team's FAAB left after the move.</p>
-      <ul class="tx" id="tx"></ul>
-    </section>
     <section aria-labelledby="tbH">
       <h2 id="tbH">Trade block</h2>
       <p class="note">Players managers have put on the block, and players they've marked themselves as interested in.</p>
       <div class="tblock" id="tblock"></div>
     </section>
+    <section aria-labelledby="txH">
+      <h2 id="txH">Transactions</h2>
+      <p class="note">Completed adds, drops, and trades for the selected week, with each team's FAAB left after the move.</p>
+      <ul class="tx" id="tx"></ul>
+    </section>
+
   </div>
 
   <footer>Data from ESPN, pulled live through this site's own server. League 353576.</footer>
@@ -926,9 +939,9 @@
     } else {
       board.parentElement.classList.add("board-pad");
       let minnowTagged = false;
-      const madeIt = scores.filter((x) => x.p > med).length;
-      board.innerHTML = scores.map((s, i) => `${i === madeIt && madeIt > 0 && madeIt < scores.length && !minnowTagged && (minnowTagged = true) ? `<div class="median-cut"><span class="up">▲ Made the median</span><i></i><span class="down">The Minnows ▼</span></div>` : ""}
-        <div class="row ${s.p > med ? "above" : s.p < med ? "below" : ""}" data-team="${s.t?.id}">
+      const madeIt = Math.floor(scores.length / 2); // top half of the league makes the median
+      board.innerHTML = scores.map((s, i) => `${i === madeIt && madeIt > 0 && !minnowTagged && (minnowTagged = true) ? `<div class="median-cut"><span class="up">▲ Made the median</span><i></i><span class="down">The Minnows ▼</span></div>` : ""}
+        <div class="row ${i < madeIt ? "above" : "below"}" data-team="${s.t?.id}">
           <div class="team">${logo(s.t)}<span class="nm">${esc(teamName(s.t))}</span></div>
           <div class="track"><div class="bar" style="width:${(s.p / max) * 100}%"></div></div>
           <div class="pts">${fmt(s.p)}</div>
@@ -1557,12 +1570,12 @@
     $("drSeason").innerHTML = years.map((y) => `<option value="${y}" ${y === state.draftYear ? "selected" : ""}>${y}</option>`).join("");
     const y = state.draftYear;
     if (!state.drafts[y]) {
-      $("draftTop").innerHTML = `<div class="empty">Pulling the ${y} draft…</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = "";
+      $("draftTop").innerHTML = `<div class="empty">Pulling the ${y} draft and working out half-PPR finishes…</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; $("draftTeams").innerHTML = "";
       try { state.drafts[y] = await getJSON(`/api/draft?season=${y}`); } catch (e) { state.drafts[y] = { available: false, reason: e.message }; }
       if (state.draftYear !== y) return;
     }
     const D = state.drafts[y];
-    if (!D.available) { $("draftTop").innerHTML = `<div class="empty">No draft to show for ${y}. ${esc(D.reason || "")}</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; return; }
+    if (!D.available) { $("draftTop").innerHTML = `<div class="empty">No draft to show for ${y}. ${esc(D.reason || "")}</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; $("draftTeams").innerHTML = ""; return; }
     const byPick = Object.fromEntries(D.picks.map((p) => [p.overall, p]));
     const who = (p) => { const t = D.teams[p.teamId] || {}; const a = assignedTo(y, t.name); return (a ? a.split(" ")[0] : t.manager) || t.name || ""; };
     const where = (p) => D.auction ? `$${p.bid}` : `${p.round}.${String(p.roundPick).padStart(2, "0")}`;
@@ -1570,9 +1583,13 @@
       ? `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, finished ${p.pos}${p.posFinishRank} with ${fmt(p.points)} points`
       : `Drafted ${p.pos}${p.posDraftRank}${D.auction ? ` by price ($${p.bid})` : ` (${where(p)})`}, now ${p.pos}${p.posFinishRank}`;
     const card = (title, cls, list) => `<div class="tcol ${cls}"><h3><span class="arrow">${cls === "up" ? "▲" : "▼"}</span>${title}</h3>${list.length ? list.map((o) => { const p = byPick[o]; return `<div class="ti"><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="why">${esc(who(p))}. ${esc(story(p))}</div></div></div>`; }).join("") : `<div class="why" style="color:var(--muted)">None.</div>`}</div>`;
-    $("draftTop").innerHTML = !D.statsAvailable ? `<div class="empty">ESPN didn't return season points for ${y}, so steals and busts can't be worked out.</div>` :
+    $("draftTop").innerHTML = !D.statsAvailable ? `<div class="empty">Couldn't find season stats for ${y}, so steals and busts can't be worked out.</div>` :
       `<div class="trends">${card(D.complete ? "Steals" : "Steals so far", "up", D.steals)}${card(D.complete ? "Busts" : "Busts so far", "down", D.busts)}</div>`;
-    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Steals and busts compare where a player went among his position with where he finished at that position${D.complete ? "" : " so far this season"}. Kickers and defenses are left out.`;
+    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Rankings use half-PPR points${D.complete ? "" : " so far this season"}, ranked against ${D.rankScope === "all" ? "every player at the position, drafted or not" : "drafted players at the position"}. Steals and busts compare where a player went among his position with where he finished. Kickers and defenses are left out.`;
+    const pt = D.perTeam || {};
+    const cell = (o, cls) => { if (o == null) return `<span class="dim">–</span>`; const p = byPick[o]; const v = p.value ?? (p.posDraftRank - p.posFinishRank); return `<div class="dt-p">${esc(p.name)} <span class="tagx ${cls}">${v > 0 ? "+" : ""}${v} spot${Math.abs(v) === 1 ? "" : "s"}</span></div><div class="owner">${esc(p.pos)}${p.posDraftRank} to ${esc(p.pos)}${p.posFinishRank}, ${esc(where(p))}</div>`; };
+    const teamIds = Object.keys(D.teams).map(Number).sort((a, b) => (who({ teamId: a }) || "").localeCompare(who({ teamId: b }) || ""));
+    $("draftTeams").innerHTML = D.statsAvailable ? `<thead><tr><th>Manager</th><th>Best steal</th><th>Biggest bust</th></tr></thead><tbody>${teamIds.map((id) => `<tr class="${id === state.me && y === draftSeasons()[0] ? "me" : ""}"><td class="strong">${esc(who({ teamId: id }))}</td><td>${cell(pt[id]?.steal, "up")}</td><td>${cell(pt[id]?.bust, "down")}</td></tr>`).join("")}</tbody>` : "";
 
     // Board: by round or by manager
     const mgrs = [...new Set(Object.values(D.teams).map((t) => t.manager).filter(Boolean))].sort();

@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.6.2)
+# Boys of Chantilly dashboard (v1.6.3)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -103,3 +103,11 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   -> Vijay Rudraraju; both Vivek Iyer profiles). Team names match ignoring case and punctuation. Applies to History and Draft.
 - Manager headshots in public/headshots/<firstname>.jpg (alexis, jeremy, sean, vivek, shreyas) replace the team logo
   circle everywhere, and appear on History profiles. Add a file and a HEADSHOTS entry for more.
+
+## 1.6.3
+- Draft rankings use half-PPR points computed from raw season stats (`netlify/lib/halfppr.mjs`): ESPN's public fantasy
+  player data, with ESPN's public NFL stat pages as a backup. Finishes rank against every player at the position we have
+  (drafted players plus the season's top 80 at QB/RB/WR/TE). Adds each manager's best steal and biggest bust
+  (busts from rounds 1-6). Cache `hist/draft/v3`.
+- Transactions: trade block moved to the top.
+- Food Chain: the top half of the league (6 of 12) always makes the median, even with ties.

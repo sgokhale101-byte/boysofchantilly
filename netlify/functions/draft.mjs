@@ -4,6 +4,7 @@
 import { getStore } from "@netlify/blobs";
 import { BASE, SEASON, EspnError, espnFetch, seasonLeague } from "../lib/espn.mjs";
 import { POS } from "../lib/model.mjs";
+import { seasonHalfPpr, HALF_PPR_NOTE } from "../lib/halfppr.mjs";
 
 const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(obj), {
   status, headers: { "content-type": "application/json", "cache-control": cache },
@@ -53,10 +54,9 @@ async function buildDraft(year) {
   (L.members || []).forEach((m) => (members[m.id] = memberName(m)));
   for (const t of L.teams || []) teams[t.id] = { name: t.name || `${t.location || ""} ${t.nickname || ""}`.trim(), manager: members[t.primaryOwner || (t.owners || [])[0]] || "" };
 
-  // Player names and season points, 50 at a time, from the league's player data.
+  // Names and positions from the league's player data first.
   const ids = [...new Set(picks.map((p) => p.playerId))];
   const info = {};
-  let statsOk = true;
   for (let i = 0; i < ids.length; i += 50) {
     const chunk = ids.slice(i, i + 50);
     const filter = { players: { filterIds: { value: chunk }, limit: chunk.length } };
@@ -64,31 +64,30 @@ async function buildDraft(year) {
       const data = await seasonLeague(year, ["kona_player_info"], 0, { "X-Fantasy-Filter": JSON.stringify(filter) });
       for (const x of data.players || []) {
         const p = x.player || x;
-        if (p?.id == null) continue;
-        info[p.id] = { name: p.fullName || null, pos: POS[p.defaultPositionId] || "", points: seasonPoints(p, year) };
-      }
-    } catch { statsOk = false; }
-  }
-  // Backup 1: ESPN's season player list (names and positions).
-  let missing = ids.filter((id) => !info[id]?.name);
-  if (missing.length) {
-    try {
-      const filter = { filterIds: { value: missing } };
-      const list = JSON.parse(await espnFetch(`${BASE}/${year}/players?scoringPeriodId=0&view=players_wl`, { "X-Fantasy-Filter": JSON.stringify(filter) }));
-      for (const p of Array.isArray(list) ? list : []) {
-        if (p?.id == null || !p.fullName) continue;
-        info[p.id] = { ...(info[p.id] || { points: null }), name: p.fullName, pos: info[p.id]?.pos || POS[p.defaultPositionId] || "" };
+        if (p?.id != null) info[p.id] = { name: p.fullName || null, pos: POS[p.defaultPositionId] || "" };
       }
     } catch {}
   }
-  // Backup 2: team defenses by id, then individual ESPN player pages.
-  missing = ids.filter((id) => !info[id]?.name);
-  for (const id of missing) { const d = defense(id); if (d) info[id] = { ...(info[id] || { points: null }), name: d, pos: "D/ST" }; }
+  // Half-PPR points from raw stats (public ESPN data), plus the season's top players at each position.
+  const hp = await seasonHalfPpr(year, ids);
+  for (const id of ids) {
+    const h = hp.players[id];
+    info[id] = { name: info[id]?.name || h?.name || null, pos: info[id]?.pos || h?.pos || "", points: h?.points ?? null };
+  }
+  // Remaining names: season player list, defenses by id, then ESPN player pages.
+  let missing = ids.filter((id) => !info[id]?.name);
+  if (missing.length) {
+    try {
+      const list = JSON.parse(await espnFetch(`${BASE}/${year}/players?scoringPeriodId=0&view=players_wl`, { "X-Fantasy-Filter": JSON.stringify({ filterIds: { value: missing } }) }));
+      for (const p of Array.isArray(list) ? list : []) if (p?.id != null && p.fullName && info[p.id]) { info[p.id].name = p.fullName; info[p.id].pos ||= POS[p.defaultPositionId] || ""; }
+    } catch {}
+  }
+  for (const id of ids.filter((x) => !info[x]?.name)) { const d = defense(id); if (d) Object.assign(info[id], { name: d, pos: "D/ST" }); }
   missing = ids.filter((id) => !info[id]?.name && id > 0);
   for (let i = 0; i < missing.length; i += 20) {
     const chunk = missing.slice(i, i + 20);
     const found = await Promise.all(chunk.map(athlete));
-    chunk.forEach((id, k) => { if (found[k]) info[id] = { ...(info[id] || { points: null }), name: found[k].name, pos: info[id]?.pos || found[k].pos }; });
+    chunk.forEach((id, k) => { if (found[k]) { info[id].name = found[k].name; info[id].pos ||= found[k].pos; } });
   }
   const namesFound = ids.filter((id) => info[id]?.name).length;
 
@@ -100,23 +99,43 @@ async function buildDraft(year) {
     points: info[p.playerId]?.points ?? null,
   })).sort((a, b) => a.overall - b.overall);
 
-  // Rank within position: draft order (or price, for auctions) vs. points scored.
+  // Draft rank: order taken at the position (or price paid, at auction).
+  // Finish rank: half-PPR points among every player at the position we have points for
+  // (drafted players plus the season's top 80 at QB, RB, WR, and TE).
   const byPos = {};
   rows.forEach((r) => (byPos[r.pos] ||= []).push(r));
+  const universe = {};
+  for (const [id, h] of Object.entries(hp.players)) if (h.points != null && h.pos) (universe[h.pos] ||= new Map()).set(Number(id), h.points);
   for (const [pos, list] of Object.entries(byPos)) {
     [...list].sort((a, b) => auction ? b.bid - a.bid || a.overall - b.overall : a.overall - b.overall).forEach((r, i) => (r.posDraftRank = i + 1));
-    [...list].sort((a, b) => (b.points ?? -1) - (a.points ?? -1)).forEach((r, i) => (r.posFinishRank = r.points == null ? null : i + 1));
-    list.forEach((r) => (r.value = r.posFinishRank == null ? null : r.posDraftRank - r.posFinishRank));
+    const pts = universe[pos] || new Map();
+    list.forEach((r) => { if (r.points != null) pts.set(r.playerId, r.points); });
+    const order = [...pts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+    list.forEach((r) => {
+      const i = order.indexOf(r.playerId);
+      r.posFinishRank = r.points == null || i < 0 ? null : i + 1;
+      r.value = r.posFinishRank == null ? null : r.posDraftRank - r.posFinishRank;
+    });
   }
   const eligible = rows.filter((r) => !SKIP.has(r.pos) && r.value != null && r.pos);
-  const steals = [...eligible].filter((r) => r.value > 0).sort((a, b) => b.value - a.value || (b.points - a.points)).slice(0, 5);
-  const earlyCut = Object.keys(teams).length * 4; // first four rounds (or the top-priced players at auction)
-  const early = eligible.filter((r) => (auction ? r.posDraftRank <= 12 : r.overall <= earlyCut));
-  const busts = [...early].filter((r) => r.value < 0).sort((a, b) => a.value - b.value || (a.points - b.points)).slice(0, 5);
+  const teamCount = Object.keys(teams).length || 10;
+  const isEarly = (r) => (auction ? r.posDraftRank <= 12 : r.round <= 4);
+  const steals = [...eligible].filter((r) => r.value > 0).sort((a, b) => b.value - a.value || b.points - a.points).slice(0, 5);
+  const busts = [...eligible].filter((r) => isEarly(r) && r.value < 0).sort((a, b) => a.value - b.value || a.points - b.points).slice(0, 5);
+
+  // Each manager's best steal and worst bust.
+  const perTeam = {};
+  for (const id of Object.keys(teams).map(Number)) {
+    const mine = eligible.filter((r) => r.teamId === id);
+    const st = [...mine].filter((r) => r.value > 0).sort((a, b) => b.value - a.value || b.points - a.points)[0];
+    const bu = [...mine].filter((r) => r.round <= 6 && r.value < 0).sort((a, b) => a.value - b.value || a.points - b.points)[0];
+    perTeam[id] = { steal: st ? st.overall : null, bust: bu ? bu.overall : null };
+  }
 
   return {
-    year, available: true, auction, complete: Number(year) < Number(SEASON), statsAvailable: statsOk && rows.some((r) => r.points != null),
-    namesFound, namesTotal: ids.length,
+    year, available: true, auction, complete: Number(year) < Number(SEASON), statsAvailable: rows.filter((r) => r.points != null).length >= rows.length * 0.5,
+    namesFound, namesTotal: ids.length, scoring: HALF_PPR_NOTE, rankScope: hp.poolOk && hp.pool.length ? "all" : "drafted",
+    perTeam,
     rounds: Math.max(...rows.map((r) => r.round || 0)), teams, picks: rows,
     steals: steals.map((r) => r.overall), busts: busts.map((r) => r.overall),
   };
@@ -126,7 +145,7 @@ export default async (req) => {
   const year = Number(new URL(req.url).searchParams.get("season") || SEASON);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return json(400, { error: "Invalid season." });
   const store = getStore({ name: "cache", consistency: "strong" });
-  const key = `hist/draft/v2/${year}`;
+  const key = `hist/draft/v3/${year}`;
   try {
     if (year < Number(SEASON)) {
       const hit = await store.get(key, { type: "json" }).catch(() => null);
