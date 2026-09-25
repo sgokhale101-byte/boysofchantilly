@@ -100,7 +100,9 @@ async function buildDraft(year) {
   })).sort((a, b) => a.overall - b.overall);
 
   const complete = Number(year) < Number(SEASON);
-  const MIN_GAMES = 6; // PPG rank needs a real sample
+  // PPG rank needs a real sample: 6 games for finished seasons, half the games played so far this season.
+  const maxGp = Math.max(0, ...Object.values(hp.players).map((h) => h.gp || 0), ...rows.map((r) => r.gp || 0));
+  const MIN_GAMES = complete ? 6 : Math.max(1, Math.ceil(maxGp / 2));
   // Starter tiers and "big move" thresholds by position.
   const TIER = { QB: 12, TE: 12, RB: 24, WR: 30 };
   const JUMP = { QB: 6, TE: 6, RB: 12, WR: 15 };
@@ -130,7 +132,7 @@ async function buildDraft(year) {
       r.posPpgRank = j < 0 ? null : j + 1;
       r.ppg = r.points != null && r.gp ? Math.round((r.points / r.gp) * 100) / 100 : null;
       // The yardstick: PPG rank for finished seasons, total points rank for the current one.
-      r.metric = complete ? r.posPpgRank : r.posFinishRank;
+      r.metric = r.posPpgRank;
     });
   }
 
@@ -143,11 +145,12 @@ async function buildDraft(year) {
     else if (complete && early && r.posDraftRank <= TIER[r.pos] / 2 && r.gp != null && r.gp < MIN_GAMES) { r.tag = "bust"; r.tagNote = "missed most of the season"; }
   }
 
-  // Top 5 steals and busts against ADP. Keepers are left out of finished seasons.
+  // Top 5 steals and busts: where he went at his position in this draft vs. his PPG rank.
+  // Keepers are left out of finished seasons.
   const boxable = rows.filter((r) => TIER[r.pos] && r.metric != null && !(complete && r.keeper));
-  const vsAdp = (r) => r.posAdpRank - r.metric;
+  const vsAdp = (r) => r.posDraftRank - r.metric;
   const steals = boxable.filter((r) => vsAdp(r) >= 3 && r.metric <= TIER[r.pos]).sort((a, b) => vsAdp(b) - vsAdp(a) || a.metric - b.metric).slice(0, 5);
-  const busts = boxable.filter((r) => vsAdp(r) <= -3 && r.posAdpRank <= TIER[r.pos]).sort((a, b) => vsAdp(a) - vsAdp(b) || a.posAdpRank - b.posAdpRank).slice(0, 5);
+  const busts = boxable.filter((r) => vsAdp(r) <= -3 && r.posDraftRank <= TIER[r.pos]).sort((a, b) => vsAdp(a) - vsAdp(b) || a.posDraftRank - b.posDraftRank).slice(0, 5);
 
   return {
     year, available: true, auction, complete, statsAvailable: rows.filter((r) => r.points != null).length >= rows.length * 0.5,
@@ -162,7 +165,7 @@ export default async (req) => {
   const year = Number(new URL(req.url).searchParams.get("season") || SEASON);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return json(400, { error: "Invalid season." });
   const store = getStore({ name: "cache", consistency: "strong" });
-  const key = `hist/draft/v4/${year}`;
+  const key = `hist/draft/v5/${year}`;
   try {
     if (year < Number(SEASON)) {
       const hit = await store.get(key, { type: "json" }).catch(() => null);

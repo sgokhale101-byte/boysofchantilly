@@ -34,7 +34,7 @@ export async function seasonSummary(year) {
       finalRank: t.rankCalculatedFinal || t.rankFinal || null,
       seed: t.playoffSeed || null,
       official: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 },
-      h2h: rec(), median: rec(), regPF: 0, regPA: 0, regGames: 0,
+      h2h: rec(), median: rec(), regPF: 0, regPA: 0, regGames: 0, games: [],
     };
   }
   const byWeek = {};
@@ -51,6 +51,9 @@ export async function seasonSummary(year) {
       h.regPF += hp; a.regPF += ap; h.regPA += ap; a.regPA += hp; h.regGames++; a.regGames++;
       scores.push([h, hp], [a, ap]);
       if (g.winner === "HOME") { h.h2h.w++; a.h2h.l++; } else if (g.winner === "AWAY") { a.h2h.w++; h.h2h.l++; } else { h.h2h.t++; a.h2h.t++; }
+      const hr = g.winner === "HOME" ? "W" : g.winner === "AWAY" ? "L" : "T";
+      h.games.push({ w: g.matchupPeriodId, pts: r2(hp), opp: a.teamId, oppPts: r2(ap), r: hr });
+      a.games.push({ w: g.matchupPeriodId, pts: r2(ap), opp: h.teamId, oppPts: r2(hp), r: hr === "W" ? "L" : hr === "L" ? "W" : "T" });
     }
     const med = median(scores.map((x) => x[1]));
     scores.forEach(([t, p]) => (p > med ? t.median.w++ : p < med ? t.median.l++ : t.median.t++));
@@ -69,7 +72,7 @@ export async function seasonSummary(year) {
 }
 
 export async function seasonSummaryCached(year) {
-  const key = `hist/season/v2/${year}`;
+  const key = `hist/season/v3/${year}`;
   if (Number(year) < Number(SEASON)) {
     const hit = await store().get(key, { type: "json" }).catch(() => null);
     if (hit) return hit;

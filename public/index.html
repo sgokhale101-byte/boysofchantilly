@@ -554,6 +554,26 @@
     .draft-teams th:not(:nth-child(1)), .draft-teams td:not(:nth-child(1)) { width: auto; white-space: normal; }
     .draft-teams td .owner { display: block; }
   }
+
+  /* Bigger headshots, tap to enlarge */
+  .logo-sm.face { width: 34px; height: 34px; cursor: zoom-in; }
+  .top4 .logo-sm.face, .sb .logo-sm.face, .pw-list .logo-sm.face { width: 40px; height: 40px; }
+  .me-team .logo-sm.face { width: 48px; height: 48px; }
+  .prof-face { width: 96px !important; height: 96px !important; cursor: zoom-in; }
+  .face-zoom { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.82); display: grid; place-items: center; padding: 24px; }
+  .face-zoom img { width: min(84vw, 360px); height: auto; border-radius: 18px; border: 3px solid var(--royal); }
+  .face-zoom .cap { margin-top: 12px; text-align: center; font-weight: 700; }
+  /* Profile extras */
+  .prof-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+  .prof-more .v { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1; }
+  .prof-more .k { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .prof-more .d { color: var(--lilac); font-size: 12.5px; margin-top: 2px; }
+  .rivals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+  .rivals .lbl { font-weight: 800; font-size: 13px; }
+  .rivals .lbl.cake { color: #22C55E; } .rivals .lbl.daddy { color: #EF4444; } .rivals .lbl.rival { color: var(--violet); }
+  .rivals .who { font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+  .rivals .rec { color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { .rivals { grid-template-columns: 1fr; } .prof-face { width: 80px !important; height: 80px !important; } }
 </style>
 </head>
 <body>
@@ -755,7 +775,7 @@
   <div class="panel" id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
     <section aria-labelledby="profH">
       <h2 id="profH">Manager profiles</h2>
-      <p class="note">Every manager who has played in the league, current and former, across every season ESPN has on record.</p>
+      <p class="note">Every manager who has played in the league, current and former, across every season ESPN has on record. Weeks and head-to-head records count regular-season games. Cakewalk is the manager they beat most often, Their Daddy is the one who owns them, and Rival is their closest head-to-head series.</p>
       <div class="hist-controls">
         <label class="me-pick"><span>Manager</span><select id="histManager" aria-label="Choose a manager"></select></label>
         <label class="me-pick"><span>Records</span><select id="histYear" aria-label="Choose all time or one season"></select></label>
@@ -842,20 +862,26 @@
     const L = state.league; if (!t || !L.members) return "";
     const id = t.primaryOwner || (t.owners || [])[0];
     const m = L.members.find((x) => x.id === id);
-    return m ? (m.firstName ? `${m.firstName} ${m.lastName || ""}`.trim() : m.displayName) : "";
+    return fixName(m ? (m.firstName ? `${m.firstName} ${m.lastName || ""}`.trim() : m.displayName) : "");
   }
   // Manager headshots (public/headshots/<firstname>.jpg), used in place of team logos.
   const HEADSHOTS = {
     alexis: "alexis.jpg", jeremy: "jeremy.jpg", sean: "sean.jpg", vivek: "vivek.jpg", shreyas: "shreyas.jpg",
     cameron: "cameron.jpg", nels: "nels.jpg", noah: "noah.jpg", srimanth: "srimanth.jpg", adam: "adam.jpg",
+    will: "will.jpg", william: "will.jpg", saffa: "saffa.jpg",
+  };
+  const headshotFromNames = (...names) => {
+    for (const n of names) for (const w of String(n || "").toLowerCase().split(/[^a-z]+/)) if (HEADSHOTS[w]) return `headshots/${HEADSHOTS[w]}`;
+    return null;
   };
   function headshotFor(t) {
     if (!t || !state.league?.members) return null;
     const m = state.league.members.find((x) => x.id === (t.primaryOwner || (t.owners || [])[0]));
-    const first = (m?.firstName || m?.displayName || "").trim().split(/\s+/)[0].toLowerCase();
-    return HEADSHOTS[first] ? `headshots/${HEADSHOTS[first]}` : null;
+    if (!m) return null;
+    // First name first; the display name catches nicknames like Saffa.
+    return headshotFromNames(m.firstName) || headshotFromNames(m.displayName);
   }
-  const headshotByName = (name) => { const f = String(name || "").trim().split(/\s+/)[0].toLowerCase(); return HEADSHOTS[f] ? `headshots/${HEADSHOTS[f]}` : null; };
+  const headshotByName = (name) => headshotFromNames(String(name || "").split(/\s+/)[0]) || headshotFromNames(name);
   // Team logo: ESPN's logo first, then public/logos/<ABBREV>.png, then initials.
   window.bocLogoFail = (img) => {
     const next = img.dataset.alt;
@@ -873,13 +899,15 @@
     return `<span class="logo-sm" data-ab="${esc(ab)}"><img src="${esc(first)}" data-alt="${esc(alt)}" alt="" loading="lazy" onerror="bocLogoFail(this)"></span>`;
   }
   const nameOf = (id) => teamName(teamById(id));
+  // Display-name fixes applied everywhere a manager's name is shown.
+  const fixName = (n) => String(n ?? "").replace(/\bWilliam\b/g, "Will");
   // Manager's first name for a team (adds a last initial if two managers share a first name).
   function mgr(id) {
     const t = teamById(id); if (!t || !state.league?.members) return teamName(t);
     const m = state.league.members.find((x) => x.id === (t.primaryOwner || (t.owners || [])[0]));
     if (!m) return teamName(t);
-    const first = m.firstName || m.displayName || teamName(t);
-    const dup = state.league.members.filter((x) => (x.firstName || x.displayName) === first).length > 1;
+    const first = fixName(m.firstName || m.displayName || teamName(t));
+    const dup = state.league.members.filter((x) => fixName(x.firstName || x.displayName) === first).length > 1;
     return dup && m.lastName ? `${first} ${m.lastName[0]}.` : first;
   }
   function median(arr) {
@@ -1317,7 +1345,7 @@
       { year: 2020, team: "Minshew and The Crew", to: "Rohit" },
     ],
     merge: [
-      { match: /^vijay\s+r/i, name: "Vijay Rudraraju", nickname: "Wiwi RaRa" },
+      { match: /^vijay\s+r|wiwi\s*ra\s*ra/i, name: "Vijay Rudraraju" },
       { match: /^vivek\s+iyer\b/i, name: "Vivek Iyer" },
     ],
   };
@@ -1332,18 +1360,19 @@
   function identity(season, team) {
     const target = assignedTo(season.year, team.teamName);
     if (target) return identityForName(target);
-    const raw = season.members[team.memberId]?.name || "Unknown manager";
+    const raw = fixName(season.members[team.memberId]?.name || "Unknown manager");
     const mr = mergeRule(raw);
-    if (mr) return { key: `merge:${mr.name}`, name: mr.nickname || mr.name, realName: mr.nickname ? mr.name : null };
+    if (mr) return { key: `merge:${mr.name}`, name: mr.name };
     return { key: team.memberId, name: raw };
   }
   function identityForName(target) {
     const t = target.toLowerCase().replace(/\.$/, "");
     for (const season of [...state.hist.seasons].reverse()) {
       for (const [id, m] of Object.entries(season.members)) {
-        if (!m.name || !m.name.toLowerCase().startsWith(t)) continue;
-        const mr = mergeRule(m.name);
-        return mr ? { key: `merge:${mr.name}`, name: mr.nickname || mr.name, realName: mr.nickname ? mr.name : null } : { key: id, name: m.name };
+        const nm = fixName(m.name);
+        if (!nm || !nm.toLowerCase().startsWith(t)) continue;
+        const mr = mergeRule(nm);
+        return mr ? { key: `merge:${mr.name}`, name: mr.name } : { key: id, name: nm };
       }
     }
     const mr = mergeRule(target);
@@ -1433,6 +1462,45 @@
       else { ifSeasons++; const r = im.teams[team.teamId]; ifm = add3(ifm, season.usesMedian ? add3(r.h2h, r.median) : r.h2h); }
     }
     const avgFinish = finishes.length ? finishes.reduce((a, b) => a + b, 0) / finishes.length : null;
+
+    // Top 4 / bottom 4 finishes, best and worst week, and head-to-head rivals.
+    let top4 = 0, bottom4 = 0, best = null, worst = null;
+    const vs = {};
+    for (const { season, team } of pick) {
+      if (season.complete && team.finalRank) {
+        if (team.finalRank <= 4) top4++;
+        if (team.finalRank > season.teams.length - 4) bottom4++;
+      }
+      for (const g of team.games || []) {
+        if (g.pts > 0) {
+          if (!best || g.pts > best.pts) best = { ...g, year: season.year };
+          if (!worst || g.pts < worst.pts) worst = { ...g, year: season.year };
+        }
+        const oppTeam = season.teams.find((x) => x.teamId === g.opp);
+        if (!oppTeam) continue;
+        const o = identity(season, oppTeam);
+        if (o.key === M.id) continue;
+        const r = (vs[o.key] ||= { name: fixName(o.name), key: o.key, w: 0, l: 0, t: 0 });
+        g.r === "W" ? r.w++ : g.r === "L" ? r.l++ : r.t++;
+      }
+    }
+    const opps = Object.values(vs).map((r) => ({ ...r, g: r.w + r.l + r.t, pct: (r.w + r.t / 2) / (r.w + r.l + r.t) }));
+    const minG = opps.some((r) => r.g >= 2) ? 2 : 1;
+    const pool = opps.filter((r) => r.g >= minG);
+    const cake = [...pool].sort((a, b) => b.pct - a.pct || b.w - a.w || b.g - a.g)[0] || null;
+    const daddy = [...pool].sort((a, b) => a.pct - b.pct || b.l - a.l || b.g - a.g).find((r) => r !== cake) || null;
+    const rival = [...pool].filter((r) => r !== cake && r !== daddy).sort((a, b) => Math.abs(a.pct - 0.5) - Math.abs(b.pct - 0.5) || b.g - a.g)[0]
+      || [...pool].sort((a, b) => Math.abs(a.pct - 0.5) - Math.abs(b.pct - 0.5) || b.g - a.g)[0] || null;
+    const weekText = (x) => x ? `${x.year} week ${x.w}${x.r ? `, ${x.r === "W" ? "won" : x.r === "L" ? "lost" : "tied"} ${fmt(x.pts)}-${fmt(x.oppPts)}` : ""}` : "";
+    const rivalCell = (cls, label, r) => `<div><div class="lbl ${cls}">${label}</div>${r ? `<div class="who">${headshotByName(r.name) ? `<span class="logo-sm face"><img src="${headshotByName(r.name)}" alt=""></span>` : ""}<span>${esc(r.name)}</span></div><div class="rec">${recStr(r)} head-to-head</div>` : `<div class="rec">Not enough games yet</div>`}</div>`;
+    const extras = `
+      <div class="prof-more">
+        <div><div class="v">${top4}</div><div class="k">Top 4 finish${top4 === 1 ? "" : "es"}</div></div>
+        <div><div class="v">${bottom4}</div><div class="k">Bottom 4 finish${bottom4 === 1 ? "" : "es"} (missed playoffs)</div></div>
+        <div><div class="v">${best ? fmt(best.pts) : "–"}</div><div class="k">Best week</div><div class="d">${esc(weekText(best))}</div></div>
+        <div><div class="v">${worst ? fmt(worst.pts) : "–"}</div><div class="k">Worst week</div><div class="d">${esc(weekText(worst))}</div></div>
+      </div>
+      <div class="rivals">${rivalCell("cake", "Cakewalk", cake)}${rivalCell("daddy", "Their Daddy", daddy)}${rivalCell("rival", "Rival", rival)}</div>`;
     const ppg = games ? pf / games : null;
     const papg = games ? pa / games : null;
     const yrs = M.seasons.map((x) => x.season.year).sort((a, b) => a - b);
@@ -1458,6 +1526,7 @@
         <div><div class="v">${recStr(med)}</div><div class="k">Median</div></div>
         <div><div class="v">${ifText}</div><div class="k">If man</div></div>
       </div>
+      ${extras}
       <div class="prof-teams">${teamsBy}</div>
       ${foot.length ? `<div class="prof-foot">${esc(foot.join(" "))}</div>` : ""}
     </div>`;
@@ -1471,7 +1540,7 @@
     $("seasNote").textContent = S.complete ? `Final order after the ${S.year} playoffs. Records are ESPN's official records${S.usesMedian ? ", which include the weekly median game" : ""}.` : `The ${S.year} season is still going, so this is the current order.`;
     const rows = [...S.teams].sort((a, b) => S.complete ? (a.finalRank || 99) - (b.finalRank || 99) : (a.seed || 99) - (b.seed || 99));
     $("seasonTable").innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th>Points against</th></tr></thead><tbody>${rows.map((t, i) => {
-      const who = identity(S, t), mgr = who.name;
+      const who = identity(S, t), mgr = fixName(who.name);
       return `<tr class="${who.key === state.histManager ? "me" : ""}"><td class="rank">${S.complete && t.finalRank ? t.finalRank : i + 1}</td><td><div class="tcell"><div><div>${esc(t.teamName)}</div><div class="owner">${esc(mgr)}</div></div></div></td><td class="strong">${recStr(t.official)}</td><td>${fmt(t.regPF)}</td><td>${t.regPA != null ? fmt(t.regPA) : "–"}</td></tr>`;
     }).join("")}</tbody>`;
   }
@@ -1580,18 +1649,15 @@
     const D = state.drafts[y];
     if (!D.available) { $("draftTop").innerHTML = `<div class="empty">No draft to show for ${y}. ${esc(D.reason || "")}</div>`; $("draftTable").innerHTML = ""; $("drView").innerHTML = ""; return; }
     const byPick = Object.fromEntries(D.picks.map((p) => [p.overall, p]));
-    const who = (p) => { const t = D.teams[p.teamId] || {}; const a = assignedTo(y, t.name); return (a ? a.split(" ")[0] : t.manager) || t.name || ""; };
+    const who = (p) => { const t = D.teams[p.teamId] || {}; const a = assignedTo(y, t.name); return fixName((a ? a.split(" ")[0] : t.manager) || t.name || ""); };
     const where = (p) => D.auction ? `$${p.bid}` : `${p.round}.${String(p.roundPick).padStart(2, "0")}`;
-    const adpWord = D.adpSource === "espn" ? "ADP" : "Drafted";
-    const story = (p) => D.complete
-      ? `${adpWord} ${p.pos}${p.posAdpRank}, finished ${p.pos}${p.posPpgRank} in points per game (${fmt(p.ppg)})`
-      : `${adpWord} ${p.pos}${p.posAdpRank}, now ${p.pos}${p.posFinishRank}`;
+    const story = (p) => `Drafted ${p.pos}${p.posDraftRank} (${where(p)}), ${D.complete ? "finished" : "now"} ${p.pos}${p.posPpgRank} in points per game (${fmt(p.ppg)})`;
     const card = (title, cls, list) => `<div class="tcol ${cls}"><h3><span class="arrow">${cls === "up" ? "▲" : "▼"}</span>${title}</h3>${list.length ? list.map((o) => { const p = byPick[o]; return `<div class="ti"><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="why">${esc(who(p))}. ${esc(story(p))}</div></div></div>`; }).join("") : `<div class="why" style="color:var(--muted)">None.</div>`}</div>`;
     $("draftTop").innerHTML = !D.statsAvailable ? `<div class="empty">Couldn't find season stats for ${y}, so steals and busts can't be worked out.</div>` :
       `<div class="trends">${card(D.complete ? "Biggest steals" : "Steals so far", "up", D.steals)}${card(D.complete ? "Biggest busts" : "Busts so far", "down", D.busts)}</div>`;
-    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Rankings use half-PPR ${D.complete ? `points per game (minimum ${D.minGames} games), so injuries don't sink a player's rank` : "points so far this season"}, against ${D.rankScope === "all" ? "every player at the position, drafted or not" : "drafted players at the position"}. The top 5 compare each player's ${D.adpSource === "espn" ? "ESPN average draft position" : "draft slot"} at his position with where he finished${D.complete ? ", and leave out keepers" : ""}. Board tags compare where he went in this draft. Kickers and defenses are left out.`;
+    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Everything is judged by half-PPR points per game${D.complete ? ` (minimum ${D.minGames} games), so injuries don't sink a player's rank` : ` so far (minimum ${D.minGames} game${D.minGames === 1 ? "" : "s"})`}, ranked against ${D.rankScope === "all" ? "every player at the position, drafted or not" : "drafted players at the position"}. Steals and busts compare where a player went at his position in this draft with his PPG rank${D.complete ? "; the top 5 leave out keepers" : ""}. Kickers and defenses are left out.`;
     // Board: by round or by manager
-    const mgrs = [...new Set(Object.values(D.teams).map((t) => t.manager).filter(Boolean))].sort();
+    const mgrs = [...new Set(Object.keys(D.teams).map((id) => who({ teamId: Number(id) })).filter(Boolean))].sort();
     const opts = [...Array.from({ length: D.rounds }, (_, i) => [`r${i + 1}`, `Round ${i + 1}`]), ...mgrs.map((m) => [`m:${m}`, m])];
     if (!state.draftView || !opts.some(([v]) => v === state.draftView)) {
       const mine = state.me != null && D.teams[state.me]?.manager;
@@ -1603,13 +1669,13 @@
     const posRank = (p, r) => (r ? `${esc(p.pos)}${r}` : "–");
     const head = D.complete
       ? `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th class="hide-m">Finished</th><th>PPG Rank</th>`
-      : `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th>Now</th>`;
+      : `<th>${D.auction ? "Price" : "Pick"}</th><th>Player</th><th>${view.startsWith("r") ? "Manager" : "Round"}</th><th>Drafted</th><th>PPG Rank</th>`;
     const tag = (p) => p.tag === "steal" ? ` <span class="tagx up">Steal</span>` : p.tag === "bust" ? ` <span class="tagx down" ${p.tagNote ? `title="${esc(p.tagNote)}"` : ""}>Bust${p.tagNote ? ", injured" : ""}</span>` : "";
     $("draftTable").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${rows.map((p) => `
       <tr class="${p.teamId === state.me && y === draftSeasons()[0] ? "me" : ""}"><td class="strong">${where(p)}</td><td><div>${esc(p.name)}${tag(p)}</div><div class="owner">${esc(p.pos)}${p.keeper ? ", keeper" : ""}</div></td>
       <td>${view.startsWith("r") ? esc(who(p)) : p.round}</td><td>${posRank(p, p.posDraftRank)}</td>${D.complete
         ? `<td class="hide-m">${posRank(p, p.posFinishRank)}</td><td class="strong">${posRank(p, p.posPpgRank)}${p.ppg != null ? `<div class="owner">${fmt(p.ppg)}/g</div>` : ""}</td>`
-        : `<td class="strong">${posRank(p, p.posFinishRank)}</td>`}</tr>`).join("")}</tbody>`;
+        : `<td class="strong">${posRank(p, p.posPpgRank)}${p.ppg != null ? `<div class="owner">${fmt(p.ppg)}/g</div>` : ""}</td>`}</tr>`).join("")}</tbody>`;
     if (D.namesTotal && D.namesFound < D.namesTotal) $("drNote").textContent += ` ESPN didn't return names for ${D.namesTotal - D.namesFound} of ${D.namesTotal} players.`;
   }
   $("drSeason").onchange = (e) => { state.draftYear = Number(e.target.value); renderDraft(); };
@@ -1670,6 +1736,17 @@
     if (state.awards) renderAwards();
   });
   $("meClose").onclick = () => { $("meCard").hidden = true; };
+
+  // ---------- Tap a headshot to see it bigger ----------
+  document.addEventListener("click", (e) => {
+    const img = e.target.closest(".logo-sm.face img, img.prof-face");
+    if (!img) return;
+    e.stopPropagation();
+    const box = document.createElement("div"); box.className = "face-zoom";
+    box.innerHTML = `<div><img src="${img.getAttribute("src")}" alt=""></div>`;
+    box.onclick = () => box.remove();
+    document.body.appendChild(box);
+  }, true);
 
   // ---------- Loading ----------
   async function loadWeek(week, { quiet = false } = {}) {

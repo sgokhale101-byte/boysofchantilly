@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.6.4)
+# Boys of Chantilly dashboard (v1.6.5)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -120,3 +120,13 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   bust: an early pick who finished that far below, or a top pick who played fewer than 6 games). Cache `hist/draft/v4`.
 - History: Vijay's merged profile shows as "Wiwi RaRa" (Vijay Rudraraju underneath).
 - Headshots added: Cameron, Nels, Noah, Srimanth, Adam.
+
+## 1.6.5
+- Draft: steals/busts (top 5 and board tags) compare where a player went at his position in this draft with his half-PPR
+  PPG rank, for every season. Current season's PPG rank needs half the games played so far. Cache `hist/draft/v5`.
+- History: "Wiwi RaRa" accounts merge into Vijay Rudraraju. Profiles add top 4 and bottom 4 finishes, best and worst
+  regular-season week, and rivals (Cakewalk: best head-to-head record; Their Daddy: worst; Rival: closest to even,
+  2+ games when possible). Season summaries now carry each team's game log. Cache `hist/season/v3`.
+- "William" shows as "Will" everywhere.
+- Headshots re-cropped wider at 320px, shown larger, tap to enlarge. Added Will and Saffa (matched by any word of the
+  ESPN first or display name).
