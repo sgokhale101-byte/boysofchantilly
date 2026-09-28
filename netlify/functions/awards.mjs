@@ -51,8 +51,10 @@ export default async () => {
   try { season = await loadSeason(); }
   catch (e) { return json(e instanceof EspnError ? e.status : 500, { error: e.message || "Couldn't build the awards." }); }
 
+  const acc = (t) => (t.optimal ? Math.min(1, t.actual / t.optimal) * 100 : null);
   const weeks = season.weeks.map(({ week, teams }) => {
     const hasProj = teams.some((t) => t.projected > 0);
+    const med = median(teams.map((t) => t.actual));
     const hasOpt = teams.some((t) => t.optimal != null);
     const fmtWin = (p, extra) => p && { value: p.value, winners: p.winners.map((r) => ({ teamId: r.teamId, actual: r.actual, projected: r.projected, optimal: r.optimal, oppId: r.oppId, ...extra?.(r) })) };
     const opp = (r) => teams.find((t) => t.teamId === r.oppId);
@@ -63,7 +65,8 @@ export default async () => {
       awards: {
         overperformer: hasProj ? fmtWin(pick(teams, (t) => t.projected > 0 ? t.actual - t.projected : null, hi)) : null,
         letdown: hasProj ? fmtWin(pick(teams, (t) => t.projected > 0 ? t.actual - t.projected : null, lo)) : null,
-        manager: hasOpt ? fmtWin(tieBreak(pick(teams, (t) => t.optimal != null ? t.optimal - t.actual : null, lo))) : null,
+        manager: hasOpt ? fmtWin(tieBreak(pick(teams.filter((t) => t.actual > med), acc, hi))) : null,
+        blunder: hasOpt ? fmtWin(pick(teams.filter((t) => acc(t) != null && acc(t) < 99.95), acc, lo)) : null,
         noah: fmtWin(pick(teams.filter((t) => t.result === "L"), (t) => t.actual, hi), (r) => ({ oppScore: opp(r)?.actual })),
         srimanth: fmtWin(pick(teams.filter((t) => t.result === "W"), (t) => t.actual, lo), (r) => ({ oppScore: opp(r)?.actual })),
         bigbrain: teams.some((t) => t.starters) ? bigBrain(teams) : null,

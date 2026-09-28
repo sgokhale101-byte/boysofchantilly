@@ -153,7 +153,7 @@ const r2 = (n) => Math.round(n * 100) / 100;
 // ---------- Full week computation ----------
 export async function computeWeek(week) {
   const [raw, nfl, snap, startSnap] = await Promise.all([
-    espnFetch(leagueUrl(["mMatchupScore", "mScoreboard", "mStatus"], week)),
+    espnFetch(leagueUrl(["mMatchupScore", "mScoreboard", "mStatus", "mSettings"], week)),
     nflWeek(week),
     readPregame(week),
     readStartPct(week),
@@ -190,7 +190,10 @@ export async function computeWeek(week) {
       };
     });
     const current = s.totalPointsLive ?? s.totalPoints ?? players.filter(isStarter).reduce((a, p) => a + p.actual, 0);
-    return { teamId: s.teamId, current: r2(current), projected: r2(current + remaining), sd: Math.sqrt(variance), starters };
+    const counts = league.settings?.rosterSettings?.lineupSlotCounts;
+    const optimal = counts && players.length ? Math.max(r2(current), optimalPoints(players, counts)) : null;
+    return { teamId: s.teamId, current: r2(current), projected: r2(current + remaining), sd: Math.sqrt(variance), starters,
+      optimal, accuracy: optimal ? r2(Math.min(1, current / optimal)) : null };
   };
 
   const matchups = games.map((g) => {

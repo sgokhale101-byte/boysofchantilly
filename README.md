@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.9)
+# Boys of Chantilly dashboard (v1.9.4)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -184,3 +184,29 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   the median. Start % is frozen per player at kickoff (`pregame-start/v1/w<N>`); earlier weeks use ESPN's current number
   and say so. Weekly data now carries starters (`weeksum/v3`).
 - Power Rankings: checks for new posts every 10 minutes and badges the tab (or More) until opened; message board cache cut to 60s.
+
+## 1.9.1
+- History: the Records choice (all time, era, or season) stays selected while switching managers; every league season is listed.
+- Hall of Fame: median streak lists only show for the Median era and 2022+ seasons (not All time).
+
+## 1.9.2
+- Start accuracy (points scored / best possible lineup): on the summary card for this week (live, `/api/week` now includes
+  optimal + accuracy) and the season so far (from `/api/ifman`).
+- Awards: Manager of the Week = best start accuracy; new Bench Blunder = worst (not awarded if every lineup is perfect).
+- Transactions tab (`/api/txstats`): FAAB Tracker (left, spent, starting-lineup points from paid pickups per $, best buys,
+  $0 free finds), 12th Man (most points scored while benched), Dead Weight (bench players out/on IR, low scoring and
+  under 50% rostered, or never started and low scoring). Weekly data now carries bench players (`weeksum/v4`).
+- `netlify/lib/tx.mjs`: shared transaction helpers used by moves and txstats.
+
+## 1.9.3
+- "The Estime Quotient": the FAAB Tracker's points-per-dollar metric.
+- Manager of the Week must make the median (best start accuracy among teams above the weekly median).
+- Weekly Recap at the top of Story (`/api/recap`), available once ESPN finalizes the week (usually early Tuesday), with a
+  New badge: your week (matchup, median, start accuracy, best starter, biggest dud, standings move, next matchup preview),
+  around the league (high and low score and pot, median line, closest game, biggest blowout, biggest upset by projection,
+  crowd pick'em accuracy), the week's awards, and record-book entries.
+
+## 1.9.4
+- The Weekly Recap moved into the "I'm ___" summary card: before the current week's first kickoff, the card shows last week's
+  recap (your week with a next-matchup preview, around the league, awards, record books) instead of the matchup, and switches
+  to the live matchup once games start. Removed from the Story tab, along with its badge.

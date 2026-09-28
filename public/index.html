@@ -608,7 +608,8 @@
   .modes button[aria-pressed="true"] { background: var(--royal); color: var(--white); }
   /* Matchup score in the summary card */
   .me-card.has-match .me-scorecell { display: none; }
-  .me-card.has-match .me-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .me-card.has-match .me-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .me-stats .k2 { color: var(--lilac); font-size: 11.5px; margin-top: 2px; }
   .me-match { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
   .me-match .mm { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
   .me-match .side { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -732,6 +733,39 @@
   .roster th:nth-child(1), .roster td:nth-child(1) { text-align: left; width: 44px; }
   .roster th:nth-child(2), .roster td:nth-child(2) { text-align: left; }
   .roster th:nth-child(3), .roster td:nth-child(3) { text-align: left; }
+
+  .dwrow { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .dwrow:first-child { border-top: 0; }
+  .dwrow .logo-sm { width: 30px; height: 30px; margin-top: 2px; }
+  .dw-who { min-width: 0; flex: 1; }
+  .dw-nm { font-weight: 700; }
+  .dwrow.me .dw-nm { color: var(--violet); }
+  .dw-mgr { color: var(--muted); font-size: 12px; font-weight: 600; margin-left: 4px; }
+  .dw-why { color: var(--muted); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
+  .faab-table td .tcell > div { overflow: hidden; text-overflow: ellipsis; }
+
+  /* Weekly Recap */
+  #recap { display: grid; gap: 12px; }
+  .rc-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+  .rc-card.mine { border-color: var(--royal); }
+  .rc-h { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 800; font-size: 20px; margin-bottom: 6px; }
+  .rc-h .logo-sm { width: 34px; height: 34px; }
+  .rc-line { display: grid; grid-template-columns: 112px 1fr; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .rc-line:first-of-type { border-top: 0; }
+  .rc-k { color: var(--muted); font-size: 12.5px; font-weight: 600; padding-top: 1px; }
+  .rc-v b { color: var(--white); }
+  .rc-aw { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .rc-aw:first-of-type { border-top: 0; }
+  .rc-sub { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .rc-rec { padding: 5px 0; font-size: 14px; }
+  @media (max-width: 640px) { .rc-line { grid-template-columns: 96px 1fr; font-size: 13.5px; } }
+
+  .me-recap { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 10px; }
+  .me-recap[hidden] { display: none; }
+  .me-recap .rc-title { font-family: var(--display); font-weight: 800; font-size: 20px; }
+  .me-recap .rc-card { padding: 10px 12px; }
+  .me-card.recap-mode .me-scorecell { display: none; }
+  .me-card.recap-mode .me-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 </style>
 </head>
 <body>
@@ -788,6 +822,15 @@
       <path d="M22 26c2.5-.6 4.5.6 5 3M20.5 34c2.6.4 4.2 2 4.2 4.6M27 21.5c-.4 2 .4 3.4 2 4M42 26c-2.5-.6-4.5.6-5 3M43.5 34c-2.6.4-4.2 2-4.2 4.6M37 21.5c.4 2-.4 3.4-2 4" fill="none" stroke="#6B2FB3" stroke-width="1.8" stroke-linecap="round"/>
       <path d="M27 49h10M28.5 52.5h7" stroke="#E4D6FF" stroke-width="2.4" stroke-linecap="round"/>
     </symbol>
+    <symbol id="tr-blunder" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#000"/><circle cx="32" cy="32" r="29" fill="none" stroke="#B98CFF" stroke-width="2.5"/>
+      <rect x="15" y="20" width="34" height="5" rx="1.5" fill="#E4D6FF"/>
+      <rect x="15" y="27.5" width="34" height="5" rx="1.5" fill="#E4D6FF"/>
+      <rect x="12" y="35" width="40" height="5.5" rx="1.5" fill="#E4D6FF"/>
+      <path d="M18 20v26M46 20v26M16 40.5v6M48 40.5v6" stroke="#E4D6FF" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M38 12.5h5l-5 5h5" fill="none" stroke="#B98CFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M45 7.5h3.5l-3.5 3.5h3.5" fill="none" stroke="#B98CFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
   </defs>
 </svg>
 <div class="wrap">
@@ -824,10 +867,12 @@
     <div class="me-stats">
       <div><div class="v" id="meRecord">–</div><div class="k">Record</div></div>
       <div><div class="v" id="meRank">–</div><div class="k" id="meRankK">Standing</div></div>
+      <div id="meAccCell"><div class="v" id="meAcc">–</div><div class="k">Start accuracy</div><div class="k2" id="meAccSeason"></div></div>
       <div class="me-scorecell"><div class="v" id="meCur">–</div><div class="k" id="meCurK">Current score</div></div>
       <div class="me-scorecell"><div class="v proj" id="meProj">–</div><div class="k">Projected</div></div>
     </div>
     <div class="me-match" id="meMatch" hidden></div>
+    <div class="me-recap" id="meRecap" hidden></div>
     <div class="me-foot" id="meFoot"></div>
     <div class="me-trophies" id="meTrophies"></div>
     <div class="me-special" id="meSpecial" hidden></div>
@@ -929,7 +974,7 @@
   <div class="panel" id="panel-hof" role="tabpanel" aria-labelledby="tab-hof" hidden>
     <section aria-labelledby="hofH">
       <div class="aw-pick"><h2 id="hofH">Hall of Fame</h2><label class="me-pick"><span>Show</span><select id="hofYear" aria-label="All time, an era, or one season"></select></label></div>
-      <details class="explain"><summary>Explain It</summary><p class="note">League records across every season on record. Scores, weeks, and streaks count regular-season games. Streaks follow a manager across seasons. Median streaks start in 2022. Season lists rank finished seasons by median points per game (the middle weekly score), so one huge or tiny week doesn't swing a season. Player performances use your league's scoring and include bench players, marked as benched. The dropdown switches every list between all time, the Plumber era (through 2021), the Median era (2022 on), and single seasons. Streaks only count games inside the chosen span.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">League records across every season on record. Scores, weeks, and streaks count regular-season games. Streaks follow a manager across seasons. Median streaks start in 2022. Season lists rank finished seasons by median points per game (the middle weekly score), so one huge or tiny week doesn't swing a season. Player performances use your league's scoring and include bench players, marked as benched. The dropdown switches every list between all time, the Plumber era (through 2021), the Median era (2022 on), and single seasons. Streaks only count games inside the chosen span. Median streaks show for the Median era and seasons from 2022 on.</p></details>
       <div class="hof" id="hof"></div>
     </section>
   </div>
@@ -943,6 +988,7 @@
   </div>
 
   <div class="panel" id="panel-story" role="tabpanel" aria-labelledby="tab-story" hidden>
+
     <section aria-labelledby="storyH">
       <div class="aw-pick"><h2 id="storyH">Team of the Week</h2><label class="me-pick"><span>Show</span><select id="storyWeek" aria-label="Choose a week"></select></label></div>
       <details class="explain"><summary>Explain It</summary><p class="note">The best lineup anyone could have started this week, from every player in the league, rostered or not. Owned by shows who had him that week.</p></details>
@@ -997,6 +1043,21 @@
       <details class="explain"><summary>Explain It</summary><p class="note">Players managers have put on the block, and players they've marked themselves as interested in.</p></details>
       <div class="tblock" id="tblock"></div>
     </section>
+    <section aria-labelledby="faabH">
+      <h2 id="faabH">FAAB Tracker</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">Each team's FAAB left and spent, and what the spending bought: points scored by waiver pickups while in that team's starting lineup, from the week of the pickup on, divided by the bid. That's The Estime Quotient: starting-lineup points per FAAB dollar. $0 pickups are counted separately as free finds.</p></details>
+      <div id="faab"></div>
+    </section>
+    <section aria-labelledby="tmH">
+      <h2 id="tmH">12th Man</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">The bench players who scored the most points this season while sitting on someone's bench (finished weeks).</p></details>
+      <div id="twelfth"></div>
+    </section>
+    <section aria-labelledby="dwH">
+      <h2 id="dwH">Dead Weight</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">Bench players worth cutting: out or on injured reserve while taking a bench spot, scoring well below a usable level at their position while few ESPN leagues roster them, or scoring low without being started all season.</p></details>
+      <div id="dead"></div>
+    </section>
     <section aria-labelledby="txH">
       <h2 id="txH">Transactions</h2>
       <details class="explain"><summary>Explain It</summary><p class="note">Completed adds, drops, and trades for the selected week, with each team's FAAB left after the move.</p></details>
@@ -1015,7 +1076,7 @@
   const state = {
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
     wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
-    story: {}, storyWeek: null, histLoading: null, hofPlayers: {}, hofYear: "all", power: null, powerErr: null, powerIdx: null, rosters: {}, drafts: {}, draftYear: null, draftView: null, draftRound: null, draftMgr: "", hist: null, histErr: null, histIfman: {}, histManager: null, histYear: "all", histSeason: null,
+    story: {}, storyWeek: null, histLoading: null, hofPlayers: {}, hofYear: "all", power: null, powerErr: null, powerIdx: null, rosters: {}, recap: null, recapErr: null, recapWeek: null, txstats: null, txstatsErr: null, ifmanLoading: null, drafts: {}, draftYear: null, draftView: null, draftRound: null, draftMgr: "", hist: null, histErr: null, histIfman: {}, histManager: null, histYear: "all", histSeason: null,
     awards: null, awardsErr: null, awardsLoading: null, awardWeek: null, animated: new Set(),
     me: (() => { try { return Number(localStorage.getItem("boc-me")) || null; } catch { return null; } })(),
   };
@@ -1403,9 +1464,10 @@
   const AWARDS = [
     { key: "overperformer", title: "Overperformer", def: "Beat its pre-game projection by the most" },
     { key: "letdown", title: "Letdown", def: "Fell furthest below its pre-game projection" },
-    { key: "manager", title: "Manager of the Week", def: "Fewest points left on the bench" },
+    { key: "manager", title: "Manager of the Week", def: "Best start accuracy among teams that made the median" },
     { key: "noah", title: "Noah of the Week", def: "Highest score in a head-to-head loss" },
     { key: "srimanth", title: "Srimanth of the Week", def: "Lowest score in a head-to-head win" },
+    { key: "blunder", title: "Bench Blunder", def: "Worst start accuracy: the most points left on the bench, relative to the best possible lineup" },
     { key: "bigbrain", title: "Big Brain", def: "Started someone under 60% started across ESPN who carried them past the median" },
   ];
   const trophy = (key, sm) => `<svg class="trophy${sm ? " sm" : ""}" role="img" aria-label="${esc(AWARDS.find((a) => a.key === key)?.title || "")}"><use href="#tr-${key}"></use></svg>`;
@@ -1416,6 +1478,8 @@
       case "letdown": return `Scored ${fmt(w.actual)}, ${fmt(w.projected - w.actual)} below a ${fmt(w.projected)} projection`;
       case "manager": { const opt = w.optimal ?? w.actual; const gap = opt - w.actual; const acc = opt > 0 ? Math.min(100, (w.actual / opt) * 100) : 100;
         return `Start accuracy ${acc >= 99.95 ? "100" : acc.toFixed(1)}%: ${gap < 0.005 ? `perfect lineup, ${fmt(w.actual)} points` : `scored ${fmt(w.actual)} of a possible ${fmt(opt)}`}`; }
+      case "blunder": { const opt = w.optimal ?? w.actual; const acc = opt > 0 ? (w.actual / opt) * 100 : 100;
+        return `Start accuracy ${acc.toFixed(1)}%: scored ${fmt(w.actual)} of a possible ${fmt(opt)}, leaving ${fmt(opt - w.actual)} on the bench`; }
       case "noah": return `Scored ${fmt(w.actual)} and still lost to ${opp} (${fmt(w.oppScore)})`;
       case "srimanth": return `Scored just ${fmt(w.actual)} and beat ${opp} (${fmt(w.oppScore)})`;
       case "bigbrain": return `Started ${w.player}${w.pos ? ` (${w.pos})` : ""}, in just ${Math.round(w.pct)}% of ESPN lineups${w.pctLive ? " (today's number)" : ""}. He scored ${fmt(w.playerPts)}, and the team cleared the median by only ${fmt(w.margin)}`;
@@ -1638,8 +1702,7 @@
     }
     $("histManager").innerHTML = ms.map((m) => `<option value="${esc(m.id)}" ${m.id === state.histManager ? "selected" : ""}>${esc(m.name)}${m.current ? "" : " (former)"}</option>`).join("");
     const M = ms.find((m) => m.id === state.histManager) || ms[0];
-    const years = M.seasons.map((x) => x.season.year).sort((a, b) => b - a);
-    if (typeof state.histYear === "number" && !years.includes(state.histYear)) state.histYear = "all";
+    const years = [...new Set(state.hist.seasons.map((x) => x.year))].sort((a, b) => b - a);
     $("histYear").innerHTML = scopeOptions(years, state.histYear);
     renderProfile(M);
     renderSeasonTable();
@@ -1789,7 +1852,7 @@
     const [y, t] = el.dataset.roster.split(":").map(Number); openRoster(y, t);
   });
 
-  $("histManager").onchange = (e) => { state.histManager = e.target.value; state.histYear = "all"; renderHistory(); };
+  $("histManager").onchange = (e) => { state.histManager = e.target.value; renderHistory(); };
   $("histYear").onchange = (e) => { state.histYear = parseScope(e.target.value); const M = managers().find((m) => m.id === state.histManager); renderProfile(M); };
   $("histSeason").onchange = (e) => { state.histSeason = Number(e.target.value); renderSeasonTable(); };
 
@@ -2047,15 +2110,15 @@
     const scoreRow = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}</div><div class="sub">${x.year} week ${x.week}, ${x.r === "W" ? "won" : x.r === "L" ? "lost" : "tied"} vs ${fmt(x.oppPts)}</div></div><span class="val">${fmt(x.pts)}</span></div>`;
     const seasonRow = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}</div><div class="sub">${x.year}, ${esc(x.teamName)}</div></div><span class="val">${x.ppg.toFixed(1)}</span></div>`;
     const streakRow = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}${x.active ? ` <span class="live">active</span>` : ""}</div><div class="sub">${esc(span(x))}</div></div><span class="val">${x.len}</span></div>`;
-    const hasMedian = state.hofYear === "all" || state.hofYear === "era:median" || (typeof state.hofYear === "number" && state.hofYear >= 2022);
+    const hasMedian = state.hofYear === "era:median" || (typeof state.hofYear === "number" && state.hofYear >= 2022);
     let html = hofList(`Highest scores, ${L}`, "🔥", top, scoreRow)
       + hofList(`Lowest scores, ${L}`, "🧊", low, scoreRow)
       + hofList(`Best seasons (median PPG), ${L}`, "👑", bestS, seasonRow)
       + hofList(`Worst seasons (median PPG), ${L}`, "🪦", worstS, seasonRow)
       + hofList(`Longest winning streaks (H2H), ${L}`, "📈", longest(h2hIn, "W"), streakRow)
       + hofList(`Longest losing streaks (H2H), ${L}`, "📉", longest(h2hIn, "L"), streakRow)
-      + (hasMedian ? hofList(`Longest median win streaks, ${state.hofYear === "all" ? "2022 on" : L}`, "📈", longest(medIn, "W"), streakRow)
-        + hofList(`Longest median losing streaks, ${state.hofYear === "all" ? "2022 on" : L}`, "📉", longest(medIn, "L"), streakRow) : "");
+      + (hasMedian ? hofList(`Longest median win streaks, ${L}`, "📈", longest(medIn, "W"), streakRow)
+        + hofList(`Longest median losing streaks, ${L}`, "📉", longest(medIn, "L"), streakRow) : "");
     html += `<div class="hcard" style="grid-column:1/-1" id="hofPlayers"></div>`;
     box.innerHTML = html;
     renderHofPlayers();
@@ -2130,6 +2193,141 @@
       : `<div class="empty">No records in reach yet this season.</div>`;
   }
 
+  // ---------- FAAB tracker, 12th Man, Dead Weight ----------
+  async function renderTxStats() {
+    const boxes = ["faab", "twelfth", "dead"];
+    if (!state.txstats && !state.txstatsErr) {
+      boxes.forEach((b) => ($(b).innerHTML = `<div class="empty">Crunching the numbers…</div>`));
+      try { state.txstats = await getJSON("/api/txstats"); } catch (e) { state.txstatsErr = e.message; }
+    }
+    if (state.txstatsErr) { boxes.forEach((b) => ($(b).innerHTML = `<div class="empty">Couldn't load: ${esc(state.txstatsErr)}</div>`)); return; }
+    const D = state.txstats, F = D.faab;
+    const money = (n) => (n == null ? "–" : `$${n}`);
+    const rows = [...F.teams].sort((a, b) => (b.left ?? 0) - (a.left ?? 0) || nameOf(a.teamId).localeCompare(nameOf(b.teamId)));
+    $("faab").innerHTML = (F.budget == null ? `<div class="empty">This league doesn't use a FAAB budget.</div>` :
+      `<div class="table-scroll"><table class="faab-table"><thead><tr><th>#</th><th>Manager</th><th>Left</th><th>Spent</th><th>Pts</th><th>Estime Q.</th></tr></thead><tbody>${rows.map((r, i) => `
+        <tr class="${r.teamId === state.me ? "me" : ""}"><td class="rank">${i + 1}</td><td><div class="tcell">${logo(teamById(r.teamId))}<div>${esc(mgr(r.teamId))}</div></div></td><td class="strong">${money(r.left)}</td><td>${money(r.spent)}</td><td>${fmt(r.paidPts)}</td><td>${r.perDollar == null ? "–" : r.perDollar.toFixed(2)}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note" style="margin-top:6px">Budget $${F.budget}. Pts = starting-lineup points from paid pickups. Estime Q. = The Estime Quotient, points per FAAB dollar.</p>`) +
+      `<div class="hof" style="margin-top:12px">${hofList("Best buys (The Estime Quotient)", "💸", F.bestBuys, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, $${b.bid}, ${fmt(b.pts)} pts in ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${b.perDollar.toFixed(2)}</span></div>`)}
+        ${hofList("Free finds ($0 pickups)", "🎁", F.freeFinds, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${fmt(b.pts)}</span></div>`)}</div>`;
+    $("twelfth").innerHTML = D.twelfthMan.length ? `<div class="hcard">${D.twelfthMan.map((x, i) => `<div class="hrow ${x.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(x.teamId))}<div class="who"><div class="nm">${esc(x.name)}${x.pos ? `, ${esc(x.pos)}` : ""}</div><div class="sub">${esc(mgr(x.teamId))}'s bench, best week ${x.best.week} (${fmt(x.best.pts)})</div></div><span class="val">${fmt(x.pts)}</span></div>`).join("")}</div>`
+      : `<div class="empty">No bench points yet.</div>`;
+    $("dead").innerHTML = D.deadWeight.length ? `<div class="hcard">${D.deadWeight.map((x) => `<div class="dwrow ${x.teamId === state.me ? "me" : ""}">${logo(teamById(x.teamId))}<div class="dw-who"><div class="dw-nm">${esc(x.name)}${x.pos ? `, ${esc(x.pos)}` : ""} <span class="dw-mgr">${esc(mgr(x.teamId))}</span></div><div class="dw-why">${esc(x.reason)}</div></div></div>`).join("")}</div>`
+      : `<div class="empty">Every bench looks clean right now.</div>`;
+  }
+
+  // ---------- Weekly Recap (Story tab) ----------
+  function standingsThrough(weeks, upto) {
+    const rec = {};
+    for (const wk of weeks) {
+      if (wk.week > upto) continue;
+      const med = median(wk.teams.map((t) => t.actual));
+      for (const t of wk.teams) {
+        const r = (rec[t.teamId] ||= { w: 0, l: 0, t: 0, pf: 0 });
+        r.pf += t.actual;
+        if (t.result === "W") r.w++; else if (t.result === "L") r.l++; else if (t.result === "T") r.t++;
+        if (t.actual > med) r.w++; else if (t.actual < med) r.l++; else r.t++;
+      }
+    }
+    const order = Object.entries(rec).sort((a, b) => (b[1].w + b[1].t / 2) - (a[1].w + a[1].t / 2) || b[1].pf - a[1].pf).map(([id]) => Number(id));
+    return { rec, rank: Object.fromEntries(order.map((id, i) => [id, i + 1])) };
+  }
+  // Before the week's first kickoff, the summary card shows last week's recap instead of the matchup.
+  async function renderRecap(N) {
+    const box = $("meRecap");
+    if (!state.recap && !state.recapErr) {
+      box.innerHTML = `<div class="rc-sub">Writing last week's recap…</div>`;
+      try { state.recap = await getJSON("/api/recap"); } catch (e) { state.recapErr = e.message; }
+    }
+    if (state.recapErr) { box.innerHTML = `<div class="rc-sub">Couldn't load the recap: ${esc(state.recapErr)}</div>`; return; }
+    const weeks = state.recap.weeks || [];
+    if (!weeks.some((w) => w.week === N)) { box.innerHTML = `<div class="rc-sub">Last week's recap comes out once ESPN finalizes the week, usually early Tuesday.</div>`; return; }
+    const W = weeks.find((w) => w.week === N);
+    await ensureAwards();
+    const byId = Object.fromEntries(W.teams.map((t) => [t.teamId, t]));
+    const med = median(W.teams.map((t) => t.actual));
+    const games = W.teams.filter((t) => t.oppId != null && t.teamId < t.oppId).map((t) => ({ a: t, b: byId[t.oppId] })).filter((g) => g.b);
+    const margin = (g) => Math.abs(g.a.actual - g.b.actual);
+    const closest = [...games].sort((x, y) => margin(x) - margin(y))[0];
+    const blowout = [...games].sort((x, y) => margin(y) - margin(x))[0];
+    const upsets = games.map((g) => { const win = g.a.result === "W" ? g.a : g.b.result === "W" ? g.b : null; const lose = win === g.a ? g.b : g.a; return win && win.projected > 0 && lose.projected > win.projected ? { win, lose, gap: lose.projected - win.projected } : null; }).filter(Boolean).sort((x, y) => y.gap - x.gap);
+    const hi = [...W.teams].sort((a, b) => b.actual - a.actual)[0], lo = [...W.teams].sort((a, b) => a.actual - b.actual)[0];
+    const line = (label, html) => `<div class="rc-line"><span class="rc-k">${label}</span><span class="rc-v">${html}</span></div>`;
+    const who = (id) => `<b>${esc(mgr(id))}</b>`;
+    let html = "";
+
+    // Your week
+    const me = state.me && byId[state.me];
+    if (me) {
+      const opp = byId[me.oppId];
+      const acc = me.optimal ? Math.min(1, me.actual / me.optimal) : null;
+      const starters = [...(me.starters || [])].sort((a, b) => b.pts - a.pts);
+      const best = starters[0], dud = starters.filter((p) => p.pos !== "K" && p.pos !== "D/ST").slice(-1)[0];
+      const before = standingsThrough(weeks, N - 1).rank[me.teamId], after = standingsThrough(weeks, N).rank[me.teamId];
+      const move = before ? (before > after ? `up ${before - after} to ${ordinal(after)}` : before < after ? `down ${after - before} to ${ordinal(after)}` : `holding at ${ordinal(after)}`) : ordinal(after);
+      html += `<div class="rc-title">Week ${N} recap</div><div class="rc-card mine"><div class="rc-h"><span>Your week</span></div>
+        ${opp ? line("Matchup", `${me.result === "W" ? "Beat" : me.result === "L" ? "Lost to" : "Tied"} ${who(opp.teamId)}, ${fmt(me.actual)} to ${fmt(opp.actual)}`) : ""}
+        ${line("Median", `${me.actual > med ? "Made it" : me.actual < med ? "Missed it" : "Tied it"}, the line was ${fmt(med)}`)}
+        ${acc != null ? line("Start accuracy", `${Math.round(acc * 100)}%, left ${fmt(me.optimal - me.actual)} on the bench`) : ""}
+        ${best ? line("Best starter", `${esc(best.name)} (${esc(best.pos)}), ${fmt(best.pts)}`) : ""}
+        ${dud ? line("Biggest dud", `${esc(dud.name)} (${esc(dud.pos)}), ${fmt(dud.pts)}`) : ""}
+        ${line("Standings", `${move}`)}
+        <div id="rcNext"></div></div>`;
+    }
+
+    // Around the league
+    html += `<div class="rc-card"><div class="rc-h"><span>Around the league</span></div>
+      ${line("High score", `${who(hi.teamId)}, ${fmt(hi.actual)}, takes the $12 pot`)}
+      ${line("Low score", `${who(lo.teamId)}, ${fmt(lo.actual)}`)}
+      ${line("Median line", fmt(med))}
+      ${closest ? line("Closest game", `${who(closest.a.teamId)} vs ${who(closest.b.teamId)}, decided by ${fmt(margin(closest))}`) : ""}
+      ${blowout ? line("Biggest blowout", `${who(blowout.a.actual > blowout.b.actual ? blowout.a.teamId : blowout.b.teamId)} by ${fmt(margin(blowout))}`) : ""}
+      ${upsets[0] ? line("Biggest upset", `${who(upsets[0].win.teamId)} beat ${who(upsets[0].lose.teamId)} despite being projected ${fmt(upsets[0].gap)} behind`) : ""}
+      <div id="rcPicks"></div></div>`;
+
+    // Awards
+    const AW = state.awards?.weeks?.find((w) => w.week === N);
+    if (AW) html += `<div class="rc-card"><div class="rc-h"><span>Awards</span></div>${AWARDS.map((a) => { const r = AW.awards[a.key]; if (!r?.winners?.length) return ""; return `<div class="rc-aw">${trophy(a.key, true)}<div><b>${a.title}</b>: ${r.winners.map((w) => esc(mgr(w.teamId))).join(" and ")}<div class="rc-sub">${esc(awardWhy(a.key, r.winners[0]))}</div></div></div>`; }).join("")}</div>`;
+
+    // Record books
+    html += `<div class="rc-card"><div class="rc-h"><span>Record books</span></div><div id="rcRecords"><div class="rc-sub">Checking…</div></div></div>`;
+    box.innerHTML = html;
+
+    // Async extras: next matchup preview, crowd pick'em, records
+    (async () => {
+      if (me && state.currentWeek === N + 1) {
+        let wk = state.wk?.week === N + 1 ? state.wk : null;
+        if (!wk) try { wk = await getJSON(`/api/week?week=${N + 1}`); } catch {}
+        const m = wk?.matchups?.find((x) => x.home?.teamId === me.teamId || x.away?.teamId === me.teamId);
+        const mine = m && (m.home.teamId === me.teamId ? m.home : m.away), opp = m && (m === null ? null : m.home.teamId === me.teamId ? m.away : m.home);
+        if (mine && opp && $("rcNext")) $("rcNext").innerHTML = line("Next up", `${who(opp.teamId)}. Projected ${fmt(mine.projected)} to ${fmt(opp.projected)}, ${pct(mine.winProb)} to win`);
+      }
+      try {
+        const [wk, pk] = await Promise.all([getJSON(`/api/week?week=${N}`), getJSON(`/api/picks?week=${N}`)]);
+        let voted = 0, right = 0;
+        for (const m of wk.matchups || []) {
+          const t = pk.tallies?.[m.id]; if (!t || !(t.home + t.away) || t.home === t.away) continue;
+          voted++; if ((t.home > t.away && m.winner === "HOME") || (t.away > t.home && m.winner === "AWAY")) right++;
+        }
+        if ($("rcPicks") && voted) $("rcPicks").innerHTML = line("Pick 'em", `The crowd got ${right} of ${voted} matchups right`);
+      } catch {}
+      try {
+        await ensureHist();
+        const R = computeRecords(), cy = R.currentYear, items = [];
+        const scored = R.games.filter((x) => x.pts > 0);
+        [...scored].sort((a, b) => b.pts - a.pts).slice(0, 10).forEach((x, i) => { if (x.year === cy && x.week === N) items.push(`${esc(x.name)}'s ${fmt(x.pts)} is the #${i + 1} score of all time`); });
+        [...scored].sort((a, b) => a.pts - b.pts).slice(0, 10).forEach((x, i) => { if (x.year === cy && x.week === N) items.push(`${esc(x.name)}'s ${fmt(x.pts)} is the #${i + 1} lowest score of all time`); });
+        for (const [runs, label] of [[R.h2hRuns, "head-to-head"], [R.medRuns, "median"]]) for (const type of ["W", "L"]) {
+          const all = runs.filter((r) => r.type === type).sort((a, b) => b.len - a.len);
+          for (const r of all.filter((x) => x.active && x.len >= 3 && x.end.week === N && x.end.year === cy)) {
+            const rec = all.find((x) => x !== r);
+            items.push(`${esc(r.name)} has ${type === "W" ? "won" : "lost"} ${r.len} straight${label === "median" ? " against the median" : ""}${rec ? (r.len >= rec.len ? ", a league record" : `, ${rec.len - r.len} off the record`) : ""}`);
+          }
+        }
+        if ($("rcRecords")) $("rcRecords").innerHTML = items.length ? items.map((t) => `<div class="rc-rec">${t}.</div>`).join("") : `<div class="rc-sub">Nothing new in the record books this week.</div>`;
+      } catch { if ($("rcRecords")) $("rcRecords").innerHTML = `<div class="rc-sub">Couldn't check the record books.</div>`; }
+    })();
+  }
   // ---------- "I'm" picker and summary ----------
   const ordinal = (n) => { const v = n % 100; return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th"); };
   function fillMePicker() {
@@ -2147,6 +2345,14 @@
     const msg = SPECIAL_CARDS[first];
     el.hidden = !msg;
     el.textContent = msg || "";
+  }
+  function renderTrophiesAndSpecial(t) {
+    const mine2 = trophiesByTeam()[t.id] || {};
+    const got = AWARDS.filter((a) => mine2[a.key]);
+    $("meTrophies").innerHTML = state.awardsErr ? `<div class="k">Trophies</div><div class="mt-d">Couldn't load trophies: ${esc(state.awardsErr)}</div>` : !state.awards ? `<div class="k">Trophies</div><div class="mt-d">Loading…</div>` : got.length
+      ? `<div class="k">Trophies</div>${got.map((a) => `<div class="mt">${trophy(a.key, true)}<div><div class="mt-t">${a.title}<span class="mt-w">${wkList(mine2[a.key])}</span></div><div class="mt-d">${a.def}</div></div></div>`).join("")}`
+      : `<div class="k">Trophies</div><div class="mt-d">None yet. Check the Awards tab for who's collecting.</div>`;
+    renderSpecial(t);
   }
   function renderMe() {
     const card = $("meCard");
@@ -2168,6 +2374,24 @@
     $("meProj").textContent = mine ? fmt(final ? mine.current : mine.projected) : "–";
     let foot = "";
     const mm = $("meMatch");
+    // Current week before its first kickoff: show last week's recap instead of the matchup.
+    const preGame = state.wk && state.week === state.currentWeek && !state.wk.started && !wkSides().some((x) => x.current > 0) && state.currentWeek > 1;
+    $("meRecap").hidden = !preGame;
+    card.classList.toggle("recap-mode", Boolean(preGame));
+    if (preGame) {
+      mm.hidden = true;
+      $("meCard").classList.remove("has-match");
+      $("meFoot").textContent = "";
+      const sea = state.ifman?.teams?.[t.id];
+      $("meAcc").textContent = sea && sea.optimalPF > 0 ? `${Math.round(Math.min(1, sea.actualPF / sea.optimalPF) * 100)}%` : "–";
+      $("meAccSeason").textContent = "Season";
+      if (state.recapShown !== `${t.id}:${state.currentWeek - 1}`) { state.recapShown = `${t.id}:${state.currentWeek - 1}`; renderRecap(state.currentWeek - 1); }
+      if (!state.ifman && !state.ifmanErr && !state.ifmanLoading) state.ifmanLoading = getJSON("/api/ifman").then((d) => { state.ifman = d; renderMe(); }).catch((e) => { state.ifmanErr = e.message; });
+      renderTrophiesAndSpecial(t);
+      card.hidden = false;
+      return;
+    }
+    state.recapShown = null;
     if (mine && opp) {
       const on = mgr(opp.teamId);
       const iWon = m.winner === (mine === m.home ? "HOME" : "AWAY");
@@ -2188,12 +2412,14 @@
       if (mine) foot = "Bye this week.";
     }
     $("meFoot").textContent = foot;
-    const mine2 = trophiesByTeam()[t.id] || {};
-    const got = AWARDS.filter((a) => mine2[a.key]);
-    $("meTrophies").innerHTML = state.awardsErr ? `<div class="k">Trophies</div><div class="mt-d">Couldn't load trophies: ${esc(state.awardsErr)}</div>` : !state.awards ? `<div class="k">Trophies</div><div class="mt-d">Loading…</div>` : got.length
-      ? `<div class="k">Trophies</div>${got.map((a) => `<div class="mt">${trophy(a.key, true)}<div><div class="mt-t">${a.title}<span class="mt-w">${wkList(mine2[a.key])}</span></div><div class="mt-d">${a.def}</div></div></div>`).join("")}`
-      : `<div class="k">Trophies</div><div class="mt-d">None yet. Check the Awards tab for who's collecting.</div>`;
-    renderSpecial(t);
+    // Start accuracy: points scored out of the best possible lineup (this week, and season so far)
+    $("meAcc").textContent = mine?.accuracy != null ? `${Math.round(mine.accuracy * 100)}%` : "–";
+    const sea = state.ifman?.teams?.[t.id];
+    $("meAccSeason").textContent = sea && sea.optimalPF > 0 ? `Season ${Math.round(Math.min(1, sea.actualPF / sea.optimalPF) * 100)}%` : "";
+    if (!state.ifman && !state.ifmanErr && !state.ifmanLoading) {
+      state.ifmanLoading = getJSON("/api/ifman").then((d) => { state.ifman = d; renderMe(); }).catch((e) => { state.ifmanErr = e.message; });
+    }
+    renderTrophiesAndSpecial(t);
     card.hidden = false;
   }
   function markMe() {
@@ -2265,7 +2491,7 @@
     if (state.tab === "history") renderHistory();
     if (state.tab === "power") renderPower();
     if (state.tab === "draft") renderDraft();
-    if (state.tab === "moves") renderTradeBlock();
+    if (state.tab === "moves") { renderTradeBlock(); renderTxStats(); }
     ensureAwards().then(() => { renderMe(); renderPot(); });
     loadWeek(state.currentWeek);
   }
@@ -2324,7 +2550,7 @@
     if (name === "history" && state.league) renderHistory();
     if (name === "power" && state.league) renderPower();
     if (name === "draft" && state.league) renderDraft();
-    if (name === "moves" && state.league) renderTradeBlock();
+    if (name === "moves" && state.league) { renderTradeBlock(); renderTxStats(); }
     $("moreBtn").classList.toggle("active", moreTabs.includes(name));
     $("moreBtn").textContent = "More";
     document.querySelector(".tabs").classList.remove("more-open");
