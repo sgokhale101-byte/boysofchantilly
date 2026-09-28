@@ -2,7 +2,7 @@
 // Used by the If man standings and the Awards tab.
 import { getStore } from "@netlify/blobs";
 import { espnFetch, leagueUrl } from "./espn.mjs";
-import { isStarter, nflWeek, optimalPoints, parsePlayer, readPregame, rosterOf, siteProj } from "./model.mjs";
+import { isStarter, nflWeek, optimalPoints, parsePlayer, readPregame, readStartPct, rosterOf, siteProj } from "./model.mjs";
 
 const r2 = (n) => Math.round((n || 0) * 100) / 100;
 
@@ -10,10 +10,11 @@ const r2 = (n) => Math.round((n || 0) * 100) / 100;
 // Pre-game projection per starter: the value frozen at kickoff if the site saw the week before games
 // started; otherwise recomputed from ESPN's projection and whatever Vegas lines ESPN still lists.
 export async function weekSummary(week, slotCounts) {
-  const [raw, nfl, snap] = await Promise.all([
+  const [raw, nfl, snap, startSnap] = await Promise.all([
     espnFetch(leagueUrl(["mMatchupScore", "mScoreboard"], week)),
     nflWeek(week),
     readPregame(week),
+    readStartPct(week),
   ]);
   const league = JSON.parse(raw);
   const games = (league.schedule || []).filter((g) => g.matchupPeriodId === week);
@@ -31,6 +32,9 @@ export async function weekSummary(week, slotCounts) {
         projected: r2(starters.reduce((a, p) => a + (snap[p.id] ?? siteProj(p, nfl)), 0)),
         optimal: players.length ? Math.max(r2(actual), optimalPoints(players, slotCounts)) : null,
         result: !o ? "BYE" : g.winner === key ? "W" : g.winner === "TIE" ? "T" : "L",
+        // start %: frozen at kickoff when the site saw the week live, else ESPN's current number
+        starters: starters.map((p) => ({ id: p.id, name: p.name, pos: p.pos, pts: r2(p.actual), pct: startSnap[p.id] ?? p.pctStarted, pctLive: startSnap[p.id] == null })),
+        bench: players.filter((p) => p.slotId === 20).map((p) => ({ id: p.id, name: p.name, pos: p.pos, pts: r2(p.actual) })),
       });
     }
   }
@@ -51,7 +55,7 @@ export async function loadSeason() {
 
   const store = getStore({ name: "cache", consistency: "strong" });
   const weeks = await Promise.all(done.map(async (w) => {
-    const key = `weeksum/v2/w${w}`;
+    const key = `weeksum/v4/w${w}`;
     let teams = await store.get(key, { type: "json" });
     if (!teams) {
       teams = await weekSummary(w, slotCounts);

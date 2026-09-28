@@ -75,6 +75,16 @@ async function savePregame(week, snap) {
   try { await getStore({ name: "cache", consistency: "strong" }).setJSON(pregameKey(week), snap); } catch {}
 }
 
+// ESPN's "% started across leagues" is a live number, so it's frozen per player at kickoff too.
+const startKey = (week) => `pregame-start/v1/w${week}`;
+export async function readStartPct(week) {
+  try { return (await getStore({ name: "cache", consistency: "strong" }).get(startKey(week), { type: "json" })) || {}; }
+  catch { return {}; }
+}
+async function saveStartPct(week, snap) {
+  try { await getStore({ name: "cache", consistency: "strong" }).setJSON(startKey(week), snap); } catch {}
+}
+
 // ---------- Roster parsing ----------
 export function rosterOf(side) {
   return side?.rosterForCurrentScoringPeriod?.entries || side?.rosterForMatchupPeriod?.entries || [];
@@ -93,6 +103,7 @@ export function parsePlayer(entry, week) {
     id: pl.id ?? entry.playerId, name: pl.fullName || `Player ${entry.playerId}`, pos: POS[pl.defaultPositionId] || "",
     proTeamId: pl.proTeamId, slotId: entry.lineupSlotId, slot: SLOT[entry.lineupSlotId] || "",
     eligible: pl.eligibleSlots || [], actual: actual || 0, espnProj: proj || 0,
+    pctStarted: Number.isFinite(pl.ownership?.percentStarted) ? Math.round(pl.ownership.percentStarted * 10) / 10 : null,
   };
 }
 
@@ -141,11 +152,13 @@ const r2 = (n) => Math.round(n * 100) / 100;
 
 // ---------- Full week computation ----------
 export async function computeWeek(week) {
-  const [raw, nfl, snap] = await Promise.all([
-    espnFetch(leagueUrl(["mMatchupScore", "mScoreboard", "mStatus"], week)),
+  const [raw, nfl, snap, startSnap] = await Promise.all([
+    espnFetch(leagueUrl(["mMatchupScore", "mScoreboard", "mStatus", "mSettings"], week)),
     nflWeek(week),
     readPregame(week),
+    readStartPct(week),
   ]);
+  let startChanged = false;
   const league = JSON.parse(raw);
   const games = (league.schedule || []).filter((g) => g.matchupPeriodId === week);
   let snapChanged = false;
@@ -159,6 +172,7 @@ export async function computeWeek(week) {
       if (g && g.state === "pre" && p.id != null) {
         const v = r2(siteProj(p, nfl));
         if (snap[p.id] !== v) { snap[p.id] = v; snapChanged = true; }
+        if (p.pctStarted != null && startSnap[p.id] !== p.pctStarted) { startSnap[p.id] = p.pctStarted; startChanged = true; }
       }
     }
     let remaining = 0, variance = 0;
@@ -176,7 +190,10 @@ export async function computeWeek(week) {
       };
     });
     const current = s.totalPointsLive ?? s.totalPoints ?? players.filter(isStarter).reduce((a, p) => a + p.actual, 0);
-    return { teamId: s.teamId, current: r2(current), projected: r2(current + remaining), sd: Math.sqrt(variance), starters };
+    const counts = league.settings?.rosterSettings?.lineupSlotCounts;
+    const optimal = counts && players.length ? Math.max(r2(current), optimalPoints(players, counts)) : null;
+    return { teamId: s.teamId, current: r2(current), projected: r2(current + remaining), sd: Math.sqrt(variance), starters,
+      optimal, accuracy: optimal ? r2(Math.min(1, current / optimal)) : null };
   };
 
   const matchups = games.map((g) => {
@@ -192,6 +209,7 @@ export async function computeWeek(week) {
   });
 
   if (snapChanged) await savePregame(week, snap);
+  if (startChanged) await saveStartPct(week, startSnap);
   const sides = matchups.flatMap((m) => [m.home, m.away]).filter(Boolean);
   const started = Object.values(nfl.byTeam).some((g) => g.state !== "pre") || sides.some((x) => x.current > 0);
   return {

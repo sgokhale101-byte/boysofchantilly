@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v1.8.4)
+# Boys of Chantilly dashboard (v2.0.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -174,3 +174,70 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   (name "Boys of Chantilly", home screen label "Chantilly", opens full screen).
 - Hall of Fame and Record watch rank seasons by median points per game.
 - Summary card and Food Chain board show starters left to play (and live on the card) with projected points left.
+
+## 1.9
+- Eras: Plumber era (through 2021) and Median era (2022 on) in the History profile and Hall of Fame dropdowns; every list,
+  record, and streak follows the chosen span.
+- History: tap a team in Final standings or a profile's season list for its end-of-season roster
+  (`/api/history?part=rosters&season=Y`, finished seasons cached `hist/roster/v1/<year>`).
+- Big Brain award: made the median by starting a player under 60% started across ESPN who outscored the team's margin over
+  the median. Start % is frozen per player at kickoff (`pregame-start/v1/w<N>`); earlier weeks use ESPN's current number
+  and say so. Weekly data now carries starters (`weeksum/v3`).
+- Power Rankings: checks for new posts every 10 minutes and badges the tab (or More) until opened; message board cache cut to 60s.
+
+## 1.9.1
+- History: the Records choice (all time, era, or season) stays selected while switching managers; every league season is listed.
+- Hall of Fame: median streak lists only show for the Median era and 2022+ seasons (not All time).
+
+## 1.9.2
+- Start accuracy (points scored / best possible lineup): on the summary card for this week (live, `/api/week` now includes
+  optimal + accuracy) and the season so far (from `/api/ifman`).
+- Awards: Manager of the Week = best start accuracy; new Bench Blunder = worst (not awarded if every lineup is perfect).
+- Transactions tab (`/api/txstats`): FAAB Tracker (left, spent, starting-lineup points from paid pickups per $, best buys,
+  $0 free finds), 12th Man (most points scored while benched), Dead Weight (bench players out/on IR, low scoring and
+  under 50% rostered, or never started and low scoring). Weekly data now carries bench players (`weeksum/v4`).
+- `netlify/lib/tx.mjs`: shared transaction helpers used by moves and txstats.
+
+## 1.9.3
+- "The Estime Quotient": the FAAB Tracker's points-per-dollar metric.
+- Manager of the Week must make the median (best start accuracy among teams above the weekly median).
+- Weekly Recap at the top of Story (`/api/recap`), available once ESPN finalizes the week (usually early Tuesday), with a
+  New badge: your week (matchup, median, start accuracy, best starter, biggest dud, standings move, next matchup preview),
+  around the league (high and low score and pot, median line, closest game, biggest blowout, biggest upset by projection,
+  crowd pick'em accuracy), the week's awards, and record-book entries.
+
+## 1.9.4
+- The Weekly Recap moved into the "I'm ___" summary card: before the current week's first kickoff, the card shows last week's
+  recap (your week with a next-matchup preview, around the league, awards, record books) instead of the matchup, and switches
+  to the live matchup once games start. Removed from the Story tab, along with its badge.
+
+## 1.9.5
+- Scoreboard shows each team's live start accuracy.
+- New Waivers tab holds the weekly adds/drops/trades feed; Transactions keeps Trade Block, FAAB Tracker, 12th Man, Dead Weight.
+- FAAB: starting budgets by manager (FAAB_START in netlify/lib/tx.mjs: Vivek, Cameron, Srimanth $110), also used for FAAB-left
+  on each move. Tracker table shows left and spent only. Best buys skip pickups with no starting-lineup points; up to 10.
+- 12th Man shows bench points per week benched.
+- Dead Weight: injured players only when out for the season (ESPN injury report: return date after the season or season-ending
+  notes) or when the team has an open IR spot.
+
+## 1.9.6
+- Season-long start accuracy (points scored / best possible lineup, summed over finished weeks):
+  - Standings "Accuracy" view: accuracy, points left on bench, perfect weeks, best/worst week (`/api/ifman` now returns weekly
+    actual + best lineup).
+  - History profiles: accuracy for all time, an era, or a season, with league rank, perfect weeks, and bench points left
+    (`/api/history?part=ifman` now returns weekly best lineups).
+  - Hall of Fame: most and least accurate seasons (finished seasons with 6+ weeks of lineup data).
+
+## 2.0
+- Luck index (actual H2H wins minus expected wins from the weekly all-play record), with bad beats (losses above the weekly
+  median) and lucky wins (wins below it): Standings "Luck" view (this season), History profiles (any span, league rank,
+  all-play record), Hall of Fame (luckiest/unluckiest seasons, most bad beats, most lucky wins). Computed from game logs.
+- Points by position pie charts: Standings (this season, from `/api/recap`) and History profiles (from weekly lineups;
+  `/api/history?part=ifman` now returns positions). Weekly lineup cache now keeps starters (`hist/week/v2`).
+- Trade Review tab (`/api/history?part=trades&season=Y`): every trade; finished seasons get a verdict from starting-lineup
+  points each side got from the players it received, trade week through the end of the regular season (even if the gap is
+  under 15 points or 15%), plus both teams' finishes. Past seasons cached (`hist/trades/v1`, `hist/tx/v1`).
+
+## 2.0.1
+- Trade Review verdicts now include fantasy playoff weeks (winners bracket games only, not consolation), period by period
+  so multi-week playoff rounds work (`hist/playoffs/v1/<year>`). Trade cache bumped to `hist/trades/v2`, so past verdicts recompute.

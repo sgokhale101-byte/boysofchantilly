@@ -74,7 +74,7 @@ export default async () => {
     authorMatched: [...authorIds].map((id) => members[id]),
     authorsSeen: [...new Set(posts.map((p) => members[p.authorId] || p.authorId || "unknown"))].slice(0, 12),
   };
-  return json(200, { posts: out, diagnostic }, "public, max-age=300");
+  return json(200, { posts: out, diagnostic }, "public, max-age=60");
 };
 
 export const config = { path: "/api/power" };
