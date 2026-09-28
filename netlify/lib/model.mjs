@@ -1,4 +1,5 @@
 // Projection model and lineup math shared by the week and ifman functions.
+import { getStore } from "@netlify/blobs";
 import { espnFetch, leagueUrl, SEASON } from "./espn.mjs";
 
 export const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
@@ -60,6 +61,30 @@ function vegasFactor(pos, g, avg) {
   return Math.min(1.25, Math.max(0.8, ratio ** 0.6));
 }
 
+// The site's own projection for one player: ESPN's number adjusted by the Vegas line.
+export const siteProj = (p, nfl) => p.espnProj * vegasFactor(p.pos, nfl.byTeam[p.proTeamId], nfl.avgImplied);
+
+// Pre-game projections are frozen per player at kickoff, so finished weeks can be judged
+// against what the site projected before games started.
+const pregameKey = (week) => `pregame/v1/w${week}`;
+export async function readPregame(week) {
+  try { return (await getStore({ name: "cache", consistency: "strong" }).get(pregameKey(week), { type: "json" })) || {}; }
+  catch { return {}; }
+}
+async function savePregame(week, snap) {
+  try { await getStore({ name: "cache", consistency: "strong" }).setJSON(pregameKey(week), snap); } catch {}
+}
+
+// ESPN's "% started across leagues" is a live number, so it's frozen per player at kickoff too.
+const startKey = (week) => `pregame-start/v1/w${week}`;
+export async function readStartPct(week) {
+  try { return (await getStore({ name: "cache", consistency: "strong" }).get(startKey(week), { type: "json" })) || {}; }
+  catch { return {}; }
+}
+async function saveStartPct(week, snap) {
+  try { await getStore({ name: "cache", consistency: "strong" }).setJSON(startKey(week), snap); } catch {}
+}
+
 // ---------- Roster parsing ----------
 export function rosterOf(side) {
   return side?.rosterForCurrentScoringPeriod?.entries || side?.rosterForMatchupPeriod?.entries || [];
@@ -78,13 +103,15 @@ export function parsePlayer(entry, week) {
     id: pl.id ?? entry.playerId, name: pl.fullName || `Player ${entry.playerId}`, pos: POS[pl.defaultPositionId] || "",
     proTeamId: pl.proTeamId, slotId: entry.lineupSlotId, slot: SLOT[entry.lineupSlotId] || "",
     eligible: pl.eligibleSlots || [], actual: actual || 0, espnProj: proj || 0,
+    pctStarted: Number.isFinite(pl.ownership?.percentStarted) ? Math.round(pl.ownership.percentStarted * 10) / 10 : null,
   };
 }
 
 export const isStarter = (p) => !NON_STARTER.has(p.slotId);
 
 // Best possible lineup from actual points. Fills the most restrictive slots first.
-export function optimalPoints(players, lineupSlotCounts) {
+// Returns [{ slotId, player }] for every starting slot that could be filled.
+export function optimalLineup(players, lineupSlotCounts) {
   const slots = [];
   for (const [id, n] of Object.entries(lineupSlotCounts || {})) {
     const sid = Number(id);
@@ -93,16 +120,19 @@ export function optimalPoints(players, lineupSlotCounts) {
   }
   const elig = (sid) => players.filter((p) => p.eligible.includes(sid)).length;
   slots.sort((a, b) => elig(a) - elig(b));
-  const used = new Set(); let total = 0;
+  const used = new Set(), out = [];
   for (const sid of slots) {
     let best = null;
     for (const p of players) {
       if (used.has(p.id) || !p.eligible.includes(sid)) continue;
       if (!best || p.actual > best.actual) best = p;
     }
-    if (best) { used.add(best.id); total += best.actual; }
+    if (best) { used.add(best.id); out.push({ slotId: sid, player: best }); }
   }
-  return Math.round(total * 100) / 100;
+  return out;
+}
+export function optimalPoints(players, lineupSlotCounts) {
+  return Math.round(optimalLineup(players, lineupSlotCounts).reduce((a, x) => a + x.player.actual, 0) * 100) / 100;
 }
 
 // ---------- Probability ----------
@@ -122,27 +152,40 @@ const r2 = (n) => Math.round(n * 100) / 100;
 
 // ---------- Full week computation ----------
 export async function computeWeek(week) {
-  const [raw, nfl] = await Promise.all([
+  const [raw, nfl, snap, startSnap] = await Promise.all([
     espnFetch(leagueUrl(["mMatchupScore", "mScoreboard", "mStatus"], week)),
     nflWeek(week),
+    readPregame(week),
+    readStartPct(week),
   ]);
+  let startChanged = false;
   const league = JSON.parse(raw);
   const games = (league.schedule || []).filter((g) => g.matchupPeriodId === week);
+  let snapChanged = false;
 
   const side = (s) => {
     if (!s) return null;
     const players = rosterOf(s).map((e) => parsePlayer(e, week));
+    // Freeze the latest pre-game projection for every rostered player whose game hasn't started.
+    for (const p of players) {
+      const g = nfl.byTeam[p.proTeamId];
+      if (g && g.state === "pre" && p.id != null) {
+        const v = r2(siteProj(p, nfl));
+        if (snap[p.id] !== v) { snap[p.id] = v; snapChanged = true; }
+        if (p.pctStarted != null && startSnap[p.id] !== p.pctStarted) { startSnap[p.id] = p.pctStarted; startChanged = true; }
+      }
+    }
     let remaining = 0, variance = 0;
     const starters = players.filter(isStarter).map((p) => {
       const g = nfl.byTeam[p.proTeamId];
-      const proj = p.espnProj * vegasFactor(p.pos, g, nfl.avgImplied);
+      const proj = siteProj(p, nfl);
       let rem;
       if (!nfl.available) rem = p.actual > 0 ? 0 : proj;
       else if (!g) rem = 0; // bye week or no game found
       else rem = g.state === "post" ? 0 : g.state === "pre" ? proj : proj * g.frac;
       remaining += rem; variance += (SPREAD_K * rem) ** 2;
       return {
-        name: p.name, pos: p.pos, slot: p.slot, actual: r2(p.actual), proj: r2(proj), remaining: r2(rem),
+        name: p.name, pos: p.pos, slot: p.slot, slotId: p.slotId, actual: r2(p.actual), proj: r2(proj), remaining: r2(rem),
         game: g ? { state: g.state, opp: g.oppAbbr, home: g.home } : null,
       };
     });
@@ -162,9 +205,12 @@ export async function computeWeek(week) {
     return { id: g.id, winner: g.winner || "UNDECIDED", home, away };
   });
 
+  if (snapChanged) await savePregame(week, snap);
+  if (startChanged) await saveStartPct(week, startSnap);
   const sides = matchups.flatMap((m) => [m.home, m.away]).filter(Boolean);
+  const started = Object.values(nfl.byTeam).some((g) => g.state !== "pre") || sides.some((x) => x.current > 0);
   return {
-    week, currentWeek: league.status?.currentMatchupPeriod ?? null,
+    week, currentWeek: league.status?.currentMatchupPeriod ?? null, started,
     medians: { current: r2(median(sides.map((s) => s.current))), projected: r2(median(sides.map((s) => s.projected))) },
     odds: { games: nfl.oddsGames, nflData: nfl.available },
     matchups,

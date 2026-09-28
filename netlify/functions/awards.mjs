@@ -1,6 +1,26 @@
 // Weekly awards for every finished week, served at /api/awards.
 import { EspnError } from "../lib/espn.mjs";
 import { loadSeason } from "../lib/season.mjs";
+import { median } from "../lib/model.mjs";
+
+// Big Brain: a team that made the median by starting someone under 60% started across ESPN,
+// who scored more than the team's margin over the median (without him, no median win).
+function bigBrain(teams) {
+  const med = median(teams.map((t) => t.actual));
+  const cands = [];
+  for (const t of teams) {
+    const margin = t.actual - med;
+    if (margin <= 0) continue;
+    for (const p of t.starters || []) {
+      if (p.pct == null || p.pct >= 60 || p.pts <= margin) continue;
+      cands.push({ teamId: t.teamId, actual: t.actual, oppId: t.oppId, player: p.name, pos: p.pos, playerPts: p.pts, pct: p.pct, pctLive: p.pctLive, margin: r2(margin), median: r2(med) });
+    }
+  }
+  if (!cands.length) return null;
+  cands.sort((a, b) => b.playerPts - a.playerPts || a.pct - b.pct);
+  const top = cands[0];
+  return { value: top.playerPts, winners: [top] };
+}
 
 const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(obj), {
   status, headers: { "content-type": "application/json", "cache-control": cache, ...(status === 200 ? { "netlify-cdn-cache-control": "public, s-maxage=300" } : {}) },
@@ -46,6 +66,7 @@ export default async () => {
         manager: hasOpt ? fmtWin(tieBreak(pick(teams, (t) => t.optimal != null ? t.optimal - t.actual : null, lo))) : null,
         noah: fmtWin(pick(teams.filter((t) => t.result === "L"), (t) => t.actual, hi), (r) => ({ oppScore: opp(r)?.actual })),
         srimanth: fmtWin(pick(teams.filter((t) => t.result === "W"), (t) => t.actual, lo), (r) => ({ oppScore: opp(r)?.actual })),
+        bigbrain: teams.some((t) => t.starters) ? bigBrain(teams) : null,
       },
     };
   });
