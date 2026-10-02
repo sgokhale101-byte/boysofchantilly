@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.1)
+# Boys of Chantilly dashboard (v2.2)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -250,3 +250,16 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
     they come near the screen. Old links (#hof, #story, #foodchain, ...) open the right tab and scroll there.
 - Modes updated: Sundays = Live, Pick 'em, The Week; Base = Standings, The Week, Pick 'em; Historian = Library, Standings.
 - Nothing removed: every former tab is a section in its new home.
+
+## 2.2
+- Four tabs, no modes: Live (Food Chain, Scoreboard, Weekly Pot, The Sharks), The Week (Standings, Story, Awards,
+  Transactions, Waivers), Social (Pick 'em, Power Rankings; the new-post badge is on Social), Library (Manager Profiles,
+  Final Standings, Hall of Fame, Draft, Trade Review).
+- Standings: H2H and "IF man..." renamed; Accuracy view removed (start accuracy lives on profiles as "Nth of N in the
+  league"); Luck view drops the H2H column.
+- The Week: "Record Watch" (only top-3 scores, top-3 paces, and streaks within 3 games of the record), "Trending", tap any
+  trophy for what it is and how it was earned, Explain It on Best buys and Free finds, Dead Weight removed from view.
+- Trade Block looks up names for players nobody rosters.
+- Library: profile season list shown as compact chips; Final Standings is its own section; Hall of Fame drops "Most
+  accurate seasons"; Trade Review hides team 0 (free agency) and names a winner on every trade by starting points
+  ("Winning so far" this season). Trade cache `hist/trades/v3`.

@@ -331,7 +331,7 @@
     .pick .opt { min-height: 104px; padding: 10px; }
     .pick .opt .chance b { font-size: 22px; }
 
-    .toggle { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; border-radius: 16px; gap: 2px; }
+    .toggle { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; border-radius: 999px; gap: 0; }
     .toggle button { font-size: 13px; }
     .toggle button { padding: 9px 4px; }
     .toggle .full { display: none; } .toggle .short { display: inline; }
@@ -719,7 +719,8 @@
   @media (min-width: 641px) { .tabs button.has-new::after { top: 2px; right: -2px; } }
   /* Roster popup */
   tr.tap { cursor: pointer; } tr.tap:hover td { background: rgba(107, 47, 179, .12); }
-  .team-link { display: block; background: none; border: 0; padding: 3px 0; text-align: left; color: var(--lilac); font-size: 13px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+  .prof-teams { display: flex; flex-wrap: wrap; gap: 6px; }
+  .team-link { display: inline-block; background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; text-align: left; color: var(--lilac); font-size: 12px; cursor: pointer; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .modal { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.7); display: grid; place-items: center; padding: 16px; }
   :root[data-theme="light"] .modal { background: rgba(30,15,50,.35); }
   .modal-card { background: var(--black); border: 1px solid var(--royal); border-radius: 16px; width: min(560px, 100%); max-height: 86vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -795,7 +796,7 @@
   .tr-side.won { border-color: #22C55E; } .tr-side.lost { opacity: .85; }
   .tr-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .tr-who .logo-sm { width: 30px; height: 30px; }
-  .tr-nm { font-weight: 700; } .tr-side.won .tr-nm::after { content: " (won)"; color: #22C55E; font-size: 12px; }
+  .tr-nm { font-weight: 700; } .tr-side.won .tr-nm::after { content: " (winner)"; color: #22C55E; font-size: 12px; }
   .tr-sub { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
   .tr-got { color: var(--muted); font-size: 11.5px; font-weight: 700; margin: 8px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
   .tr-p { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; padding: 3px 0; flex-wrap: wrap; }
@@ -804,7 +805,7 @@
   @media (max-width: 640px) { .tr-sides { grid-template-columns: 1fr; } }
 
   /* Old per-section tab buttons stay in the page (for links) but are hidden */
-  .tabs [role=tab]:not([data-tab="live"]):not([data-tab="pickem"]):not([data-tab="standings"]):not([data-tab="week"]):not([data-tab="library"]):not([data-tab="power"]) { display: none !important; }
+  .tabs [role=tab]:not([data-tab="live"]):not([data-tab="week"]):not([data-tab="social"]):not([data-tab="library"]) { display: none !important; }
   /* Jump bar */
   .jumpbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: var(--black); display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 8px; margin-top: 4px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
   .jumpbar::-webkit-scrollbar { display: none; }
@@ -818,6 +819,14 @@
     .jumpbar[hidden] { display: none; }
     .jumpbar button { padding: 7px 3px; font-size: 12px; line-height: 1.15; white-space: normal; min-width: 0; border-radius: 12px; }
   }
+
+  .tabs.no-more .more-wrap { display: none !important; }
+  @media (max-width: 640px) { .tabs.no-more { grid-template-columns: repeat(4, 1fr) !important; } .tabs.no-more button { font-size: 13.5px; } }
+
+  [data-trophy], .trophy.tap { cursor: pointer; }
+  .tw { padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .tw:first-of-type { border-top: 0; }
+  .tw-w { font-weight: 700; color: var(--lilac); font-size: 12.5px; margin-bottom: 2px; }
 </style>
 </head>
 <body>
@@ -898,11 +907,7 @@
         <div class="label" id="weekLabel">Week –</div>
         <button id="nextWeek" aria-label="Next week">›</button>
       </div>
-      <div class="modes" role="group" aria-label="Mode">
-        <button data-mode="sundays" aria-pressed="false">Sundays</button>
-        <button data-mode="base" aria-pressed="false">Base</button>
-        <button data-mode="historian" aria-pressed="false">Historian</button>
-      </div>
+
       <label class="me-pick"><span>I'm</span>
         <select id="mePick" aria-label="Choose your team"><option value="">pick your team</option></select>
       </label>
@@ -933,6 +938,7 @@
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
     <button role="tab" id="tab-live" aria-controls="panel-pecking" data-tab="live"><span class="full">Live</span><span class="short">Live</span></button>
     <button role="tab" id="tab-week" aria-controls="panel-story" data-tab="week"><span class="full">The Week</span><span class="short">The Week</span></button>
+    <button role="tab" id="tab-social" aria-controls="panel-pickem" data-tab="social"><span class="full">Social</span><span class="short">Social</span></button>
     <button role="tab" id="tab-library" aria-controls="panel-history" data-tab="library"><span class="full">Library</span><span class="short">Library</span></button>
     <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard"><span class="full">Scoreboard</span><span class="short">Scores</span></button>
     <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Food Chain</span><span class="short">Food<br>Chain</span></button>
@@ -980,6 +986,19 @@
       <details class="explain"><summary>Explain It</summary><p class="note">Every team ranked by this week's score. Teams above the dashed line made the median and are winning their second game of the week. The Minnows below it are losing theirs.</p></details>
       <div class="board board-pad"><div class="board-inner" id="board"></div></div>
     </section>
+
+
+  </div>
+
+    <div class="panel" id="panel-pot" role="tabpanel" hidden>
+    <section aria-labelledby="potH">
+      <h2 id="potH">Weekly Pot</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">The week's highest scorer takes $12. A tie splits it.</p></details>
+      <div class="pot" id="pot"></div>
+    </section>
+  </div>
+
+  <div class="panel" id="panel-sharks" role="tabpanel" hidden>
     <section aria-labelledby="highH">
       <h2 id="highH">The Sharks and Their Prey</h2>
       <details class="explain"><summary>Explain It</summary><p class="note" id="highNote">The week's four highest-scoring teams and the lowest.</p></details>
@@ -988,14 +1007,9 @@
         <div><h3>Last place</h3><div class="low" id="low"></div></div>
       </div>
     </section>
-    <section aria-labelledby="potH">
-      <h2 id="potH">Weekly Pot</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">The week's highest scorer takes $12. A tie splits it.</p></details>
-      <div class="pot" id="pot"></div>
-    </section>
   </div>
 
-    <div class="panel" id="panel-pickem" role="tabpanel" aria-labelledby="tab-pickem" hidden>
+  <div class="panel" id="panel-pickem" role="tabpanel" aria-labelledby="tab-pickem" hidden>
     <section aria-labelledby="pickH">
       <h2 id="pickH">Pick 'em</h2>
       <details class="explain"><summary>Explain It</summary><p class="note" id="pickNote"></p></details>
@@ -1011,10 +1025,9 @@
       <h2 id="stH">Standings</h2>
       <div class="toggle" role="group" aria-label="Standings view">
         <button data-view="current" aria-pressed="true">Current</button>
-        <button data-view="h2h" aria-pressed="false"><span class="full">Head-to-head</span><span class="short">H2H</span></button>
+        <button data-view="h2h" aria-pressed="false">H2H</button>
         <button data-view="median" aria-pressed="false">Median</button>
-        <button data-view="ifman" aria-pressed="false">If man</button>
-        <button data-view="accuracy" aria-pressed="false"><span class="full">Accuracy</span><span class="short">Acc %</span></button>
+        <button data-view="ifman" aria-pressed="false">IF man...</button>
         <button data-view="luck" aria-pressed="false">Luck</button>
       </div>
       <details class="explain"><summary>Explain It</summary><p class="note" id="standNote"></p></details>
@@ -1060,12 +1073,12 @@
       <div id="tow"></div>
     </section>
     <section aria-labelledby="rwH">
-      <h2 id="rwH">Record watch</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">This season against the Hall of Fame: scores that already cracked the all-time top 10, teams on pace for a top-10 (or bottom-10) season by median points per game, and active streaks closing in on the record.</p></details>
+      <h2 id="rwH">Record Watch</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">Only records that are actually in reach: this season's scores in the all-time top 3 (or bottom 3), teams on pace for a top-3 (or bottom-3) season by median points per game, and active streaks within 3 games of the record.</p></details>
       <div class="rwatch" id="rwatch"></div>
     </section>
     <section aria-labelledby="trendH">
-      <h2 id="trendH">Who's hot, who's not</h2>
+      <h2 id="trendH">Trending</h2>
       <details class="explain"><summary>Explain It</summary><p class="note">Trends combine each team's current win streak with how far above or below the weekly median it has scored over its last three weeks.</p></details>
       <div class="trends" id="trends"></div>
     </section>
@@ -1073,7 +1086,7 @@
 
   <div class="panel" id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
     <section aria-labelledby="profH">
-      <h2 id="profH">Manager profiles</h2>
+      <h2 id="profH">Manager Profiles</h2>
       <details class="explain"><summary>Explain It</summary><p class="note">Every manager who has played in the league, current and former, across every season ESPN has on record. Weeks and head-to-head records count regular-season games. Cakewalk is the manager they beat most often, Their Daddy is the one who owns them, and Rival is their closest head-to-head series. For current managers, all three are other current managers. Luck index: actual head-to-head wins minus the wins your scores earned against the whole league each week (the all-play record). Positive means the schedule has helped, negative means it has hurt. Bad beats are losses while scoring above that week's median; lucky wins are wins while scoring below it.</p></details>
       <div class="hist-controls">
         <label class="me-pick"><span>Manager</span><select id="histManager" aria-label="Choose a manager"></select></label>
@@ -1081,8 +1094,12 @@
       </div>
       <div id="profile"></div>
     </section>
+
+  </div>
+
+  <div class="panel" id="panel-seasons" role="tabpanel" hidden>
     <section aria-labelledby="seasH">
-      <div class="aw-pick"><h2 id="seasH">Final standings</h2><label class="me-pick"><span>Season</span><select id="histSeason" aria-label="Choose a season"></select></label></div>
+      <div class="aw-pick"><h2 id="seasH">Final Standings</h2><label class="me-pick"><span>Season</span><select id="histSeason" aria-label="Choose a season"></select></label></div>
       <details class="explain"><summary>Explain It</summary><p class="note" id="seasNote"></p><p class="note">Tap any team to see its final roster.</p></details>
       <div class="table-scroll"><table id="seasonTable"></table></div>
     </section>
@@ -1105,7 +1122,7 @@
   <div class="panel" id="panel-trades" role="tabpanel" aria-labelledby="tab-trades" hidden>
     <section aria-labelledby="trH">
       <div class="aw-pick"><h2 id="trH">Trade Review</h2><label class="me-pick"><span>Season</span><select id="trSeason" aria-label="Choose a season"></select></label></div>
-      <details class="explain"><summary>Explain It</summary><p class="note">Every trade ESPN has on record. This season's trades are just listed. For finished seasons, each side is scored by the starting-lineup points it got from the players it received, from the week of the trade through the fantasy playoffs (playoff bracket games count; consolation games don't). The side with more wins the trade; if the gap is under 15 points (or 15%), it's called even. Each side also shows how that team finished.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">Every trade ESPN has on record, each with a trade winner. Players dropped to free agency as part of a trade aren't shown. This season's trades show who's winning so far. Each side is scored by the starting-lineup points it got from the players it received, from the week of the trade through the fantasy playoffs (playoff bracket games count; consolation games don't). The side with more wins the trade. Each side also shows how that team finished.</p></details>
       <div id="trades"></div>
     </section>
   </div>
@@ -1134,11 +1151,7 @@
       <details class="explain"><summary>Explain It</summary><p class="note">The bench players who scored the most points this season while sitting on someone's bench (finished weeks), with how much they average per week on the bench. The number on the right is the season total.</p></details>
       <div id="twelfth"></div>
     </section>
-    <section aria-labelledby="dwH">
-      <h2 id="dwH">Dead Weight</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">Bench players worth cutting or moving: out for the season (from ESPN's injury report), injured while the team has an open IR spot, scoring well below a usable level at their position while few ESPN leagues roster them, or scoring low without being started all season. Short-term injuries don't count when there's no IR spot to use.</p></details>
-      <div id="dead"></div>
-    </section>
+
 
 
   </div>
@@ -1149,11 +1162,12 @@
 (() => {
   const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
   // Top-level tabs. Live, The Week, and Library each hold several sections with a jump bar.
-  const TABS = ["live", "pickem", "standings", "week", "library", "power"];
+  const TABS = ["live", "week", "social", "library"];
   const GROUPS = {
-    live: [["pecking", "Food Chain"], ["scoreboard", "Scoreboard"]],
-    week: [["story", "Story"], ["awards", "Awards"], ["waivers", "Waivers"], ["moves", "Transactions"]],
-    library: [["history", "League History"], ["hof", "Hall of Fame"], ["draft", "Draft"], ["trades", "Trade Review"]],
+    live: [["pecking", "Food Chain"], ["scoreboard", "Scoreboard"], ["pot", "Weekly Pot"], ["sharks", "The Sharks"]],
+    week: [["standings", "Standings"], ["story", "Story"], ["awards", "Awards"], ["moves", "Transactions"], ["waivers", "Waivers"]],
+    social: [["pickem", "Pick 'em"], ["power", "Power Rankings"]],
+    library: [["history", "Manager Profiles"], ["seasons", "Final Standings"], ["hof", "Hall of Fame"], ["draft", "Draft"], ["trades", "Trade Review"]],
   };
   const SECTION_GROUP = Object.fromEntries(Object.entries(GROUPS).flatMap(([g, list]) => list.map(([id]) => [id, g])));
   // Is this section (or tab) on screen right now?
@@ -1476,9 +1490,9 @@
   }
   const NOTES = {
     current: "Official standings as ESPN has them, in playoff-seed order.",
-    h2h: "Records from head-to-head matchups only.",
+    h2h: "H2H: records from head-to-head matchups only.",
     median: "One game per completed week against the league median: a win for finishing above it, a loss for finishing below.",
-    ifman: "What the standings would be if every team had started its best possible lineup every week, against opponents who did the same.",
+    ifman: "IF man...: what the standings would be if every team had started its best possible lineup every week, against opponents who did the same.",
     luck: LUCK_EXPLAIN_SHORT,
     accuracy: "Season-long start accuracy: points scored out of the best lineup each team could have started, over every finished week. Perfect weeks are weeks with nothing better left on the bench.",
   };
@@ -1527,8 +1541,8 @@
       const lk = luckFromWeeks(wk);
       const rows = L.teams.map((t) => ({ t, x: lk[t.id] })).filter((r) => r.x).sort((a, b) => b.x.luck - a.x.luck);
       if (!rows.length) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Fills in after the first week is final.</td></tr></tbody>`; return; }
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Luck</th><th>H2H</th><th class="hide-m">All-play</th><th>Bad beats</th><th>Lucky wins</th></tr></thead><tbody>${rows.map(({ t, x }, i) => `
-        <tr class="${t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(t)}<td class="strong ${x.luck > 0.05 ? "up" : x.luck < -0.05 ? "down" : ""}">${luckText(x.luck)}</td><td>${recStr({ w: x.w, l: x.l, t: x.t })}</td><td class="hide-m">${recStr({ w: x.apW, l: x.apL, t: x.apT })}</td><td>${x.badBeats}</td><td>${x.luckyWins}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Luck</th><th class="hide-m">All-play</th><th>Bad beats</th><th>Lucky wins</th></tr></thead><tbody>${rows.map(({ t, x }, i) => `
+        <tr class="${t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(t)}<td class="strong ${x.luck > 0.05 ? "up" : x.luck < -0.05 ? "down" : ""}">${luckText(x.luck)}</td><td class="hide-m">${recStr({ w: x.apW, l: x.apL, t: x.apT })}</td><td>${x.badBeats}</td><td>${x.luckyWins}</td></tr>`).join("")}</tbody>`;
     } else if (v === "accuracy") {
       if (!state.ifman && !state.ifmanErr) {
         table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every lineup…</td></tr></tbody>`;
@@ -1545,8 +1559,8 @@
       }).sort((x, y) => (y.acc ?? -1) - (x.acc ?? -1));
       if (!rows.some((r) => r.n)) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Fills in after the first week is final.</td></tr></tbody>`; return; }
       const p1 = (x) => (x == null ? "–" : `${(x * 100).toFixed(1)}%`);
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Accuracy</th><th>Left on bench</th><th>Perfect</th><th class="hide-m">Best week</th><th class="hide-m">Worst week</th></tr></thead><tbody>${rows.map((x, i) => `
-        <tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${p1(x.acc)}</td><td>${fmt(x.left)}</td><td>${x.perfect}</td><td class="hide-m">${x.best ? `${p1(x.best.pct)} (wk ${x.best.w})` : "–"}</td><td class="hide-m">${x.worst ? `${p1(x.worst.pct)} (wk ${x.worst.w})` : "–"}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Accuracy</th><th>Left on bench</th><th>Perfect</th></tr></thead><tbody>${rows.map((x, i) => `
+        <tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${p1(x.acc)}</td><td>${fmt(x.left)}</td><td>${x.perfect}</td></tr>`).join("")}</tbody>`;
     } else {
       if (!state.ifman && !state.ifmanErr) {
         table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every team's best lineup for each completed week…</td></tr></tbody>`;
@@ -1602,7 +1616,26 @@
     { key: "blunder", title: "Bench Blunder", def: "Worst start accuracy: the most points left on the bench, relative to the best possible lineup" },
     { key: "bigbrain", title: "Big Brain", def: "Started someone under 60% started across ESPN who carried them past the median" },
   ];
-  const trophy = (key, sm) => `<svg class="trophy${sm ? " sm" : ""}" role="img" aria-label="${esc(AWARDS.find((a) => a.key === key)?.title || "")}"><use href="#tr-${key}"></use></svg>`;
+  const trophy = (key, sm, teamId, week) => `<svg class="trophy${sm ? " sm" : ""}${teamId != null ? " tap" : ""}" role="img" aria-label="${esc(AWARDS.find((a) => a.key === key)?.title || "")}"${teamId != null ? ` data-trophy="${key}:${teamId}${week != null ? `:${week}` : ""}"` : ""}><use href="#tr-${key}"></use></svg>`;
+  // Tap a trophy: what it is and what they did to earn it
+  function openTrophy(key, teamId, week) {
+    const a = AWARDS.find((x) => x.key === key); if (!a || !state.awards) return;
+    const wins = [];
+    for (const wk of state.awards.weeks || []) {
+      if (week != null && wk.week !== week) continue;
+      for (const w of wk.awards[key]?.winners || []) if (w.teamId === teamId) wins.push({ week: wk.week, why: awardWhy(key, w) });
+    }
+    const box = document.createElement("div"); box.className = "modal";
+    box.innerHTML = `<div class="modal-card"><div class="modal-head"><div class="modal-who">${trophy(key)}<div><div class="modal-t">${esc(a.title)}</div><div class="modal-s">${esc(mgr(teamId))}${wins.length > 1 ? `, ${wins.length} times` : ""}</div></div></div><button class="modal-x" aria-label="Close">×</button></div>
+      <div class="modal-body"><p class="modal-note">${esc(a.def)}.</p>${wins.map((x) => `<div class="tw"><div class="tw-w">Week ${x.week}</div><div>${esc(x.why)}</div></div>`).join("") || `<div class="empty">No details for this one yet.</div>`}</div></div>`;
+    box.addEventListener("click", (e) => { if (e.target === box || e.target.closest(".modal-x")) box.remove(); });
+    document.body.appendChild(box);
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-trophy]"); if (!t) return;
+    const [k, id, wk] = t.getAttribute("data-trophy").split(":");
+    openTrophy(k, Number(id), wk != null ? Number(wk) : null);
+  });
   function awardWhy(key, w) {
     const opp = w.oppId != null ? nameOf(w.oppId) : "";
     switch (key) {
@@ -1648,7 +1681,7 @@
     const caseRows = [...state.league.teams].sort((a, b) => total(b.id) - total(a.id) || teamName(a).localeCompare(teamName(b)));
     const caseHtml = `<h3>Trophy case</h3><div class="case">${caseRows.map((t) => {
       const c = byTeam[t.id] || {};
-      const shelf = AWARDS.filter((a) => c[a.key]).map((a) => `<span class="chip" title="${esc(a.title)}">${trophy(a.key, true)}<span>${wkList(c[a.key])}</span></span>`).join("");
+      const shelf = AWARDS.filter((a) => c[a.key]).map((a) => `<span class="chip" title="${esc(a.title)}" data-trophy="${a.key}:${t.id}">${trophy(a.key, true)}<span>${wkList(c[a.key])}</span></span>`).join("");
       return `<div class="ct ${t.id === state.me ? "me" : ""}">${logo(t)}<span class="nm">${esc(teamName(t))}</span><div class="shelf">${shelf || `<span class="empty-shelf">None yet</span>`}</div></div>`;
     }).join("")}</div>`;
 
@@ -1668,7 +1701,7 @@
         const who = r.winners.map((w) => `<span class="${w.teamId === state.me ? "me" : ""}">${esc(nameOf(w.teamId))}</span>`).join(" and ");
         const why = r.winners.length === 1 ? awardWhy(a.key, r.winners[0]) : `Tied: ${r.winners.map((w) => awardWhy(a.key, w)).join("; ")}`;
         const mine = r.winners.some((w) => w.teamId === state.me);
-        return `<div class="aw">${trophy(a.key)}<div><div class="title">${a.title}</div><div class="def">${a.def}</div><div class="who ${mine ? "me" : ""}">${who}</div><div class="why">${esc(why)}</div></div></div>`;
+        return `<div class="aw">${trophy(a.key, false, r.winners[0].teamId, wk.week)}<div><div class="title">${a.title}</div><div class="def">${a.def}</div><div class="who ${mine ? "me" : ""}">${who}</div><div class="why">${esc(why)}</div></div></div>`;
       }).join("");
       return `<article class="wkcard"><header><h3>Week ${wk.week}</h3><div class="recap">${recap}</div></header>${rows}</article>`;
     }).join("");
@@ -1977,7 +2010,7 @@
       if (myAcc == null) return "";
       const all = managers().map((m) => { let a = 0, o = 0; for (const x of m.seasons) { if (!inScope(state.histYear, x.season.year)) continue; const r = seasonAccuracy(x.season, x.team); if (r) { a += r.actual; o += r.optimal; } } return { id: m.id, v: o > 0 ? a / o : null }; }).filter((x) => x.v != null);
       const pos = all.filter((x) => x.v > myAcc + 1e-9).length + 1;
-      return `${pos === 1 ? "Best" : `${ordinal(pos)} best`} of ${all.length}`;
+      return `${ordinal(pos)} of ${all.length}`;
     })();
     // Luck over the chosen span, with a league rank
     const lk = { w: 0, l: 0, t: 0, apW: 0, apL: 0, apT: 0, expected: 0, luck: 0, badBeats: 0, luckyWins: 0 };
@@ -1997,7 +2030,7 @@
       <div class="prof-more">
         <div><div class="v ${lk.luck > 0.05 ? "up" : lk.luck < -0.05 ? "down" : ""}">${hasLuck ? luckText(lk.luck) : "–"}</div><div class="k">Luck index</div><div class="d">${hasLuck ? `${luckRank}. All-play ${recStr({ w: lk.apW, l: lk.apL, t: lk.apT })}` : ""}</div></div>
         <div><div class="v">${hasLuck ? `${lk.badBeats} / ${lk.luckyWins}` : "–"}</div><div class="k">Bad beats / lucky wins</div><div class="d">${hasLuck ? "Losses above the median / wins below it" : ""}</div></div>
-        <div><div class="v">${myAcc == null ? (ifPending ? "…" : "–") : `${(myAcc * 100).toFixed(1)}%`}</div><div class="k">Start accuracy</div><div class="d">${myAcc == null ? "" : `${accRank}, ${accPerfect} perfect week${accPerfect === 1 ? "" : "s"}`}</div></div>
+        <div><div class="v">${myAcc == null ? (ifPending ? "…" : "–") : `${(myAcc * 100).toFixed(1)}%`}</div><div class="k">Start accuracy</div><div class="d">${myAcc == null ? "" : `${accRank} in the league, ${accPerfect} perfect week${accPerfect === 1 ? "" : "s"}`}</div></div>
         <div><div class="v">${myAcc == null ? "–" : fmt(accO - accA)}</div><div class="k">Points left on the bench</div><div class="d">${accSeasons ? `${accN} weeks, ${accSeasons} season${accSeasons === 1 ? "" : "s"}` : ""}</div></div>
         <div><div class="v">${top4}</div><div class="k">Top 4 finish${top4 === 1 ? "" : "es"}</div></div>
         <div><div class="v">${bottom4}</div><div class="k">Bottom 4 finish${bottom4 === 1 ? "" : "es"} (missed playoffs)</div></div>
@@ -2028,9 +2061,9 @@
       </div>
       <div class="prof-recs">
         <div><div class="v">${recStr(off)}</div><div class="k">Official record</div></div>
-        <div><div class="v">${recStr(h2h)}</div><div class="k">Head-to-head</div></div>
+        <div><div class="v">${recStr(h2h)}</div><div class="k">H2H</div></div>
         <div><div class="v">${recStr(med)}</div><div class="k">Median</div></div>
-        <div><div class="v">${ifText}</div><div class="k">If man</div></div>
+        <div><div class="v">${ifText}</div><div class="k">IF man...</div></div>
       </div>
       ${extras}
       <div class="prof-teams">${teamsBy}</div>
@@ -2150,7 +2183,7 @@
   const powerSeen = () => { try { return localStorage.getItem("boc-power-seen"); } catch { return null; } };
   const markPowerSeen = (id) => { try { if (id) localStorage.setItem("boc-power-seen", id); } catch {} setPowerBadge(false); };
   function setPowerBadge(on) {
-    $("tab-power").classList.toggle("has-new", on);
+    $("tab-social").classList.toggle("has-new", on);
     $("moreBtn").classList.toggle("has-new", on && moreTabs.includes("power"));
   }
   async function checkPower() {
@@ -2313,8 +2346,8 @@
     const t = latest.teams.find((x) => x.teamId === state.me);
     return t ? identity(latest, t).key : null;
   };
-  function hofList(title, icon, rows, render) {
-    return `<div class="hcard"><h3><span class="ic">${icon}</span>${title}</h3>${rows.length ? rows.map((r, i) => render(r, i)).join("") : `<div class="sub" style="color:var(--muted)">Nothing yet.</div>`}</div>`;
+  function hofList(title, icon, rows, render, explain) {
+    return `<div class="hcard"><h3><span class="ic">${icon}</span>${title}</h3>${explain ? `<details class="explain"><summary>Explain It</summary><p class="note">${explain}</p></details>` : ""}${rows.length ? rows.map((r, i) => render(r, i)).join("") : `<div class="sub" style="color:var(--muted)">Nothing yet.</div>`}</div>`;
   }
   async function renderHof() {
     const box = $("hof");
@@ -2358,7 +2391,7 @@
       + hofList(`Unluckiest seasons, ${L}`, "⛈️", [...luckRows].sort((a, b) => a.luck - b.luck).slice(0, 10), luckRow)
       + hofList(`Most bad beats in a season, ${L}`, "💔", [...luckRows].filter((x) => x.badBeats).sort((a, b) => b.badBeats - a.badBeats || a.luck - b.luck).slice(0, 10), beatRow)
       + hofList(`Most lucky wins in a season, ${L}`, "🎰", [...luckRows].filter((x) => x.luckyWins).sort((a, b) => b.luckyWins - a.luckyWins || b.luck - a.luck).slice(0, 10), (x, i) => beatRow({ ...x, badBeats: x.luckyWins }, i));
-    html += `<div class="hcard" id="hofAccBest"></div><div class="hcard" id="hofAccWorst"></div>`;
+    html += `<div class="hcard" id="hofAccWorst"></div>`;
     html += `<div class="hcard" style="grid-column:1/-1" id="hofPlayers"></div>`;
     box.innerHTML = html;
     renderHofPlayers();
@@ -2391,7 +2424,7 @@
     const years = [...new Set(state.hist.seasons.map((x) => x.year))].filter((y) => inScope(state.hofYear, y)).sort((a, b) => b - a);
     const me = myKey();
     const draw = () => {
-      if (!$("hofAccBest")) return;
+      if (!$("hofAccWorst")) return;
       const rows = [];
       for (const season of state.hist.seasons) {
         if (!season.complete || !years.includes(season.year)) continue;
@@ -2400,7 +2433,7 @@
       const pending = years.filter((y) => !state.histIfman[y]?.complete).length;
       const row = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}</div><div class="sub">${x.year}, ${fmt(x.optimal - x.actual)} left on the bench</div></div><span class="val">${(x.acc * 100).toFixed(1)}%</span></div>`;
       const note = pending ? `<div class="sub" style="color:var(--muted);margin-top:6px">Still working out ${pending} season${pending === 1 ? "" : "s"}…</div>` : "";
-      $("hofAccBest").outerHTML = `<div class="hcard" id="hofAccBest">${hofList(`Most accurate seasons, ${scopeLabel(state.hofYear)}`, "🎯", [...rows].sort((a, b) => b.acc - a.acc).slice(0, 10), row).replace(/^<div class="hcard">|<\/div>$/g, "")}${note}</div>`;
+      if ($("hofAccBest")) $("hofAccBest").outerHTML = `<div class="hcard" id="hofAccBest">${hofList(`Most accurate seasons, ${scopeLabel(state.hofYear)}`, "🎯", [...rows].sort((a, b) => b.acc - a.acc).slice(0, 10), row).replace(/^<div class="hcard">|<\/div>$/g, "")}${note}</div>`;
       $("hofAccWorst").outerHTML = `<div class="hcard" id="hofAccWorst">${hofList(`Least accurate seasons, ${scopeLabel(state.hofYear)}`, "🙈", [...rows].sort((a, b) => a.acc - b.acc).slice(0, 10), row).replace(/^<div class="hcard">|<\/div>$/g, "")}${note}</div>`;
     };
     draw();
@@ -2417,19 +2450,20 @@
     const scored = R.games.filter((x) => x.pts > 0);
     const topAll = [...scored].sort((a, b) => b.pts - a.pts).slice(0, 10);
     const lowAll = [...scored].sort((a, b) => a.pts - b.pts).slice(0, 10);
-    topAll.forEach((x, i) => { if (x.year === cy) items.push({ kind: "done", key: x.key, text: `<b>${esc(x.name)}</b> scored <b>${fmt(x.pts)}</b> in week ${x.week}, the #${i + 1} score of all time.` }); });
-    lowAll.forEach((x, i) => { if (x.year === cy) items.push({ kind: "done", key: x.key, text: `<b>${esc(x.name)}</b> put up <b>${fmt(x.pts)}</b> in week ${x.week}, the #${i + 1} lowest score of all time.` }); });
+    topAll.forEach((x, i) => { if (x.year === cy && i < 3) items.push({ kind: "done", key: x.key, text: `<b>${esc(x.name)}</b> scored <b>${fmt(x.pts)}</b> in week ${x.week}, the #${i + 1} score of all time.` }); });
+    lowAll.forEach((x, i) => { if (x.year === cy && i < 3) items.push({ kind: "done", key: x.key, text: `<b>${esc(x.name)}</b> put up <b>${fmt(x.pts)}</b> in week ${x.week}, the #${i + 1} lowest score of all time.` }); });
     const best = [...R.seasonsPpg].sort((a, b) => b.ppg - a.ppg), worst = [...R.seasonsPpg].sort((a, b) => a.ppg - b.ppg);
     for (const p of R.pace) {
       const rb = best.filter((x) => x.ppg > p.ppg).length + 1, rw = worst.filter((x) => x.ppg < p.ppg).length + 1;
-      if (rb <= 10) items.push({ kind: "pace", key: p.key, sort: rb, text: `<b>${esc(p.name)}</b> has a median of <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rb} best season ever${best[0] ? ` (record: ${best[0].ppg.toFixed(1)}, ${esc(best[0].name)} ${best[0].year})` : ""}.` });
-      else if (rw <= 10) items.push({ kind: "pace", key: p.key, sort: rw, text: `<b>${esc(p.name)}</b> has a median of <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rw} worst season ever.` });
+      if (rb <= 3) items.push({ kind: "pace", key: p.key, sort: rb, text: `<b>${esc(p.name)}</b> has a median of <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rb} best season ever${best[0] ? ` (record: ${best[0].ppg.toFixed(1)}, ${esc(best[0].name)} ${best[0].year})` : ""}.` });
+      else if (rw <= 3) items.push({ kind: "pace", key: p.key, sort: rw, text: `<b>${esc(p.name)}</b> has a median of <b>${p.ppg.toFixed(1)}</b> a week, on pace for the #${rw} worst season ever.` });
     }
     const streakNote = (runs, label) => {
       for (const type of ["W", "L"]) {
         const all = runs.filter((r) => r.type === type).sort((a, b) => b.len - a.len);
         const rec = all[0]; if (!rec) continue;
-        for (const r of all.filter((x) => x.active && x.len >= 3)) {
+        // Only streaks within 3 games of the record (or already tying or breaking it)
+        for (const r of all.filter((x) => x.active && x.len >= 3 && (!all.find((y) => y !== x) || all.find((y) => y !== x).len - x.len <= 3))) {
           const word = type === "W" ? "won" : "lost";
           const others = all.filter((x) => x !== r);
           const record = others[0];
@@ -2445,17 +2479,17 @@
     if (state.hofPlayers[cy]?.complete) {
       const topP = loaded.sort((a, b) => b.pts - a.pts).slice(0, 10);
       const S = state.hist.seasons.find((x) => x.year === cy);
-      topP.forEach((t, i) => { if (t.year !== cy) return; const team = S?.teams.find((x) => x.teamId === t.teamId); const o = team ? identity(S, team) : { name: "", key: null };
+      topP.forEach((t, i) => { if (t.year !== cy || i >= 3) return; const team = S?.teams.find((x) => x.teamId === t.teamId); const o = team ? identity(S, team) : { name: "", key: null };
         items.push({ kind: "done", key: o.key, text: `<b>${esc(t.name)}</b> scored <b>${fmt(t.pts)}</b> for ${esc(fixName(o.name))} in week ${t.week}, #${i + 1} among the league's best player games${Object.keys(state.hofPlayers).length < state.hist.seasons.length ? " loaded so far" : ""}.` }); });
     }
     const me = myKey();
     box.innerHTML = items.length ? items.map((x) => `<div class="rw ${x.kind}"><span class="badge">${x.kind === "done" ? "In the books" : "On pace"}</span><div class="txt ${x.key === me ? "me" : ""}">${x.text}</div></div>`).join("")
-      : `<div class="empty">No records in reach yet this season.</div>`;
+      : `<div class="empty">Nobody's close to a record right now.</div>`;
   }
 
   // ---------- FAAB tracker, 12th Man, Dead Weight ----------
   async function renderTxStats() {
-    const boxes = ["faab", "twelfth", "dead"];
+    const boxes = ["faab", "twelfth"];
     if (!state.txstats && !state.txstatsErr) {
       boxes.forEach((b) => ($(b).innerHTML = `<div class="empty">Crunching the numbers…</div>`));
       try { state.txstats = await getJSON("/api/txstats"); } catch (e) { state.txstatsErr = e.message; }
@@ -2468,11 +2502,11 @@
       `<div class="table-scroll"><table class="faab-table"><thead><tr><th>#</th><th>Manager</th><th>Left</th><th>Spent</th></tr></thead><tbody>${rows.map((r, i) => `
         <tr class="${r.teamId === state.me ? "me" : ""}"><td class="rank">${i + 1}</td><td><div class="tcell">${logo(teamById(r.teamId))}<div>${esc(mgr(r.teamId))}${r.start !== F.budget ? `<div class="owner" style="display:block">started with $${r.start}</div>` : ""}</div></div></td><td class="strong">${money(r.left)}</td><td>${money(r.spent)}</td></tr>`).join("")}</tbody></table></div>
       <p class="note" style="margin-top:6px">Budget $${F.budget}${rows.some((r) => r.start !== F.budget) ? ", with a few managers starting higher" : ""}.</p>`) +
-      `<div class="hof" style="margin-top:12px">${hofList("Best buys (The Estime Quotient)", "💸", F.bestBuys, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, $${b.bid}, ${fmt(b.pts)} pts in ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${b.perDollar.toFixed(2)}</span></div>`)}
-        ${hofList("Free finds ($0 pickups)", "🎁", F.freeFinds, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${fmt(b.pts)}</span></div>`)}</div>`;
+      `<div class="hof" style="margin-top:12px">${hofList("Best buys (The Estime Quotient)", "💸", F.bestBuys, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, $${b.bid}, ${fmt(b.pts)} pts in ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${b.perDollar.toFixed(2)}</span></div>`, "The Estime Quotient: points a paid pickup has scored in that team's starting lineup, from the week of the pickup on, divided by the FAAB bid. 3.44 means 3.44 points per dollar. Pickups that haven't scored in a starting lineup yet aren't listed.")}
+        ${hofList("Free finds ($0 pickups)", "🎁", F.freeFinds, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${fmt(b.pts)}</span></div>`, "The best $0 pickups (free agents or $0 waiver claims), ranked by points scored in that team's starting lineup since the pickup.")}</div>`;
     $("twelfth").innerHTML = D.twelfthMan.length ? `<div class="hcard">${D.twelfthMan.map((x, i) => `<div class="hrow ${x.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(x.teamId))}<div class="who"><div class="nm">${esc(x.name)}${x.pos ? `, ${esc(x.pos)}` : ""}</div><div class="sub">${esc(mgr(x.teamId))}'s bench, ${fmt(x.avg)} a week over ${x.weeks} week${x.weeks === 1 ? "" : "s"}</div></div><span class="val">${fmt(x.pts)}</span></div>`).join("")}</div>`
       : `<div class="empty">No bench points yet.</div>`;
-    $("dead").innerHTML = D.deadWeight.length ? `<div class="hcard">${D.deadWeight.map((x) => `<div class="dwrow ${x.teamId === state.me ? "me" : ""}">${logo(teamById(x.teamId))}<div class="dw-who"><div class="dw-nm">${esc(x.name)}${x.pos ? `, ${esc(x.pos)}` : ""} <span class="dw-mgr">${esc(mgr(x.teamId))}</span></div><div class="dw-why">${esc(x.reason)}</div></div></div>`).join("")}</div>`
+    if ($("dead")) $("dead").innerHTML = D.deadWeight.length ? `<div class="hcard">${D.deadWeight.map((x) => `<div class="dwrow ${x.teamId === state.me ? "me" : ""}">${logo(teamById(x.teamId))}<div class="dw-who"><div class="dw-nm">${esc(x.name)}${x.pos ? `, ${esc(x.pos)}` : ""} <span class="dw-mgr">${esc(mgr(x.teamId))}</span></div><div class="dw-why">${esc(x.reason)}</div></div></div>`).join("")}</div>`
       : `<div class="empty">Every bench looks clean right now.</div>`;
   }
 
@@ -2610,7 +2644,9 @@
       const cards = [];
       for (const y of want) {
         const T = state.trades[y]; if (!T) continue;
-        for (const tr of [...(T.trades || [])].reverse()) {
+        for (const tr0 of [...(T.trades || [])].reverse()) {
+          const tr = { ...tr0, sides: tr0.sides.filter((sd) => sd.teamId > 0) }; // team 0 = free agency
+          if (tr.sides.length < 2) continue;
           const season = byYear[y];
           const side = (sd) => {
             const team = season?.teams.find((t) => t.teamId === sd.teamId);
@@ -2624,7 +2660,10 @@
             </div>`;
           };
           const v = tr.verdict;
-          const badge = !v ? (y === years[0] ? `<span class="tr-badge">In season, no verdict yet</span>` : "") : v.result === "even" ? `<span class="tr-badge even">Even trade</span>` : `<span class="tr-badge win">Won by ${fmt(v.gap)} pts</span>`;
+          const winnerName = v?.result === "win" ? (() => { const sd = tr.sides.find((x) => x.teamId === v.winner); const team = season?.teams.find((t) => t.teamId === v.winner); return fixName(team ? identity(season, team).name : sd?.teamName || ""); })() : "";
+          const badge = !v ? `<span class="tr-badge">Waiting on the first finished week</span>`
+            : v.result === "tie" ? `<span class="tr-badge even">Dead even</span>`
+            : `<span class="tr-badge win">${(v.final ?? y !== years[0]) ? "Trade winner" : "Winning so far"}: ${esc(winnerName)}, +${fmt(v.gap)}</span>`;
           cards.push(`<article class="tr-card"><div class="tr-head"><span>${y}, week ${tr.week}</span>${badge}</div><div class="tr-sides">${tr.sides.map(side).join("")}</div></article>`);
         }
       }
@@ -2659,7 +2698,7 @@
     const mine2 = trophiesByTeam()[t.id] || {};
     const got = AWARDS.filter((a) => mine2[a.key]);
     $("meTrophies").innerHTML = state.awardsErr ? `<div class="k">Trophies</div><div class="mt-d">Couldn't load trophies: ${esc(state.awardsErr)}</div>` : !state.awards ? `<div class="k">Trophies</div><div class="mt-d">Loading…</div>` : got.length
-      ? `<div class="k">Trophies</div>${got.map((a) => `<div class="mt">${trophy(a.key, true)}<div><div class="mt-t">${a.title}<span class="mt-w">${wkList(mine2[a.key])}</span></div><div class="mt-d">${a.def}</div></div></div>`).join("")}`
+      ? `<div class="k">Trophies</div>${got.map((a) => `<div class="mt" data-trophy="${a.key}:${t.id}">${trophy(a.key, true)}<div><div class="mt-t">${a.title}<span class="mt-w">${wkList(mine2[a.key])}</span></div><div class="mt-d">${a.def}</div></div></div>`).join("")}`
       : `<div class="k">Trophies</div><div class="mt-d">None yet. Check the Awards tab for who's collecting.</div>`;
     renderSpecial(t);
   }
@@ -2810,43 +2849,29 @@
   applyTheme((() => { try { return localStorage.getItem("boc-theme") || "dark"; } catch { return "dark"; } })());
 
   // ---------- Modes: which tabs sit in the phone tab bar (the rest go under More) ----------
-  const MODES = {
-    sundays: ["live", "pickem", "week"],
-    base: ["standings", "week", "pickem"],
-    historian: ["library", "standings"],
-  };
-  let mode = (() => { try { const m = localStorage.getItem("boc-mode"); return MODES[m] ? m : "base"; } catch { return "base"; } })();
-  let moreTabs = TABS.filter((t) => !MODES[mode].includes(t));
-  const WEEKLESS = new Set(["base", "historian"]);
-  function applyMode(m, { jump = true } = {}) {
-    mode = MODES[m] ? m : "base";
-    // Base and Historian always show the current week, so the week picker goes away.
-    document.querySelector(".mast .controls").classList.toggle("no-week", WEEKLESS.has(mode));
-    document.querySelector(".mast .controls").classList.toggle("no-status", mode === "historian");
-    if (WEEKLESS.has(mode) && state.currentWeek && state.week !== state.currentWeek) loadWeek(state.currentWeek);
-    try { localStorage.setItem("boc-mode", mode); } catch {}
-    document.querySelectorAll(".modes [data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === mode));
-    const nav = document.querySelector(".tabs"), wrap = nav.querySelector(".more-wrap"), sheet = $("moreSheet");
-    const primary = MODES[mode];
-    moreTabs = TABS.filter((t) => !primary.includes(t));
-    primary.forEach((t) => nav.insertBefore($(`tab-${t}`), wrap));
-    moreTabs.forEach((t) => sheet.appendChild($(`tab-${t}`)));
-    nav.style.setProperty("--tabcols", primary.length + 1);
-    if (jump && !primary.includes(state.tab)) showTab(primary[0]);
-    else $("moreBtn").classList.toggle("active", moreTabs.includes(state.tab));
+  // One layout for everyone: all four tabs sit in the tab bar.
+  const MODES = { all: TABS };
+  const mode = "all";
+  let moreTabs = [];
+  function applyMode() {
+    const nav = document.querySelector(".tabs"), wrap = nav.querySelector(".more-wrap");
+    TABS.forEach((t) => nav.insertBefore($(`tab-${t}`), wrap));
+    nav.style.setProperty("--tabcols", TABS.length);
+    nav.classList.add("no-more");
   }
-  document.querySelector(".modes").addEventListener("click", (e) => { const b = e.target.closest("[data-mode]"); if (b) applyMode(b.dataset.mode); });
 
   // ---------- Tabs ----------
   // Draw one section's content (sections load when they come near the screen).
   function renderSection(n) {
-    if (!state.league && n !== "pecking" && n !== "scoreboard" && n !== "pickem") return;
+    if (!state.league && !["pecking", "scoreboard", "pickem", "pot", "sharks"].includes(n)) return;
     if (n === "pecking") requestAnimationFrame(placeMedian);
     if (n === "standings") renderStandings();
     if (n === "awards") renderAwards();
     if (n === "story") { renderStory(); renderRecordWatch(); }
     if (n === "hof") renderHof();
-    if (n === "history") renderHistory();
+    if (n === "history" || n === "seasons") renderHistory();
+    if (n === "pot") renderPot();
+    if (n === "sharks") renderPecking();
     if (n === "power") renderPower();
     if (n === "draft") renderDraft();
     if (n === "trades") renderTrades();
@@ -2894,8 +2919,7 @@
     state.drawSection = draw;
     if (scrollTo) { draw(scrollTo); requestAnimationFrame(() => jumpTo(scrollTo, false)); }
     setTimeout(() => jb.querySelectorAll("[data-jump]").forEach((b) => b.classList.toggle("on", b.dataset.jump === currentSection())), 50);
-    $("moreBtn").classList.toggle("active", moreTabs.includes(name));
-    $("moreBtn").textContent = "More";
+    $("moreBtn").classList.remove("active");
     document.querySelector(".tabs").classList.remove("more-open");
     $("moreBtn").setAttribute("aria-expanded", "false");
   }
@@ -2950,7 +2974,7 @@
   $("nextWeek").onclick = () => state.week < state.lastWeek && loadWeek(state.week + 1);
   window.addEventListener("resize", placeMedian, { passive: true });
 
-  applyMode(mode, { jump: false });
+  applyMode();
   showTab(location.hash.slice(1) || MODES[mode][0], false);
   init();
 })();

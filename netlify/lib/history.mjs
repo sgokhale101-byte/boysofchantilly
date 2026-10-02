@@ -244,7 +244,7 @@ async function playoffWeeks(year, deadline) {
 // players it received, from the trade's week through the fantasy playoffs (winners bracket games).
 export async function seasonTrades(year, deadline) {
   const Y = Number(year), past = Y < Number(SEASON);
-  const key = `hist/trades/v2/${Y}`;
+  const key = `hist/trades/v3/${Y}`;
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const summary = await seasonSummaryCached(Y);
   const lastPeriod = past ? summary.regularSeasonWeeks + 4 : Math.max(1, ...(summary.doneWeeks || [0])) + 1;
@@ -277,6 +277,11 @@ export async function seasonTrades(year, deadline) {
 
   // Players' starting points for their new team after the trade (needs weekly lineups).
   let weeks = null;
+  if (!past && uniq.length) {
+    // This season: starting points so far, from finished weeks.
+    const cur = await loadSeason();
+    weeks = Object.fromEntries(cur.weeks.map((w) => [w.week, { rows: w.teams.map((t) => ({ teamId: t.teamId, starters: (t.starters || []).map((p) => ({ id: p.id, pts: p.pts })) })) }]));
+  }
   if (past && complete && uniq.length) {
     const sw = await seasonWeeks(Y, deadline + 2500);
     const po = sw.done ? await playoffWeeks(Y, deadline + 3500).catch(() => ({})) : null;
@@ -286,7 +291,8 @@ export async function seasonTrades(year, deadline) {
   const teamName = Object.fromEntries(summary.teams.map((t) => [t.teamId, t]));
   const out = uniq.map((t) => {
     const byTeam = {};
-    for (const it of t.items) if (it.to != null && it.to >= 0) (byTeam[it.to] ||= []).push(it);
+    // Team 0 / negative ids are free agency (players dropped to make room), not a trade partner.
+    for (const it of t.items) if (it.to != null && it.to > 0) (byTeam[it.to] ||= []).push(it);
     const sides = Object.entries(byTeam).map(([teamId, items]) => {
       const tid = Number(teamId);
       const received = items.map((it) => {
@@ -302,14 +308,15 @@ export async function seasonTrades(year, deadline) {
       const team = teamName[tid];
       return { teamId: tid, teamName: team?.teamName || `Team ${tid}`, finalRank: past ? team?.finalRank ?? null : null, received, pts: weeks ? r2(received.reduce((a, x) => a + (x.pts || 0), 0)) : null };
     });
+    // Winner = the side that got more starting points from what it received.
     let verdict = null;
-    if (weeks && sides.length === 2) {
-      const [a, b] = [...sides].sort((x, y) => y.pts - x.pts);
-      const gap = a.pts - b.pts;
-      verdict = gap < Math.max(15, 0.15 * Math.max(a.pts, 1)) ? { result: "even", gap: r2(gap) } : { result: "win", winner: a.teamId, loser: b.teamId, gap: r2(gap) };
+    if (weeks && sides.length >= 2) {
+      const ranked = [...sides].sort((x, y) => y.pts - x.pts);
+      const gap = ranked[0].pts - ranked[1].pts;
+      verdict = gap < 0.005 ? { result: "tie", gap: 0, final: past } : { result: "win", winner: ranked[0].teamId, loser: ranked[ranked.length - 1].teamId, gap: r2(gap), final: past };
     }
     return { id: t.id, year: Y, week: t.period, date: t.date, sides, verdict };
-  });
+  }).filter((t) => t.sides.length >= 2); // a "trade" with only free agency on the other side isn't a trade
   const result = { year: Y, complete: complete && (!past || !uniq.length || weeks != null), available: true, trades: out };
   if (past && result.complete) await store().setJSON(key, result).catch(() => {});
   return result;
