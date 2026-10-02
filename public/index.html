@@ -802,6 +802,22 @@
   .tr-pts { color: var(--muted); font-size: 12px; }
   .tr-tot { margin-top: 6px; font-weight: 700; font-size: 13px; color: var(--lilac); }
   @media (max-width: 640px) { .tr-sides { grid-template-columns: 1fr; } }
+
+  /* Old per-section tab buttons stay in the page (for links) but are hidden */
+  .tabs [role=tab]:not([data-tab="live"]):not([data-tab="pickem"]):not([data-tab="standings"]):not([data-tab="week"]):not([data-tab="library"]):not([data-tab="power"]) { display: none !important; }
+  /* Jump bar */
+  .jumpbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: var(--black); display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 8px; margin-top: 4px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+  .jumpbar::-webkit-scrollbar { display: none; }
+  .jumpbar[hidden] { display: none; }
+  .jumpbar button { flex: none; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 7px 14px; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .jumpbar button.on { background: var(--royal); border-color: var(--royal); color: var(--on-accent) !important; }
+  .panel + .panel { border-top: 2px solid var(--line); margin-top: 30px; padding-top: 4px; }
+  .panel { scroll-margin-top: 64px; }
+  @media (max-width: 640px) {
+    .jumpbar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); overflow: visible; gap: 4px; }
+    .jumpbar[hidden] { display: none; }
+    .jumpbar button { padding: 7px 3px; font-size: 12px; line-height: 1.15; white-space: normal; min-width: 0; border-radius: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -915,6 +931,9 @@
   </aside>
 
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button role="tab" id="tab-live" aria-controls="panel-pecking" data-tab="live"><span class="full">Live</span><span class="short">Live</span></button>
+    <button role="tab" id="tab-week" aria-controls="panel-story" data-tab="week"><span class="full">The Week</span><span class="short">The Week</span></button>
+    <button role="tab" id="tab-library" aria-controls="panel-history" data-tab="library"><span class="full">Library</span><span class="short">Library</span></button>
     <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard"><span class="full">Scoreboard</span><span class="short">Scores</span></button>
     <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Food Chain</span><span class="short">Food<br>Chain</span></button>
     <button role="tab" id="tab-pickem" aria-controls="panel-pickem" data-tab="pickem"><span class="full">Pick 'em</span><span class="short">Pick 'em</span></button>
@@ -936,6 +955,7 @@
   </nav>
 
   <div class="banner" id="banner" role="alert" hidden></div>
+  <nav class="jumpbar" id="jumpbar" aria-label="Jump to a section" hidden></nav>
 
   <div class="panel" id="panel-scoreboard" role="tabpanel" aria-labelledby="tab-scoreboard">
     <section aria-labelledby="sbH">
@@ -1128,7 +1148,16 @@
 <script>
 (() => {
   const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
-  const TABS = ["scoreboard", "pecking", "pickem", "standings", "power", "hof", "awards", "story", "history", "draft", "moves", "waivers", "trades"];
+  // Top-level tabs. Live, The Week, and Library each hold several sections with a jump bar.
+  const TABS = ["live", "pickem", "standings", "week", "library", "power"];
+  const GROUPS = {
+    live: [["pecking", "Food Chain"], ["scoreboard", "Scoreboard"]],
+    week: [["story", "Story"], ["awards", "Awards"], ["waivers", "Waivers"], ["moves", "Transactions"]],
+    library: [["history", "League History"], ["hof", "Hall of Fame"], ["draft", "Draft"], ["trades", "Trade Review"]],
+  };
+  const SECTION_GROUP = Object.fromEntries(Object.entries(GROUPS).flatMap(([g, list]) => list.map(([id]) => [id, g])));
+  // Is this section (or tab) on screen right now?
+  const isOn = (name) => state.tab === name || (GROUPS[state.tab] || []).some(([id]) => id === name);
   const MORE_TABS = ["power", "hof", "awards", "story", "history", "draft", "moves"];
   const state = {
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
@@ -2130,8 +2159,8 @@
       const newest = d.posts?.[0]?.id ? String(d.posts[0].id) : null;
       if (!newest) return;
       const changed = !state.power || String(state.power.posts?.[0]?.id) !== newest;
-      if (changed) { state.power = d; if (state.tab === "power") renderPower(); }
-      if (state.tab === "power") markPowerSeen(newest);
+      if (changed) { state.power = d; if (isOn("power")) renderPower(); }
+      if (isOn("power")) markPowerSeen(newest);
       else setPowerBadge(powerSeen() !== newest);
     } catch {}
   }
@@ -2604,7 +2633,7 @@
         (pending ? `<div class="empty">Pulling trades from ${pending} season${pending === 1 ? "" : "s"}. The first time takes a few seconds per season…</div>` : "");
     };
     draw();
-    for (const y of want) { if (state.trades[y]?.complete) continue; await loadTrades(y); if (state.tab === "trades") draw(); }
+    for (const y of want) { if (state.trades[y]?.complete) continue; await loadTrades(y); if (isOn("trades")) draw(); }
   }
   $("trSeason").onchange = (e) => { state.tradeYear = e.target.value === "all" ? "all" : Number(e.target.value); renderTrades(); };
 
@@ -2741,7 +2770,7 @@
       if (week !== state.week) return;
       state.wk = wk;
       renderScoreboard(); renderPecking(); renderPicks(); renderMe(); markMe(); renderPot();
-      if (!quiet || state.tab === "pickem") loadPicks();
+      if (!quiet || isOn("pickem")) loadPicks();
       const live = weekLive() && wkSides().some((s) => s.current > 0);
       $("liveDot").classList.toggle("live", live);
       $("updated").textContent = `${live ? "Live, updated" : "Updated"} ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
@@ -2753,7 +2782,7 @@
   }
   const LEAGUE_VIEWS = ["mSettings", "mTeam", "mStandings", "mMatchupScore", "mStatus"];
   async function refresh() {
-    try { state.league = await espn({ view: LEAGUE_VIEWS }); if (state.tab === "standings") renderStandings(); renderMe(); } catch (e) { showError(e.message); }
+    try { state.league = await espn({ view: LEAGUE_VIEWS }); if (isOn("standings")) renderStandings(); renderMe(); } catch (e) { showError(e.message); }
     loadWeek(state.week, { quiet: true });
   }
   async function init() {
@@ -2765,14 +2794,8 @@
     $("leagueSub").textContent = `${L.settings?.name || "League 353576"}, ${L.seasonId || ""} season, ${L.teams.length} teams`;
     fillMePicker();
     renderStandings();
-    if (state.tab === "awards") renderAwards();
-    if (state.tab === "story") { renderStory(); renderRecordWatch(); }
-    if (state.tab === "hof") renderHof();
-    if (state.tab === "history") renderHistory();
-    if (state.tab === "power") renderPower();
-    if (state.tab === "draft") renderDraft();
-    if (state.tab === "trades") renderTrades();
-    if (state.tab === "moves") { renderTradeBlock(); renderTxStats(); }
+    // Re-run the section loader now that league data is here
+    showTab(location.hash.slice(1) || state.tab, false);
     ensureAwards().then(() => { renderMe(); renderPot(); });
     loadWeek(state.currentWeek);
   }
@@ -2788,9 +2811,9 @@
 
   // ---------- Modes: which tabs sit in the phone tab bar (the rest go under More) ----------
   const MODES = {
-    sundays: ["pecking", "pickem", "scoreboard"],
-    base: ["standings", "story", "awards", "pickem"],
-    historian: ["history", "draft", "hof"],
+    sundays: ["live", "pickem", "week"],
+    base: ["standings", "week", "pickem"],
+    historian: ["library", "standings"],
   };
   let mode = (() => { try { const m = localStorage.getItem("boc-mode"); return MODES[m] ? m : "base"; } catch { return "base"; } })();
   let moreTabs = TABS.filter((t) => !MODES[mode].includes(t));
@@ -2815,29 +2838,97 @@
   document.querySelector(".modes").addEventListener("click", (e) => { const b = e.target.closest("[data-mode]"); if (b) applyMode(b.dataset.mode); });
 
   // ---------- Tabs ----------
+  // Draw one section's content (sections load when they come near the screen).
+  function renderSection(n) {
+    if (!state.league && n !== "pecking" && n !== "scoreboard" && n !== "pickem") return;
+    if (n === "pecking") requestAnimationFrame(placeMedian);
+    if (n === "standings") renderStandings();
+    if (n === "awards") renderAwards();
+    if (n === "story") { renderStory(); renderRecordWatch(); }
+    if (n === "hof") renderHof();
+    if (n === "history") renderHistory();
+    if (n === "power") renderPower();
+    if (n === "draft") renderDraft();
+    if (n === "trades") renderTrades();
+    if (n === "moves") { renderTradeBlock(); renderTxStats(); }
+  }
+  let sectionWatch = null;
   function showTab(name, push = true) {
-    if (name === "foodchain" || name === "live") name = "pecking";
-    if (name === "transactions") name = "moves";
-    if (!TABS.includes(name)) name = "scoreboard";
+    // Old links (#foodchain, #story, #hof, ...) open the tab that now holds that section.
+    const legacy = { foodchain: "pecking", transactions: "moves", livetab: "pecking" };
+    if (legacy[name]) name = legacy[name];
+    let scrollTo = null;
+    if (SECTION_GROUP[name]) { scrollTo = name; name = SECTION_GROUP[name]; }
+    if (!TABS.includes(name)) name = MODES[mode][0];
     state.tab = name;
     document.querySelectorAll(".tabs [role=tab]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.tab === name); b.tabIndex = b.dataset.tab === name ? 0 : -1; });
-    document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.id !== `panel-${name}`));
-    if (push) { history.replaceState(null, "", `#${name}`); window.scrollTo({ top: 0 }); }
-    if (name === "pecking") requestAnimationFrame(placeMedian);
-    if (name === "standings") renderStandings();
-    if (name === "awards" && state.league) renderAwards();
-    if (name === "story" && state.league) { renderStory(); renderRecordWatch(); }
-    if (name === "hof" && state.league) renderHof();
-    if (name === "history" && state.league) renderHistory();
-    if (name === "power" && state.league) renderPower();
-    if (name === "draft" && state.league) renderDraft();
-    if (name === "trades" && state.league) renderTrades();
-    if (name === "moves" && state.league) { renderTradeBlock(); renderTxStats(); }
+    const sections = GROUPS[name] ? GROUPS[name].map(([id]) => id) : [name];
+    // Put this tab's sections in jump-bar order
+    const foot = document.querySelector(".wrap > footer");
+    if (foot) sections.forEach((id) => { const el = $(`panel-${id}`); if (el) foot.before(el); });
+    document.querySelectorAll(".panel").forEach((p) => (p.hidden = !sections.includes(p.id.replace("panel-", ""))));
+    if (push) { history.replaceState(null, "", `#${scrollTo || name}`); window.scrollTo({ top: 0 }); }
+    // Jump bar for grouped tabs
+    const jb = $("jumpbar");
+    if (GROUPS[name]) {
+      jb.hidden = false;
+      jb.innerHTML = GROUPS[name].map(([id, label]) => `<button data-jump="${id}">${label}</button>`).join("");
+    } else { jb.hidden = true; jb.innerHTML = ""; }
+    // First section draws now; the rest when they scroll into range.
+    if (sectionWatch) sectionWatch.disconnect();
+    const drawn = new Set();
+    const draw = (id) => { if (drawn.has(id)) return; drawn.add(id); renderSection(id); };
+    draw(sections[0]);
+    if (sections.length > 1 && "IntersectionObserver" in window) {
+      sectionWatch = new IntersectionObserver((entries) => {
+        for (const en of entries) {
+          const id = en.target.id.replace("panel-", "");
+          if (en.isIntersecting) draw(id);
+          if (en.isIntersecting && en.intersectionRatio > 0) {
+            jb.querySelectorAll("[data-jump]").forEach((b) => b.classList.toggle("on", b.dataset.jump === currentSection()));
+          }
+        }
+      }, { rootMargin: "400px 0px 400px 0px", threshold: [0, 0.01] });
+      sections.forEach((id) => { const el = $(`panel-${id}`); if (el) sectionWatch.observe(el); });
+    } else sections.forEach(draw);
+    state.drawSection = draw;
+    if (scrollTo) { draw(scrollTo); requestAnimationFrame(() => jumpTo(scrollTo, false)); }
+    setTimeout(() => jb.querySelectorAll("[data-jump]").forEach((b) => b.classList.toggle("on", b.dataset.jump === currentSection())), 50);
     $("moreBtn").classList.toggle("active", moreTabs.includes(name));
     $("moreBtn").textContent = "More";
     document.querySelector(".tabs").classList.remove("more-open");
     $("moreBtn").setAttribute("aria-expanded", "false");
   }
+  // Which section of a grouped tab sits at the top of the screen
+  function currentSection() {
+    const list = GROUPS[state.tab]; if (!list) return null;
+    const top = ($("jumpbar").getBoundingClientRect().bottom || 0) + 20;
+    let cur = list[0][0];
+    for (const [id] of list) { const el = $(`panel-${id}`); if (el && el.getBoundingClientRect().top <= top) cur = id; }
+    return cur;
+  }
+  let userScrolled = false;
+  ["touchstart", "wheel", "keydown"].forEach((ev) => window.addEventListener(ev, () => (userScrolled = true), { passive: true }));
+  function jumpTo(id, smooth = true) {
+    jumpOnce(id, smooth);
+    // Sections above can still be loading and change height; settle on the target a few times.
+    userScrolled = false;
+    [700, 1600, 3000].forEach((ms) => setTimeout(() => { if (!userScrolled && location.hash === `#${id}`) jumpOnce(id, false); }, ms));
+  }
+  function jumpOnce(id, smooth) {
+    const el = $(`panel-${id}`); if (!el) return;
+    if (state.drawSection) state.drawSection(id);
+    const y = el.getBoundingClientRect().top + window.scrollY - ($("jumpbar").offsetHeight || 0) - 8;
+    window.scrollTo({ top: Math.max(0, y), behavior: smooth ? "smooth" : "auto" });
+    history.replaceState(null, "", `#${id}`);
+    $("jumpbar").querySelectorAll("[data-jump]").forEach((b) => b.classList.toggle("on", b.dataset.jump === id));
+  }
+  $("jumpbar").addEventListener("click", (e) => { const b = e.target.closest("[data-jump]"); if (b) jumpTo(b.dataset.jump); });
+  window.addEventListener("scroll", () => {
+    if ($("jumpbar").hidden) return;
+    const cur = currentSection();
+    $("jumpbar").querySelectorAll("[data-jump]").forEach((b) => b.classList.toggle("on", b.dataset.jump === cur));
+  }, { passive: true });
   document.querySelector(".tabs").addEventListener("click", (e) => { const b = e.target.closest("[role=tab]"); if (b) showTab(b.dataset.tab); });
   $("moreBtn").addEventListener("click", (e) => {
     e.stopPropagation();
@@ -2850,7 +2941,7 @@
   });
   document.querySelector(".tabs").addEventListener("keydown", (e) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    const tabs = [...document.querySelectorAll(".tabs [role=tab]")];
+    const tabs = [...document.querySelectorAll(".tabs [role=tab]")].filter((b) => TABS.includes(b.dataset.tab));
     const i = tabs.findIndex((b) => b.dataset.tab === state.tab);
     const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
     showTab(next.dataset.tab); next.focus();

@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.0.1)
+# Boys of Chantilly dashboard (v2.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -241,3 +241,12 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 ## 2.0.1
 - Trade Review verdicts now include fantasy playoff weeks (winners bracket games only, not consolation), period by period
   so multi-week playoff rounds work (`hist/playoffs/v1/<year>`). Trade cache bumped to `hist/trades/v2`, so past verdicts recompute.
+
+## 2.1
+- Six top-level tabs: Live, Pick 'em, Standings, The Week, Library, Power Rankings (GROUPS and TABS in index.html).
+  - Live: Food Chain, Scoreboard. The Week: Story, Awards, Waivers, Transactions.
+    Library: League History, Hall of Fame, Draft, Trade Review.
+  - Each grouped tab has a sticky jump bar that scrolls to a section and highlights the one on screen; sections load as
+    they come near the screen. Old links (#hof, #story, #foodchain, ...) open the right tab and scroll there.
+- Modes updated: Sundays = Live, Pick 'em, The Week; Base = Standings, The Week, Pick 'em; Historian = Library, Standings.
+- Nothing removed: every former tab is a section in its new home.
