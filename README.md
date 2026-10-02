@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.2)
+# Boys of Chantilly dashboard (v2.2.3)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -263,3 +263,23 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Library: profile season list shown as compact chips; Final Standings is its own section; Hall of Fame drops "Most
   accurate seasons"; Trade Review hides team 0 (free agency) and names a winner on every trade by starting points
   ("Winning so far" this season). Trade cache `hist/trades/v3`.
+
+## 2.2.1
+- Record Watch: this season's scores and player games in an all-time top 10, top-10 (or bottom-10) PPG paces, and active
+  streaks in the top 5 or within 3 games of it.
+- Hall of Fame: Most and Least accurate seasons only for the Median era.
+- Power Rankings: pages back through the whole message board (it mixes posts with every add/drop/trade notice), so every post shows.
+- Recap card redesigned as tiles: result banner, Median / Start accuracy / Standings tiles, Next up mini-matchup,
+  league tiles (High score + pot, Low score, Game of the Week, Biggest upset, Blowout, Pick 'em crowd), a swipeable row of
+  award tiles (tap for details), and record-book cards. Best starter and Biggest dud removed.
+
+## 2.2.2
+- Record Watch adds non-scoring paces against the Hall of Fame lists: luck (luckiest/unluckiest), bad beats, lucky wins,
+  and start accuracy (vs. Median-era seasons). Paces need 3+ games and project the current rate over a full regular season.
+  Records already in the books are listed first.
+
+## 2.2.3
+- Record Watch mirrors the Hall of Fame list by list (same metrics and sizes; all time first, then the Median era):
+  highest/lowest scores, best/worst median-PPG seasons, H2H and median win/loss streaks (top 5 or within 3 games), luckiest/
+  unluckiest seasons, most bad beats / lucky wins, most/least accurate (Median era), and best player performances.
+  "In the books" = on a list now; "On pace" = projected onto one (3+ games, full regular season).

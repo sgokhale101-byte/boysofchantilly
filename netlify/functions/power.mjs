@@ -36,10 +36,18 @@ export default async () => {
   let league, topics;
   try {
     league = JSON.parse(await espnFetch(leagueUrl(["mTeam"])));
+    // The board mixes posts with every add/drop/trade notice, so page back through all of it.
     const url = `${BASE}/${SEASON}/segments/0/leagues/${LEAGUE_ID}/communication/?view=kona_league_communication`;
-    const filter = { topics: { limit: 100, sortMessageDate: { sortPriority: 1, sortAsc: false } } };
-    const data = JSON.parse(await espnFetch(url, { "X-Fantasy-Filter": JSON.stringify(filter) }));
-    topics = data.topics || [];
+    topics = [];
+    const seen = new Set();
+    for (let page = 0; page < 15; page++) {
+      const filter = { topics: { limit: 100, offset: page * 100, sortMessageDate: { sortPriority: 1, sortAsc: false } } };
+      const data = JSON.parse(await espnFetch(url, { "X-Fantasy-Filter": JSON.stringify(filter) }));
+      const batch = (data.topics || []).filter((t) => !seen.has(t.id));
+      batch.forEach((t) => seen.add(t.id));
+      topics.push(...batch);
+      if ((data.topics || []).length < 100 || !batch.length) break;
+    }
   } catch (e) {
     return json(e instanceof EspnError ? e.status : 500, { error: e.message || "Couldn't read the message board." });
   }
