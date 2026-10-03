@@ -1,5 +1,6 @@
 // Power rankings from the league message board, served at /api/power.
 // Looks for posts by the member named in POWER_AUTHOR (default "Saffa") that mention power rankings.
+import { getStore } from "@netlify/blobs";
 import { BASE, SEASON, LEAGUE_ID, EspnError, espnFetch, leagueUrl } from "../lib/espn.mjs";
 
 const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(obj), {
@@ -56,31 +57,76 @@ export default async () => {
   (league.members || []).forEach((m) => (members[m.id] = memberName(m)));
   const authorIds = new Set(Object.entries(members).filter(([, n]) => n.toLowerCase().includes(AUTHOR)).map(([id]) => id));
 
-  const posts = topics
-    .filter((t) => !String(t.type || "").toUpperCase().startsWith("ACTIVITY"))
-    .map((t) => {
-      const msgs = t.messages || [];
-      return {
-        id: t.id, type: t.type || "", date: t.date || msgs[0]?.date || 0,
-        authorId: t.author || msgs[0]?.author || null,
-        title: plain(t.title || ""),
-        text: plain(msgs.map((m) => m.content).filter(Boolean).join("\n\n") || t.content || ""),
-      };
-    })
-    .filter((p) => p.text || p.title);
+  // Every edition: a thread's first post and each of Saffa's replies count separately.
+  const editions = [];
+  for (const t of topics) {
+    if (String(t.type || "").toUpperCase().startsWith("ACTIVITY")) continue;
+    const msgs = t.messages?.length ? t.messages : [{ content: t.content, author: t.author, date: t.date }];
+    msgs.forEach((m, i) => {
+      const authorId = m.author || t.author || null;
+      const text = plain(m.content || "");
+      if (!text) return;
+      // A reply is named by its opening line ("Week 3:") when it has one.
+      const first = text.split("\n")[0].trim();
+      const heading = !/^#?\s*\d+\s*[.):\-]/.test(first) && first.length <= 40 ? first.replace(/[:\-–]\s*$/, "") : "";
+      const title = i === 0 ? (plain(t.title || "") || heading) : heading || `${plain(t.title || "Power Rankings")} (update)`;
+      editions.push({ id: `${t.id}:${m.id ?? i}`, topicId: t.id, date: m.date || t.date || 0, authorId, title, text });
+    });
+  }
+  // An edition is a post titled like "Power Rankings after Week N" (title, or the opening line of a reply).
+  // An edition is a "power rankings" post; its week comes from "Week N" / "Wk N" anywhere in the title or opening lines.
+  const head = (e) => `${e.title}\n${e.text.split("\n").slice(0, 2).join("\n")}`;
+  const isPower = (e) => /power\s*-?\s*rank/i.test(head(e)) || /power\s*-?\s*rank/i.test(e.title);
+  const WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18 };
+  const weekOf = (e) => {
+    const m = /\b(?:week|wk)\.?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen)\b/i.exec(head(e));
+    return m ? (Number(m[1]) || WORDS[m[1].toLowerCase()] || null) : null;
+  };
+  const looksLikeRankings = (e) => isPower(e) || (weekOf(e) != null && Boolean(parseRanks(e.text)));
+  // Saffa's ranking posts, plus any post titled "power rankings" (in case one came from a different account)
+  let found = editions.filter((e) => (authorIds.has(e.authorId) && looksLikeRankings(e)) || /power\s*-?\s*rank/i.test(e.title));
 
-  const byAuthor = authorIds.size ? posts.filter((p) => authorIds.has(p.authorId)) : [];
-  let power = byAuthor.filter((p) => /power/i.test(`${p.title} ${p.text}`));
-  if (!power.length) power = byAuthor.length ? byAuthor : posts.filter((p) => /power\s*rank/i.test(`${p.title} ${p.text}`));
+  // Keep a copy of every edition ever seen, so an edited or deleted post stays readable.
+  const store = getStore({ name: "cache", consistency: "strong" });
+  const key = `power/archive/v1/${SEASON}`; // editions are re-filtered on every read, so the archive itself stays
+  let archive = {};
+  try { archive = (await store.get(key, { type: "json" })) || {}; } catch {}
+  let changed = false;
+  const hash = (t) => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+  for (const e of found) {
+    const k = `${e.id}:${hash(e.text)}`;
+    if (!archive[k]) { archive[k] = { ...e, seenAt: Date.now() }; changed = true; }
+  }
+  if (changed) { try { await store.setJSON(key, archive); } catch {} }
+  const all = Object.entries(archive).map(([k, e]) => ({ ...e, key: k }));
+  // If one post was edited over time, label the older copies as earlier versions.
+  const byPost = {};
+  all.forEach((e) => (byPost[e.id] ||= []).push(e));
 
-  const out = power.sort((a, b) => b.date - a.date).map((p) => ({
-    id: p.id, date: p.date, title: p.title, author: members[p.authorId] || "", text: p.text, ranks: parseRanks(p.text),
+
+  // One edition per week: the latest version of each post. Posts without a week number are ordered by date.
+  const undated = all.filter((e) => weekOf(e) == null).sort((a, b) => (a.date || a.seenAt) - (b.date || b.seenAt));
+  const usedWeeks = new Set(all.map(weekOf).filter((w) => w != null));
+  let nextWk = 1;
+  const weekFor = new Map();
+  for (const e of undated) { while (usedWeeks.has(nextWk)) nextWk++; if (!weekFor.has(e.id)) { weekFor.set(e.id, nextWk); usedWeeks.add(nextWk); } }
+  const perWeek = {};
+  for (const e of all) {
+    const wk = weekOf(e) ?? weekFor.get(e.id); if (wk == null) continue;
+    const cur = perWeek[wk];
+    if (!cur || (e.seenAt || 0) > (cur.seenAt || 0) || ((e.seenAt || 0) === (cur.seenAt || 0) && (e.date || 0) > (cur.date || 0))) perWeek[wk] = e;
+  }
+  const out = Object.entries(perWeek).sort((a, b) => Number(b[0]) - Number(a[0])).map(([wk, p]) => ({
+    id: p.key, week: Number(wk), date: p.date || p.seenAt, title: `Power Rankings after Week ${wk}`, author: members[p.authorId] || "", text: p.text, ranks: parseRanks(p.text),
   }));
+  const posts = editions;
   const diagnostic = out.length ? null : {
     topicsReturned: topics.length,
     postTypes: [...new Set(topics.map((t) => t.type || "unknown"))],
     authorMatched: [...authorIds].map((id) => members[id]),
     authorsSeen: [...new Set(posts.map((p) => members[p.authorId] || p.authorId || "unknown"))].slice(0, 12),
+    editionsSeen: posts.length,
+    authorTitles: posts.filter((p) => authorIds.has(p.authorId)).slice(0, 8).map((p) => (p.title || p.text.split("\n")[0]).slice(0, 80)),
   };
   return json(200, { posts: out, diagnostic }, "public, max-age=60");
 };
