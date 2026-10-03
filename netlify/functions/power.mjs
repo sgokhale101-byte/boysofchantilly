@@ -70,7 +70,8 @@ export default async () => {
       const first = text.split("\n")[0].trim();
       const heading = !/^#?\s*\d+\s*[.):\-]/.test(first) && first.length <= 40 ? first.replace(/[:\-–]\s*$/, "") : "";
       const title = i === 0 ? (plain(t.title || "") || heading) : heading || `${plain(t.title || "Power Rankings")} (update)`;
-      editions.push({ id: `${t.id}:${m.id ?? i}`, topicId: t.id, date: m.date || t.date || 0, authorId, title, text, topLevel: i === 0 });
+      const header = [t.title, t.subject, t.name, m.title, m.subject, ...text.split("\n").slice(0, 3)].filter(Boolean).map((x) => plain(String(x))).join("\n");
+      editions.push({ id: `${t.id}:${m.id ?? i}`, topicId: t.id, date: m.date || t.date || 0, authorId, title, text, header, topLevel: i === 0, fields: Object.keys(t).join(",") });
     });
   }
   // An edition is a post titled like "Power Rankings after Week N" (title, or the opening line of a reply).
@@ -83,14 +84,21 @@ export default async () => {
     return m ? (Number(m[1]) || WORDS[m[1].toLowerCase()] || null) : null;
   };
   // An edition: a top-level post whose title says "power rankings" and names a week (digits or words).
-  const titleWeek = (e) => { const m = /\b(?:week|wk)\.?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen)\b/i.exec(e.title || ""); return m ? (Number(m[1]) || WORDS[m[1].toLowerCase()] || null) : null; };
-  const looksLikeRankings = (e) => e.topLevel && /power\s*-?\s*rank/i.test(e.title || "") && titleWeek(e) != null;
+  // The "title" can live in several places, so check the title/subject fields and the post's opening lines.
+  const hdr = (e) => e.header || `${e.title || ""}\n${(e.text || "").split("\n").slice(0, 3).join("\n")}`;
+  const titleWeek = (e) => { const m = /\b(?:week|wk)\.?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen)\b/i.exec(hdr(e)); return m ? (Number(m[1]) || WORDS[m[1].toLowerCase()] || null) : null; };
+  const strict = (e) => e.topLevel !== false && /power\s*-?\s*rank/i.test(hdr(e)) && titleWeek(e) != null;
+  // Fallback when nothing passes: Saffa's top-level posts that say "power rankings" early on and contain a numbered ranking.
+  const loose = (e) => e.topLevel !== false && authorIds.has(e.authorId) && /power\s*-?\s*rank/i.test((e.text || "").slice(0, 400) + hdr(e)) && Boolean(parseRanks(e.text || ""));
+  const looksLikeRankings = (e) => strict(e);
   // Saffa's ranking posts, plus any post titled "power rankings" (in case one came from a different account)
-  let found = editions.filter(looksLikeRankings);
+  let found = editions.filter(strict);
+  const usedLoose = !found.length;
+  if (usedLoose) found = editions.filter(loose);
 
   // Keep a copy of every edition ever seen, so an edited or deleted post stays readable.
   const store = getStore({ name: "cache", consistency: "strong" });
-  const key = `power/archive/v2/${SEASON}`;
+  const key = `power/archive/v3/${SEASON}`;
   let archive = {};
   try { archive = (await store.get(key, { type: "json" })) || {}; } catch {}
   let changed = false;
@@ -107,10 +115,15 @@ export default async () => {
 
 
   // One edition per week: the latest saved version of that week's post. Archived entries are re-checked too.
+  // Posts with no readable week number are numbered by date after the ones that have one.
+  const ok = all.filter((e) => strict(e) || (usedLoose && loose(e)));
   const perWeek = {};
-  for (const e of all) {
-    if (!looksLikeRankings({ ...e, topLevel: e.topLevel !== false })) continue;
-    const wk = titleWeek(e); if (wk == null) continue;
+  const noWeek = ok.filter((e) => titleWeek(e) == null).sort((a, b) => (a.date || a.seenAt) - (b.date || b.seenAt));
+  const taken = new Set(ok.map(titleWeek).filter((w) => w != null));
+  let n = 1; const dateWeek = new Map();
+  for (const e of noWeek) { if (dateWeek.has(e.id)) continue; while (taken.has(n)) n++; dateWeek.set(e.id, n); taken.add(n); }
+  for (const e of ok) {
+    const wk = titleWeek(e) ?? dateWeek.get(e.id); if (wk == null) continue;
     const cur = perWeek[wk];
     if (!cur || (e.seenAt || 0) > (cur.seenAt || 0) || ((e.seenAt || 0) === (cur.seenAt || 0) && (e.date || 0) > (cur.date || 0))) perWeek[wk] = e;
   }
@@ -124,7 +137,8 @@ export default async () => {
     authorMatched: [...authorIds].map((id) => members[id]),
     authorsSeen: [...new Set(posts.map((p) => members[p.authorId] || p.authorId || "unknown"))].slice(0, 12),
     editionsSeen: posts.length,
-    authorTitles: posts.filter((p) => authorIds.has(p.authorId)).slice(0, 8).map((p) => (p.title || p.text.split("\n")[0]).slice(0, 80)),
+    authorTitles: posts.filter((p) => authorIds.has(p.authorId) && p.topLevel).slice(0, 8).map((p) => p.header.replace(/\n/g, " / ").slice(0, 120)),
+    topicFields: posts[0]?.fields || "",
   };
   return json(200, { posts: out, diagnostic }, "public, max-age=60");
 };

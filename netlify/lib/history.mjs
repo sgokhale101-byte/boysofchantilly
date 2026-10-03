@@ -244,7 +244,7 @@ async function playoffWeeks(year, deadline) {
 // players it received, from the trade's week through the fantasy playoffs (winners bracket games).
 export async function seasonTrades(year, deadline) {
   const Y = Number(year), past = Y < Number(SEASON);
-  const key = `hist/trades/v7/${Y}`;
+  const key = `hist/trades/v8/${Y}`;
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const summary = await seasonSummaryCached(Y);
   // Week 0 holds preseason trades; past seasons run through the last playoff week.
@@ -282,6 +282,10 @@ export async function seasonTrades(year, deadline) {
   if (fetched >= periods.length) {
     try { const act = await activityTrades(Y); for (const t of act) trades.push(t); (act.pickups || []).forEach((k) => pickups.add(k)); } catch {}
   }
+  // Only real players count (draft-pick trades and blank entries have no player id).
+  const realPlayer = (id) => Number.isFinite(Number(id)) && (Number(id) > 0 || Number(id) <= -16001);
+  for (const t of trades) t.items = (t.items || []).filter((x) => realPlayer(x.playerId));
+  for (let i = trades.length - 1; i >= 0; i--) if (trades[i].items.length < 2) trades.splice(i, 1);
   const seen = new Set();
   const sig = (t) => t.items.map((x) => `${x.playerId}>${x.to}`).sort().join(",");
   const uniq = trades.filter((t) => { const k = sig(t); if (seen.has(t.id) || seen.has(k)) return false; seen.add(t.id); seen.add(k); return true; }).sort((a, b) => a.date - b.date);

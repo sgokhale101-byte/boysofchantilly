@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.3.3)
+# Boys of Chantilly dashboard (v2.3.4)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -324,3 +324,10 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   from them are never treated as trades. Caches reset (`hist/trades/v7`, `hist/tx/v3`).
 - Power Rankings: an edition is a top-level post whose title says "power rankings" and names a week (digits or words); one
   per week; replies and other posts are ignored. Saved editions reset (`power/archive/v2`).
+
+## 2.3.4
+- Power Rankings: the title is read from every place ESPN might put it (title/subject fields and the post's opening lines).
+  If nothing qualifies, falls back to Saffa's top-level posts that say "power rankings" and contain a numbered ranking.
+  The "What ESPN returned" note shows how Saffa's posts start and which fields ESPN sent. Saved editions reset (`power/archive/v3`).
+- Trade Review: trade items without a real player (draft-pick trades, blank entries) are dropped, and trades left without a
+  player on both sides are removed. Cache `hist/trades/v8`.

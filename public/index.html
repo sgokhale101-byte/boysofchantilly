@@ -2315,7 +2315,7 @@
     if (!posts.length) {
       const d = state.power.diagnostic || {};
       box.innerHTML = `<div class="empty">No power rankings found on the message board yet.</div>
-        <details class="how"><summary>What ESPN returned</summary><p>${esc(`${d.topicsReturned ?? 0} message board items. Post types: ${(d.postTypes || []).join(", ") || "none"}. Matched author: ${(d.authorMatched || []).join(", ") || "nobody named Saffa"}. Authors seen: ${(d.authorsSeen || []).join(", ") || "none"}. Saffa's post titles: ${(d.authorTitles || []).join(" | ") || "none found"}.`)}</p></details>`;
+        <details class="how"><summary>What ESPN returned</summary><p>${esc(`${d.topicsReturned ?? 0} message board items. Post types: ${(d.postTypes || []).join(", ") || "none"}. Matched author: ${(d.authorMatched || []).join(", ") || "nobody named Saffa"}. Authors seen: ${(d.authorsSeen || []).join(", ") || "none"}. Saffa's posts start with: ${(d.authorTitles || []).join(" | ") || "none found"}. Fields ESPN sent: ${d.topicFields || "unknown"}.`)}</p></details>`;
       $("powPickWrap").hidden = true;
       return;
     }
