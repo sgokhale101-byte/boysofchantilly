@@ -3,7 +3,7 @@
 //   ?part=ifman&season=Y   -> best-lineup records for one season (may need a few calls on first run)
 //   ?part=players&season=Y -> top individual player performances for one season
 import { EspnError } from "../lib/espn.mjs";
-import { allSeasons, seasonIfMan, seasonPlayers, seasonRosters, seasonTrades, seasonFavorites } from "../lib/history.mjs";
+import { allSeasons, seasonIfMan, seasonPlayers, seasonRosters, seasonTrades } from "../lib/history.mjs";
 
 const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(obj), {
   status, headers: { "content-type": "application/json", "cache-control": cache },
@@ -27,12 +27,6 @@ export default async (req) => {
       const year = Number(url.searchParams.get("season"));
       if (!Number.isInteger(year) || year < 2000 || year > 2100) return json(400, { error: "Invalid season." });
       const r = await seasonPlayers(year, Date.now() + 6500);
-      return json(200, r, r.complete ? "public, max-age=600" : "no-store");
-    }
-    if (part === "favorites") {
-      const year = Number(url.searchParams.get("season"));
-      if (!Number.isInteger(year) || year < 2000 || year > 2100) return json(400, { error: "Invalid season." });
-      const r = await seasonFavorites(year, Date.now() + 6000);
       return json(200, r, r.complete ? "public, max-age=600" : "no-store");
     }
     if (part === "trades") {

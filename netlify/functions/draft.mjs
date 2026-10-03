@@ -137,24 +137,20 @@ async function buildDraft(year) {
   }
 
   // Tags on the draft board, against where the player went in this league.
-  // Keepers get a "keeper" tag instead of steal/bust. A player who missed a big part of the season
-  // (played under 60% of the most games anyone played) is never called a bust.
-  const seasonGames = Math.max(1, ...Object.values(hp.players).map((h) => h.gp || 0), ...rows.map((r) => r.gp || 0));
-  const hurt = (r) => complete && r.gp != null && r.gp < 0.6 * seasonGames;
   for (const r of rows) {
-    if (r.keeper) { r.tag = "keeper"; continue; }
     if (SKIP.has(r.pos) || !TIER[r.pos]) continue;
     const early = r.posDraftRank <= TIER[r.pos];
     if (r.metric != null && r.metric <= TIER[r.pos] && r.posDraftRank - r.metric >= JUMP[r.pos]) r.tag = "steal";
-    else if (early && !hurt(r) && r.metric != null && r.metric - r.posDraftRank >= JUMP[r.pos]) r.tag = "bust";
+    else if (early && r.metric != null && r.metric - r.posDraftRank >= JUMP[r.pos]) r.tag = "bust";
+    else if (complete && early && r.posDraftRank <= TIER[r.pos] / 2 && r.gp != null && r.gp < MIN_GAMES) { r.tag = "bust"; r.tagNote = "missed most of the season"; }
   }
 
   // Top 5 steals and busts: where he went at his position in this draft vs. his PPG rank.
   // Keepers are left out of finished seasons.
-  const boxable = rows.filter((r) => TIER[r.pos] && r.metric != null && !r.keeper);
+  const boxable = rows.filter((r) => TIER[r.pos] && r.metric != null && !(complete && r.keeper));
   const vsAdp = (r) => r.posDraftRank - r.metric;
   const steals = boxable.filter((r) => vsAdp(r) >= 3 && r.metric <= TIER[r.pos]).sort((a, b) => vsAdp(b) - vsAdp(a) || a.metric - b.metric).slice(0, 5);
-  const busts = boxable.filter((r) => !hurt(r) && vsAdp(r) <= -3 && r.posDraftRank <= TIER[r.pos]).sort((a, b) => vsAdp(a) - vsAdp(b) || a.posDraftRank - b.posDraftRank).slice(0, 5);
+  const busts = boxable.filter((r) => vsAdp(r) <= -3 && r.posDraftRank <= TIER[r.pos]).sort((a, b) => vsAdp(a) - vsAdp(b) || a.posDraftRank - b.posDraftRank).slice(0, 5);
 
   return {
     year, available: true, auction, complete, statsAvailable: rows.filter((r) => r.points != null).length >= rows.length * 0.5,
@@ -169,7 +165,7 @@ export default async (req) => {
   const year = Number(new URL(req.url).searchParams.get("season") || SEASON);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return json(400, { error: "Invalid season." });
   const store = getStore({ name: "cache", consistency: "strong" });
-  const key = `hist/draft/v6/${year}`;
+  const key = `hist/draft/v5/${year}`;
   try {
     if (year < Number(SEASON)) {
       const hit = await store.get(key, { type: "json" }).catch(() => null);

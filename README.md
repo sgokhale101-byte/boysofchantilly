@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.3)
+# Boys of Chantilly dashboard (v2.2.3)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -283,22 +283,3 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   highest/lowest scores, best/worst median-PPG seasons, H2H and median win/loss streaks (top 5 or within 3 games), luckiest/
   unluckiest seasons, most bad beats / lucky wins, most/least accurate (Median era), and best player performances.
   "In the books" = on a list now; "On pace" = projected onto one (3+ games, full regular season).
-
-## 2.2.4
-- Record Watch grouped like the Hall of Fame: All time and Median era sections, one card per list, entries ranked, with
-  "On pace" tags. Luck, bad beats, lucky wins, and start accuracy wait until 7 games played.
-- Power Rankings: every edition is its own entry (thread replies split out, named by their first line), Saffa's numbered
-  posts count even without the word "power", and every version seen is archived (`power/archive/v1/<season>`) so edited
-  posts keep their earlier versions. Dropdown shows title, date, and "(latest)".
-- Jump bars with five sections use two rows on phones; chip text shrinks slightly at 360px.
-
-## 2.3
-- Record Watch: green "In the books" tags; records on both the all-time and Median-era lists go in a "Both" section with both ranks.
-- Power Rankings: one edition per "Power Rankings after Week N" post (latest version of each), titled and dated.
-- Manager Profiles: Favorite player (most weeks on the roster; tiebreak = starting points in that manager's wins;
-  `/api/history?part=favorites&season=Y`, cached `hist/fav/v1`), All-play record as its own stat, bench points removed.
-- Draft: keepers get a yellow Keeper tag (never steal/bust) and stay out of the top 5; players who played under 60% of the
-  season aren't busts; tags sit on their own line; tap a player for his draft history in the league. Cache `hist/draft/v6`.
-- Standings and Final Standings: tap any column header to sort (tap again to flip).
-- Trade Review: includes week 0 (preseason) trades and trades upheld after league review, de-duplicates the same trade
-  recorded twice; caches reset (`hist/trades/v4`, `hist/tx/v2`).
