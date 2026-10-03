@@ -244,38 +244,43 @@ async function playoffWeeks(year, deadline) {
 // players it received, from the trade's week through the fantasy playoffs (winners bracket games).
 export async function seasonTrades(year, deadline) {
   const Y = Number(year), past = Y < Number(SEASON);
-  const key = `hist/trades/v6/${Y}`;
+  const key = `hist/trades/v7/${Y}`;
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const summary = await seasonSummaryCached(Y);
   // Week 0 holds preseason trades; past seasons run through the last playoff week.
   const lastPeriod = past ? summary.regularSeasonWeeks + 5 : Math.max(1, ...(summary.doneWeeks || [0])) + 1;
   // Transactions, one scoring period at a time (cached per period for past seasons).
   const trades = [];
+  const pickups = new Set(); // "playerId>teamId" for every waiver / free-agent add this season
   const periods = Array.from({ length: lastPeriod + 1 }, (_, i) => i);
   let fetched = 0;
   for (let i = 0; i < periods.length && Date.now() < deadline; i += 6) {
     const batch = periods.slice(i, i + 6);
     const lists = await Promise.all(batch.map(async (pd) => {
-      const pk = `hist/tx/v2/${Y}/p${pd}`;
+      const pk = `hist/tx/v3/${Y}/p${pd}`;
       let list = past ? await store().get(pk, { type: "json" }).catch(() => null) : null;
       if (!list) {
         try {
           const L = await seasonLeague(Y, ["mTransactions2"], pd);
+          // Waiver / free-agent pickups, kept so roster moves from them are never mistaken for trades
+          const adds = (L.transactions || []).filter((t) => (t.type === "WAIVER" || t.type === "FREEAGENT") && t.status === "EXECUTED")
+            .flatMap((t) => (t.items || []).filter((x) => x.type === "ADD").map((x) => ({ playerId: x.playerId, teamId: t.teamId })));
           // Any executed trade record (accepted, or upheld after league review)
           list = (L.transactions || []).filter((t) => String(t.type || "").startsWith("TRADE") && t.type !== "TRADE_PROPOSAL" && t.type !== "TRADE_DECLINE" && t.type !== "TRADE_VETO" && t.status === "EXECUTED").map((t) => ({
             id: t.id, period: t.scoringPeriodId ?? pd, date: t.processDate || t.proposedDate || 0,
             items: (t.items || []).filter((x) => x.type === "TRADE" || x.type === "ADD" || x.fromTeamId != null).map((x) => ({ playerId: x.playerId, from: x.fromTeamId, to: x.toTeamId })),
           }));
+          list.push({ id: `adds:${pd}`, addsOnly: true, period: pd, adds });
         } catch { list = []; }
         if (past) await store().setJSON(pk, list).catch(() => {});
       }
       return list;
     }));
-    lists.flat().forEach((t) => trades.push(t)); fetched += batch.length;
+    lists.flat().forEach((t) => { if (t.addsOnly) t.adds.forEach((a) => pickups.add(`${a.playerId}>${a.teamId}`)); else trades.push(t); }); fetched += batch.length;
   }
   // Second source: the message board's activity log ("X traded to Y"), which keeps older seasons.
   if (fetched >= periods.length) {
-    try { for (const t of await activityTrades(Y)) trades.push(t); } catch {}
+    try { const act = await activityTrades(Y); for (const t of act) trades.push(t); (act.pickups || []).forEach((k) => pickups.add(k)); } catch {}
   }
   const seen = new Set();
   const sig = (t) => t.items.map((x) => `${x.playerId}>${x.to}`).sort().join(",");
@@ -314,7 +319,7 @@ export async function seasonTrades(year, deadline) {
         for (const [B, set] of Object.entries(cur)) for (const id of set) {
           if (prev[B]?.has(id)) continue;
           const A = Object.keys(prev).find((t) => t !== B && prev[t].has(id));
-          if (A) (moves[`${A}>${B}`] ||= []).push(id);
+          if (A && !pickups.has(`${id}>${B}`) && !pickups.has(`${id}>0`)) (moves[`${A}>${B}`] ||= []).push(id);
         }
         const done = new Set();
         for (const k of Object.keys(moves)) {
@@ -387,7 +392,7 @@ export async function seasonTrades(year, deadline) {
       verdict = gap < 0.005 ? { result: "tie", gap: 0, final: past } : { result: "win", winner: ranked[0].teamId, loser: ranked[ranked.length - 1].teamId, gap: r2(gap), final: past };
     }
     return { id: t.id, year: Y, week: t.period, date: t.date, sides, verdict };
-  }).filter((t) => t.sides.length >= 2); // a "trade" with only free agency on the other side isn't a trade
+  }).filter((t) => t.sides.length === 2 && t.sides.every((sd) => sd.received.length >= 1)); // exactly two teams, each getting someone
   const result = { year: Y, complete: complete && (!past || !uniq.length || weeks != null), available: true, trades: out };
   if (past && result.complete) await store().setJSON(key, result).catch(() => {});
   return result;
@@ -399,6 +404,7 @@ async function activityTrades(year) {
   const base = Y >= 2018 ? `${BASE}/${Y}/segments/0/leagues/${LEAGUE_ID}/communication/?view=kona_league_communication` : null;
   if (!base) return [];
   const out = [], seen = new Set();
+  out.pickups = [];
   for (let page = 0; page < 40; page++) {
     const filter = { topics: { filterType: { value: ["ACTIVITY_TRANSACTIONS"] }, limit: 100, offset: page * 100, limitPerMessageSet: { value: 25 },
       sortMessageDate: { sortPriority: 1, sortAsc: false }, sortFor: { sortPriority: 2, sortAsc: false } } };
@@ -407,11 +413,12 @@ async function activityTrades(year) {
     for (const t of topics) {
       if (seen.has(t.id)) continue; seen.add(t.id);
       // A trade moves players team-to-team in both directions (adds/drops involve free agency instead).
-      const items = (t.messages || []).filter((m) => m.targetId != null && (m.messageTypeId === 244 || (Number(m.from) > 0 && Number(m.to) > 0 && Number(m.from) !== Number(m.to))))
+      // 178 = free-agent add, 180 = waiver add: remember them so they're never counted as trades
+      for (const m of t.messages || []) if ((m.messageTypeId === 178 || m.messageTypeId === 180) && m.targetId != null) out.pickups.push(`${m.targetId}>${Number(m.to) || Number(m.from) || 0}`);
+      // 244 = traded. Only real trade entries count.
+      const items = (t.messages || []).filter((m) => m.messageTypeId === 244 && m.targetId != null)
         .map((m) => ({ playerId: m.targetId, from: Number(m.from) || null, to: Number(m.to) || null }));
-      const dirs = new Set(items.filter((x) => x.from > 0 && x.to > 0).map((x) => `${x.from}>${x.to}`));
-      const twoWay = [...dirs].some((d) => { const [a, b] = d.split(">"); return dirs.has(`${b}>${a}`); });
-      if (items.length >= 2 && (twoWay || items.some((m) => m.from == null || m.to == null))) out.push({ id: `act:${t.id}`, period: 0, date: t.date || 0, items, fromActivity: true });
+      if (items.length >= 2) out.push({ id: `act:${t.id}`, period: 0, date: t.date || 0, items, fromActivity: true });
     }
     if (topics.length < 100) break;
   }

@@ -70,7 +70,7 @@ export default async () => {
       const first = text.split("\n")[0].trim();
       const heading = !/^#?\s*\d+\s*[.):\-]/.test(first) && first.length <= 40 ? first.replace(/[:\-–]\s*$/, "") : "";
       const title = i === 0 ? (plain(t.title || "") || heading) : heading || `${plain(t.title || "Power Rankings")} (update)`;
-      editions.push({ id: `${t.id}:${m.id ?? i}`, topicId: t.id, date: m.date || t.date || 0, authorId, title, text });
+      editions.push({ id: `${t.id}:${m.id ?? i}`, topicId: t.id, date: m.date || t.date || 0, authorId, title, text, topLevel: i === 0 });
     });
   }
   // An edition is a post titled like "Power Rankings after Week N" (title, or the opening line of a reply).
@@ -82,13 +82,15 @@ export default async () => {
     const m = /\b(?:week|wk)\.?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen)\b/i.exec(head(e));
     return m ? (Number(m[1]) || WORDS[m[1].toLowerCase()] || null) : null;
   };
-  const looksLikeRankings = (e) => isPower(e) || (weekOf(e) != null && Boolean(parseRanks(e.text)));
+  // An edition: a top-level post whose title says "power rankings" and names a week (digits or words).
+  const titleWeek = (e) => { const m = /\b(?:week|wk)\.?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen)\b/i.exec(e.title || ""); return m ? (Number(m[1]) || WORDS[m[1].toLowerCase()] || null) : null; };
+  const looksLikeRankings = (e) => e.topLevel && /power\s*-?\s*rank/i.test(e.title || "") && titleWeek(e) != null;
   // Saffa's ranking posts, plus any post titled "power rankings" (in case one came from a different account)
-  let found = editions.filter((e) => (authorIds.has(e.authorId) && looksLikeRankings(e)) || /power\s*-?\s*rank/i.test(e.title));
+  let found = editions.filter(looksLikeRankings);
 
   // Keep a copy of every edition ever seen, so an edited or deleted post stays readable.
   const store = getStore({ name: "cache", consistency: "strong" });
-  const key = `power/archive/v1/${SEASON}`; // editions are re-filtered on every read, so the archive itself stays
+  const key = `power/archive/v2/${SEASON}`;
   let archive = {};
   try { archive = (await store.get(key, { type: "json" })) || {}; } catch {}
   let changed = false;
@@ -104,15 +106,11 @@ export default async () => {
   all.forEach((e) => (byPost[e.id] ||= []).push(e));
 
 
-  // One edition per week: the latest version of each post. Posts without a week number are ordered by date.
-  const undated = all.filter((e) => weekOf(e) == null).sort((a, b) => (a.date || a.seenAt) - (b.date || b.seenAt));
-  const usedWeeks = new Set(all.map(weekOf).filter((w) => w != null));
-  let nextWk = 1;
-  const weekFor = new Map();
-  for (const e of undated) { while (usedWeeks.has(nextWk)) nextWk++; if (!weekFor.has(e.id)) { weekFor.set(e.id, nextWk); usedWeeks.add(nextWk); } }
+  // One edition per week: the latest saved version of that week's post. Archived entries are re-checked too.
   const perWeek = {};
   for (const e of all) {
-    const wk = weekOf(e) ?? weekFor.get(e.id); if (wk == null) continue;
+    if (!looksLikeRankings({ ...e, topLevel: e.topLevel !== false })) continue;
+    const wk = titleWeek(e); if (wk == null) continue;
     const cur = perWeek[wk];
     if (!cur || (e.seenAt || 0) > (cur.seenAt || 0) || ((e.seenAt || 0) === (cur.seenAt || 0) && (e.date || 0) > (cur.date || 0))) perWeek[wk] = e;
   }

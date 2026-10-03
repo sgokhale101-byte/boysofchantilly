@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.3.2)
+# Boys of Chantilly dashboard (v2.3.3)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -317,3 +317,10 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Trade Review: a third source reads trades off the weekly rosters (players moving directly team-to-team in both directions
   the same week; draft picks vs. week 1 for preseason trades). The activity feed no longer depends on ESPN's trade message code,
   and 40 pages are checked. Duplicates across sources are merged. Cache `hist/trades/v6`.
+
+## 2.3.3
+- Trade Review: only two-team trades where each side receives a player. Activity feed counts only real "traded" entries (244).
+  Waiver and free-agent pickups (from transaction records and the activity log) are recorded, and roster moves that came
+  from them are never treated as trades. Caches reset (`hist/trades/v7`, `hist/tx/v3`).
+- Power Rankings: an edition is a top-level post whose title says "power rankings" and names a week (digits or words); one
+  per week; replies and other posts are ignored. Saved editions reset (`power/archive/v2`).
