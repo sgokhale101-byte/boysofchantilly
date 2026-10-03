@@ -244,23 +244,25 @@ async function playoffWeeks(year, deadline) {
 // players it received, from the trade's week through the fantasy playoffs (winners bracket games).
 export async function seasonTrades(year, deadline) {
   const Y = Number(year), past = Y < Number(SEASON);
-  const key = `hist/trades/v3/${Y}`;
+  const key = `hist/trades/v4/${Y}`;
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const summary = await seasonSummaryCached(Y);
-  const lastPeriod = past ? summary.regularSeasonWeeks + 4 : Math.max(1, ...(summary.doneWeeks || [0])) + 1;
+  // Week 0 holds preseason trades; past seasons run through the last playoff week.
+  const lastPeriod = past ? summary.regularSeasonWeeks + 5 : Math.max(1, ...(summary.doneWeeks || [0])) + 1;
   // Transactions, one scoring period at a time (cached per period for past seasons).
   const trades = [];
-  const periods = Array.from({ length: lastPeriod }, (_, i) => i + 1);
+  const periods = Array.from({ length: lastPeriod + 1 }, (_, i) => i);
   let fetched = 0;
   for (let i = 0; i < periods.length && Date.now() < deadline; i += 6) {
     const batch = periods.slice(i, i + 6);
     const lists = await Promise.all(batch.map(async (pd) => {
-      const pk = `hist/tx/v1/${Y}/p${pd}`;
+      const pk = `hist/tx/v2/${Y}/p${pd}`;
       let list = past ? await store().get(pk, { type: "json" }).catch(() => null) : null;
       if (!list) {
         try {
           const L = await seasonLeague(Y, ["mTransactions2"], pd);
-          list = (L.transactions || []).filter((t) => t.type === "TRADE_ACCEPT" && t.status === "EXECUTED").map((t) => ({
+          // Any executed trade record (accepted, or upheld after league review)
+          list = (L.transactions || []).filter((t) => String(t.type || "").startsWith("TRADE") && t.type !== "TRADE_PROPOSAL" && t.type !== "TRADE_DECLINE" && t.type !== "TRADE_VETO" && t.status === "EXECUTED").map((t) => ({
             id: t.id, period: t.scoringPeriodId ?? pd, date: t.processDate || t.proposedDate || 0,
             items: (t.items || []).filter((x) => x.type === "TRADE" || x.type === "ADD" || x.fromTeamId != null).map((x) => ({ playerId: x.playerId, from: x.fromTeamId, to: x.toTeamId })),
           }));
@@ -272,7 +274,8 @@ export async function seasonTrades(year, deadline) {
     lists.flat().forEach((t) => trades.push(t)); fetched += batch.length;
   }
   const seen = new Set();
-  const uniq = trades.filter((t) => (seen.has(t.id) ? false : seen.add(t.id))).sort((a, b) => a.date - b.date);
+  const sig = (t) => t.items.map((x) => `${x.playerId}>${x.to}`).sort().join(",");
+  const uniq = trades.filter((t) => { const k = sig(t); if (seen.has(t.id) || seen.has(k)) return false; seen.add(t.id); seen.add(k); return true; }).sort((a, b) => a.date - b.date);
   const complete = fetched >= periods.length;
 
   // Players' starting points for their new team after the trade (needs weekly lineups).
@@ -346,5 +349,45 @@ async function tradeNames(year, ids) {
       if (r.ok) { const a = (await r.json()).athlete; if (a?.displayName) out[id] = { name: a.displayName, pos: a.position?.abbreviation || "" }; }
     } catch {}
   }
+  return out;
+}
+
+// Favorite players for one season: weeks each player spent on each team's roster, plus his starting points in
+// that team's head-to-head wins (the tiebreaker). Top 8 per team, with names.
+export async function seasonFavorites(year, deadline) {
+  const Y = Number(year), past = Y < Number(SEASON);
+  const key = `hist/fav/v1/${Y}`;
+  if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
+  const summary = await seasonSummaryCached(Y);
+  const resultOf = {};
+  for (const t of summary.teams) for (const g of t.games || []) (resultOf[t.teamId] ||= {})[g.w] = g.r;
+  const tally = {};
+  const bump = (teamId, id, week, startPts) => {
+    const T = (tally[teamId] ||= {}), x = (T[id] ||= { weeks: 0, winPts: 0 });
+    x.weeks++;
+    if (startPts != null && resultOf[teamId]?.[week] === "W") x.winPts = r2(x.winPts + startPts);
+  };
+  let names = {};
+  if (past) {
+    const sw = await seasonWeeks(Y, deadline);
+    if (!sw.done) return { year: Y, complete: false, teams: {} };
+    for (const [w, wk] of Object.entries(sw.results)) for (const row of wk.rows || []) {
+      const st = Object.fromEntries((row.starters || []).map((p) => [p.id, p.pts]));
+      for (const id of row.roster || Object.keys(st).map(Number)) bump(row.teamId, id, Number(w), st[id]);
+    }
+  } else {
+    const cur = await loadSeason();
+    for (const { week, teams } of cur.weeks) for (const t of teams) {
+      for (const p of t.starters || []) { bump(t.teamId, p.id, week, p.pts); names[p.id] = { name: p.name, pos: p.pos }; }
+      for (const p of t.bench || []) { bump(t.teamId, p.id, week, null); names[p.id] = { name: p.name, pos: p.pos }; }
+    }
+  }
+  const teams = {};
+  for (const [teamId, T] of Object.entries(tally)) teams[teamId] = Object.entries(T).map(([id, x]) => ({ id: Number(id), ...x })).sort((a, b) => b.weeks - a.weeks || b.winPts - a.winPts).slice(0, 8);
+  const need = [...new Set(Object.values(teams).flat().map((x) => x.id))].filter((id) => !names[id]);
+  if (need.length) Object.assign(names, await tradeNames(Y, need));
+  for (const list of Object.values(teams)) for (const x of list) { x.name = names[x.id]?.name || `Player ${x.id}`; x.pos = names[x.id]?.pos || ""; }
+  const out = { year: Y, complete: true, teams };
+  if (past) await store().setJSON(key, out).catch(() => {});
   return out;
 }

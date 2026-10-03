@@ -73,7 +73,9 @@ export default async () => {
       editions.push({ id: `${t.id}:${m.id ?? i}`, topicId: t.id, date: m.date || t.date || 0, authorId, title, text });
     });
   }
-  const looksLikeRankings = (e) => /power|ranking/i.test(`${e.title} ${e.text}`) || Boolean(parseRanks(e.text));
+  // An edition is a post titled like "Power Rankings after Week N" (title, or the opening line of a reply).
+  const weekOf = (e) => { const m = /power\s*rankings?[^\n]*?week\s*(\d{1,2})/i.exec(`${e.title}\n${e.text.split("\n")[0]}`); return m ? Number(m[1]) : null; };
+  const looksLikeRankings = (e) => weekOf(e) != null;
   let found = authorIds.size ? editions.filter((e) => authorIds.has(e.authorId) && looksLikeRankings(e)) : editions.filter((e) => /power\s*rank/i.test(`${e.title} ${e.text}`));
 
   // Keep a copy of every edition ever seen, so an edited or deleted post stays readable.
@@ -92,10 +94,17 @@ export default async () => {
   // If one post was edited over time, label the older copies as earlier versions.
   const byPost = {};
   all.forEach((e) => (byPost[e.id] ||= []).push(e));
-  for (const list of Object.values(byPost)) if (list.length > 1) { list.sort((a, b) => a.seenAt - b.seenAt); list.slice(0, -1).forEach((e, i) => (e.title = `${e.title || "Power Rankings"} (version ${i + 1})`)); }
 
-  const out = all.sort((a, b) => (b.date || b.seenAt) - (a.date || a.seenAt) || b.seenAt - a.seenAt).map((p) => ({
-    id: p.key, date: p.date || p.seenAt, title: p.title, author: members[p.authorId] || "", text: p.text, ranks: parseRanks(p.text),
+
+  // One edition per week: the latest version of each "after week N" post.
+  const perWeek = {};
+  for (const e of all) {
+    const wk = weekOf(e); if (wk == null) continue;
+    const cur = perWeek[wk];
+    if (!cur || (e.seenAt || 0) > (cur.seenAt || 0) || ((e.seenAt || 0) === (cur.seenAt || 0) && (e.date || 0) > (cur.date || 0))) perWeek[wk] = e;
+  }
+  const out = Object.entries(perWeek).sort((a, b) => Number(b[0]) - Number(a[0])).map(([wk, p]) => ({
+    id: p.key, week: Number(wk), date: p.date || p.seenAt, title: `Power Rankings after Week ${wk}`, author: members[p.authorId] || "", text: p.text, ranks: parseRanks(p.text),
   }));
   const posts = editions;
   const diagnostic = out.length ? null : {
