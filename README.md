@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.4.1)
+# Boys of Chantilly dashboard (v2.4.2)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -345,3 +345,7 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 - Weekly recap card's Record books now shows the same records as Story's Record Watch, with the same rules (one shared
   builder, `recordWatchEntries()`): top 6 shown, yours first, with a pointer to Story for the rest.
 - Dr. Strange threshold: 36% or less to win once the Sunday 4 PM games ended.
+
+## 2.4.2
+- Weekly recap Record books ordered by tier: set that week ("Set in week N"), still current ("Still going": active streaks
+  on a list, season totals already on a list), on pace to break soon ("On pace" / "Close"), then the rest. Yours first within a tier.

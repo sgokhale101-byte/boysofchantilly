@@ -2734,7 +2734,7 @@
       return null;
     };
     const hi = (a, b) => a > b, lo = (a, b) => a < b;
-    const add = (list, icon, p, kind, key, line) => entries.push({ list, icon, era: p.era, rank: p.rank, medRank: p.medRank, kind, key, line });
+    const add = (list, icon, p, kind, key, line, extra = {}) => entries.push({ list, icon, era: p.era, rank: p.rank, medRank: p.medRank, kind, key, line, ...extra });
 
     // Highest / lowest scores (top 10)
     const scored = R.games.filter((x) => x.pts > 0);
@@ -2742,8 +2742,8 @@
     for (const g of scored.filter((x) => x.year === cy)) {
       const others = pastScores.concat(scored.filter((x) => x.year === cy && x !== g).map((x) => ({ v: x.pts, year: x.year })));
       const top = place(others, g.pts, hi, 10), bot = place(others, g.pts, lo, 10);
-      if (top) add("Highest scores", "🔥", top, "done", g.key, `<b>${esc(g.name)}</b>, ${fmt(g.pts)} in week ${g.week}`);
-      else if (bot) add("Lowest scores", "🧊", bot, "done", g.key, `<b>${esc(g.name)}</b>, ${fmt(g.pts)} in week ${g.week}`);
+      if (top) add("Highest scores", "🔥", top, "done", g.key, `<b>${esc(g.name)}</b>, ${fmt(g.pts)} in week ${g.week}`, { week: g.week });
+      else if (bot) add("Lowest scores", "🧊", bot, "done", g.key, `<b>${esc(g.name)}</b>, ${fmt(g.pts)} in week ${g.week}`, { week: g.week });
     }
     // Best / worst seasons, median points per game (top 10)
     const pastPpg = R.seasonsPpg.map((x) => ({ v: x.ppg, year: x.year }));
@@ -2767,11 +2767,11 @@
           if (on.length) {
             const lead = on[0], rec = lead.others[0];
             const era = on.length === 2 ? "both" : lead.sc === "all" ? "all" : "median";
-            add(titles[type], icon, { rank: lead.rank, era, medRank: on.length === 2 ? on[1].rank : undefined }, "done", r.key, `<b>${esc(r.name)}</b>, ${word} ${r.len} straight${rec && lead.rank > 1 ? ` (record ${rec.len}, ${esc(rec.name)})` : lead.rank === 1 ? " (the record)" : ""}`);
+            add(titles[type], icon, { rank: lead.rank, era, medRank: on.length === 2 ? on[1].rank : undefined }, "done", r.key, `<b>${esc(r.name)}</b>, ${word} ${r.len} straight${rec && lead.rank > 1 ? ` (record ${rec.len}, ${esc(rec.name)})` : lead.rank === 1 ? " (the record)" : ""}`, { current: true });
             continue;
           }
           const close = res.find((x) => x.fifth && x.fifth.len - r.len + 1 <= 3);
-          if (close) add(titles[type], icon, { rank: 6, era: close.sc === "all" ? "all" : "median" }, "pace", r.key, `<b>${esc(r.name)}</b>, ${word} ${r.len} straight, ${close.fifth.len - r.len + 1} more to make the list`);
+          if (close) add(titles[type], icon, { rank: 6, era: close.sc === "all" ? "all" : "median" }, "pace", r.key, `<b>${esc(r.name)}</b>, ${word} ${r.len} straight, ${close.fifth.len - r.len + 1} more to make the list`, { soon: true });
         }
       }
     };
@@ -2795,13 +2795,13 @@
       const now = x.luck > 0 ? place(L, x.luck, hi, 10) : place(L, x.luck, lo, 10);
       const onp = x.luck > 0 ? place(L, pace, hi, 10) : place(L, pace, lo, 10);
       const title = x.luck > 0 ? "Luckiest seasons" : "Unluckiest seasons", icon = x.luck > 0 ? "🍀" : "⛈️";
-      if (now) add(title, icon, now, "done", who.key, `<b>${name}</b>, ${luckText(x.luck)} already`);
+      if (now) add(title, icon, now, "done", who.key, `<b>${name}</b>, ${luckText(x.luck)} already`, { current: true });
       else if (onp) add(title, icon, onp, "pace", who.key, `<b>${name}</b>, ${luckText(x.luck)} through ${x.games} games, on pace for ${luckText(pace)}`);
       for (const [field, ttl, ic, label] of [["badBeats", "Most bad beats in a season", "💔", "bad beats"], ["luckyWins", "Most lucky wins in a season", "🎰", "lucky wins"]]) {
         const n = x[field]; if (!n) continue;
         const pool = pastLuck.map((y) => ({ v: y[field], year: y.year })).filter((y) => y.v > 0);
         const nowP = place(pool, n, hi, 10), paceP = place(pool, n * scale, hi, 10);
-        if (nowP) add(ttl, ic, nowP, "done", who.key, `<b>${name}</b>, ${n} already`);
+        if (nowP) add(ttl, ic, nowP, "done", who.key, `<b>${name}</b>, ${n} already`, { current: true });
         else if (paceP) add(ttl, ic, paceP, "pace", who.key, `<b>${name}</b>, ${n} so far, on pace for ${Math.round(n * scale)}`);
       }
     }
@@ -2832,21 +2832,24 @@
       for (const t of perf.filter((x) => x.year === cy)) {
         const pl = place(perf.filter((x) => x !== t).map((x) => ({ v: x.pts, year: x.year })), t.pts, hi, 10); if (!pl) continue;
         const team = curSeason.teams.find((x) => x.teamId === t.teamId), o = team ? identity(curSeason, team) : { name: "", key: null };
-        add("Best individual performances", "⭐", pl, "done", o.key, `<b>${esc(t.name)}</b>, ${fmt(t.pts)} for ${esc(fixName(o.name))} in week ${t.week}`);
+        add("Best individual performances", "⭐", pl, "done", o.key, `<b>${esc(t.name)}</b>, ${fmt(t.pts)} for ${esc(fixName(o.name))} in week ${t.week}`, { week: t.week });
       }
     }
     return { entries, missingP, missingAcc };
   }
   // Recap card: the same records as Story's Record Watch, same rules, in a compact list (yours first).
-  async function drawRecapRecords() {
+  async function drawRecapRecords(N) {
     const el = $("rcRecords"); if (!el) return;
+    if (N == null && state.recapShown) N = Number(String(state.recapShown).split(":")[1]);
     const { entries, error } = await recordWatchEntries();
     if (error || !$("rcRecords")) return;
     const me = myKey();
-    const rows = [...entries].sort((x, y) => (y.key === me ? 1 : 0) - (x.key === me ? 1 : 0) || (x.kind === "done" ? 0 : 1) - (y.kind === "done" ? 0 : 1) || x.rank - y.rank);
+    // 1) broken that week, 2) still current (live streaks, season totals already on a list), 3) on pace to break soon, 4) the rest
+    const tier = (e) => (e.week === N ? 0 : e.current ? 1 : e.kind === "pace" || e.soon ? 2 : 3);
+    const rows = [...entries].sort((x, y) => tier(x) - tier(y) || (y.key === me ? 1 : 0) - (x.key === me ? 1 : 0) || x.rank - y.rank);
     const MAX = 6, shown = rows.slice(0, MAX);
     const eraTxt = (e) => e.era === "both" ? `#${e.rank} all time, #${e.medRank} Median era` : e.rank <= 10 ? `#${e.rank} ${e.era === "all" ? "all time" : "Median era"}` : "";
-    el.innerHTML = rows.length ? `<div class="rc-sec">Record books</div><div class="rb">${shown.map((e) => `<div class="rb-i ${e.key === me ? "me" : ""}"><span class="rw-tag ${e.kind === "done" ? "done" : ""}">${e.kind === "done" ? "In the books" : e.rank <= 10 ? "On pace" : "Close"}</span><span class="rb-t"><span class="rb-l">${esc(e.list)}${eraTxt(e) ? `, ${eraTxt(e)}` : ""}</span>${e.line}</span></div>`).join("")}</div>${rows.length > MAX ? `<div class="rc-sub" style="margin-top:4px">${rows.length - MAX} more on The Week → Story.</div>` : ""}` : "";
+    el.innerHTML = rows.length ? `<div class="rc-sec">Record books</div><div class="rb">${shown.map((e) => `<div class="rb-i ${e.key === me ? "me" : ""}"><span class="rw-tag ${e.kind === "done" ? "done" : ""}">${e.week === N ? `Set in week ${N}` : e.current ? "Still going" : e.kind === "done" ? "In the books" : e.rank <= 10 ? "On pace" : "Close"}</span><span class="rb-t"><span class="rb-l">${esc(e.list)}${eraTxt(e) ? `, ${eraTxt(e)}` : ""}</span>${e.line}</span></div>`).join("")}</div>${rows.length > MAX ? `<div class="rc-sub" style="margin-top:4px">${rows.length - MAX} more on The Week → Story.</div>` : ""}` : "";
   }
   function refreshRecordViews() {
     if (isOn("story")) renderRecordWatch();
@@ -3001,7 +3004,7 @@
         }
         if ($("rcPicks") && voted) $("rcPicks").outerHTML = tile("", "Pick 'em crowd", `${right}/${voted}`, "matchups called right");
       } catch {}
-      drawRecapRecords();
+      drawRecapRecords(N);
     })();
   }
   // ---------- Trade Review ----------
