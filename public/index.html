@@ -922,6 +922,32 @@
   .ph-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; font-size: 13px; }
   .ph-k { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
   .ph-n { display: block; font-size: 11px; color: var(--muted); }
+
+  /* Recap: tighter */
+  .me-recap { gap: 7px; margin-top: 8px; padding-top: 8px; }
+  .me-recap .rc-title { font-size: 19px; line-height: 1.1; }
+  .rc-sec { margin: 2px 0 -3px; }
+  .hero { padding: 9px 11px; column-gap: 10px; }
+  .hero-res { width: 40px; height: 40px; font-size: 24px; }
+  .hero-sc { font-size: 28px; }
+  .t2-row, .t2-grid { gap: 6px; }
+  .t2 { padding: 7px 9px; }
+  .t2-v { font-size: 21px; margin-top: 2px; }
+  .t2-s { margin-top: 1px; }
+  .t2-slot:empty, #rcNext:empty, #rcRecords:empty { display: none; }
+  .t2-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .nextup { padding: 8px 10px; }
+  .nu-row { margin: 3px 0 1px; }
+  .aw-row { gap: 6px; padding-bottom: 2px; }
+  .aw-tile { width: 100px; padding: 8px 5px; gap: 3px; }
+  .aw-tile .trophy { width: 34px; height: 34px; }
+  .rb { gap: 5px; }
+  .rb-i { padding: 6px 9px; display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; line-height: 1.35; }
+  .rb-i .rw-tag { flex: none; margin-top: 1px; } .rb-t { min-width: 0; }
+  .me-card.recap-mode .me-trophies { margin-top: 6px; padding-top: 6px; }
+
+  .rb-l { display: block; font-size: 11px; font-weight: 700; color: var(--muted); }
+  .rb-i.me .rb-t b { color: var(--violet); }
 </style>
 </head>
 <body>
@@ -986,6 +1012,26 @@
       <path d="M18 20v26M46 20v26M16 40.5v6M48 40.5v6" stroke="#E4D6FF" stroke-width="3.2" stroke-linecap="round"/>
       <path d="M38 12.5h5l-5 5h5" fill="none" stroke="#B98CFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M45 7.5h3.5l-3.5 3.5h3.5" fill="none" stroke="#B98CFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tr-cloud9" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
+      <path d="M20 40c-4.4 0-7-3-7-6.4 0-3.3 2.6-6 6-6.3.9-4.6 4.8-7.8 9.5-7.8 3.7 0 6.9 2 8.5 5 .7-.2 1.4-.3 2.2-.3 4.6 0 8.3 3.6 8.3 8 0 4.3-3.5 7.8-8 7.8H20z" fill="#fff"/>
+      <text x="32" y="38.5" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="13" fill="#6B2FB3">9</text>
+      <path d="M44 15l1.3 2.8 2.9 1.2-2.9 1.3L44 23l-1.3-2.7-2.8-1.3 2.8-1.2zM18 14l.9 1.9 2 .8-2 .9-.9 1.9-.9-1.9-1.9-.9 1.9-.8z" fill="#E4D6FF"/>
+    </symbol>
+    <symbol id="tr-rockbottom" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#000"/><circle cx="32" cy="32" r="29" fill="none" stroke="#B98CFF" stroke-width="2.5"/>
+      <path d="M14 44h36" stroke="#E4D6FF" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M18 44l3-8 6-3 5 2 7-4 5 5 2 8z" fill="#E4D6FF"/>
+      <path d="M26 37l3 1.5M36 35l2 3" stroke="#000" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M32 12v13" stroke="#B98CFF" stroke-width="2.8" stroke-linecap="round"/><path d="M26.5 20l5.5 6 5.5-6" fill="none" stroke="#B98CFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tr-drstrange" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#6B2FB3"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#B98CFF" stroke-width="1.5" opacity=".7"/>
+      <circle cx="32" cy="32" r="15" fill="none" stroke="#FCD34D" stroke-width="2.2"/>
+      <circle cx="32" cy="32" r="10.5" fill="none" stroke="#FCD34D" stroke-width="1.4" stroke-dasharray="2.5 2"/>
+      <path d="M32 17v30M17 32h30M21.4 21.4l21.2 21.2M42.6 21.4L21.4 42.6" stroke="#FCD34D" stroke-width="1" opacity=".75"/>
+      <path d="M24 32c2.4-3.4 5-5 8-5s5.6 1.6 8 5c-2.4 3.4-5 5-8 5s-5.6-1.6-8-5z" fill="#fff"/><circle cx="32" cy="32" r="2.6" fill="#6B2FB3"/>
     </symbol>
   </defs>
 </svg>
@@ -1239,7 +1285,7 @@
     </section>
     <section aria-labelledby="faabH">
       <h2 id="faabH">FAAB Tracker</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">Each team's FAAB left and spent. Vivek, Cameron, and Srimanth started with $110; everyone else started with the league budget. Best buys rank paid pickups by The Estime Quotient: points scored in that team's starting lineup, from the week of the pickup on, per FAAB dollar. Pickups that haven't scored in a starting lineup yet aren't listed, and the list grows to 10 as the season goes. $0 pickups are counted separately as free finds.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">Each team's FAAB left and spent. Vivek, Cameron, and Srimanth started with $110; everyone else started with the league budget. Best buys rank paid pickups at 1.0 or better by The Estime Quotient: points scored in that team's starting lineup, from the week of the pickup on, per FAAB dollar. Pickups that haven't scored in a starting lineup yet aren't listed, and the list grows to 10 as the season goes. $0 pickups are counted separately as free finds.</p></details>
       <div id="faab"></div>
     </section>
     <section aria-labelledby="tmH">
@@ -1273,7 +1319,7 @@
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
     wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
     sorts: {}, story: {}, storyWeek: null, histLoading: null, hofPlayers: {}, hofYear: "all", power: null, powerErr: null, powerIdx: null, rosters: {}, trades: {}, tradeYear: null, recap: null, recapErr: null, recapWeek: null, txstats: null, txstatsErr: null, ifmanLoading: null, drafts: {}, draftYear: null, draftView: null, draftRound: null, draftMgr: "", hist: null, histErr: null, histIfman: {}, histFav: {}, histManager: null, histYear: "all", histSeason: null,
-    awards: null, awardsErr: null, awardsLoading: null, awardWeek: null, animated: new Set(),
+    awards: null, awardsErr: null, awardsLoading: null, awardsPersonal: false, awardWeek: null, animated: new Set(),
     me: (() => { try { return Number(localStorage.getItem("boc-me")) || null; } catch { return null; } })(),
   };
   const voter = (() => {
@@ -1746,6 +1792,9 @@
     { key: "noah", title: "Noah of the Week", def: "Highest score in a head-to-head loss" },
     { key: "srimanth", title: "Srimanth of the Week", def: "Lowest score in a head-to-head win" },
     { key: "blunder", title: "Bench Blunder", def: "Worst start accuracy: the most points left on the bench, relative to the best possible lineup" },
+    { key: "cloud9", title: "Cloud 9", def: "A manager's highest score in their whole league history" },
+    { key: "rockbottom", title: "Rock Bottom", def: "A manager's lowest score in their whole league history" },
+    { key: "drstrange", title: "Dr. Strange", def: "Won after being 36% or less to win once the Sunday 4 PM games ended" },
     { key: "bigbrain", title: "Big Brain", def: "Started someone under 60% started across ESPN who carried them past the median" },
   ];
   const trophy = (key, sm, teamId, week) => `<svg class="trophy${sm ? " sm" : ""}${teamId != null ? " tap" : ""}" role="img" aria-label="${esc(AWARDS.find((a) => a.key === key)?.title || "")}"${teamId != null ? ` data-trophy="${key}:${teamId}${week != null ? `:${week}` : ""}"` : ""}><use href="#tr-${key}"></use></svg>`;
@@ -1777,6 +1826,9 @@
         return `Start accuracy ${acc >= 99.95 ? "100" : acc.toFixed(1)}%: ${gap < 0.005 ? `perfect lineup, ${fmt(w.actual)} points` : `scored ${fmt(w.actual)} of a possible ${fmt(opt)}`}`; }
       case "blunder": { const opt = w.optimal ?? w.actual; const acc = opt > 0 ? (w.actual / opt) * 100 : 100;
         return `Start accuracy ${acc.toFixed(1)}%: scored ${fmt(w.actual)} of a possible ${fmt(opt)}, leaving ${fmt(opt - w.actual)} on the bench`; }
+      case "cloud9": return `Scored ${fmt(w.actual)}, a new personal best (old best ${fmt(w.prev)}, ${w.games} games)`;
+      case "rockbottom": return `Scored ${fmt(w.actual)}, a new personal low (old low ${fmt(w.prev)}, ${w.games} games)`;
+      case "drstrange": return `Was ${Math.round((w.preSnf || 0) * 100)}% to win after the Sunday 4 PM games, then won ${fmt(w.actual)} to ${fmt(w.oppScore)} after Sunday and Monday night`;
       case "noah": return `Scored ${fmt(w.actual)} and still lost to ${opp} (${fmt(w.oppScore)})`;
       case "srimanth": return `Scored just ${fmt(w.actual)} and beat ${opp} (${fmt(w.oppScore)})`;
       case "bigbrain": return `Started ${w.player}${w.pos ? ` (${w.pos})` : ""}, in just ${Math.round(w.pct)}% of ESPN lineups${w.pctLive ? " (today's number)" : ""}. He scored ${fmt(w.playerPts)}, and the team cleared the median by only ${fmt(w.margin)}`;
@@ -1792,9 +1844,33 @@
   }
   const wkList = (ws) => `Wk ${ws.join(", ")}`;
   async function ensureAwards() {
-    if (state.awards || state.awardsErr) return;
+    if (state.awards || state.awardsErr) { if (state.awards && !state.awardsPersonal) await addPersonalAwards(); return; }
     if (!state.awardsLoading) state.awardsLoading = getJSON("/api/awards").then((d) => (state.awards = d)).catch((e) => (state.awardsErr = e.message));
     await state.awardsLoading;
+    if (state.awards) await addPersonalAwards();
+  }
+  // Cloud 9 / Rock Bottom: a manager's best or worst score across their whole league history (10+ earlier games).
+  async function addPersonalAwards() {
+    if (state.awardsPersonal) return;
+    state.awardsPersonal = true;
+    await ensureHist(); if (!state.hist) return;
+    const seasons = [...state.hist.seasons].sort((a, b) => a.year - b.year);
+    const cy = seasons[seasons.length - 1]?.year, cur = seasons.find((x) => x.year === cy);
+    const byMgr = {};
+    for (const season of seasons) for (const t of season.teams) { const k = identity(season, t).key; for (const g of t.games || []) (byMgr[k] ||= []).push({ year: season.year, w: g.w, pts: g.pts, teamId: t.teamId }); }
+    for (const wk of state.awards.weeks || []) {
+      const hi = [], lo = [];
+      for (const t of cur?.teams || []) {
+        const k = identity(cur, t).key, g = (t.games || []).find((x) => x.w === wk.week); if (!g || !(g.pts > 0)) continue;
+        const prior = (byMgr[k] || []).filter((x) => x.pts > 0 && (x.year < cy || x.w < wk.week));
+        if (prior.length < 10) continue;
+        const best = Math.max(...prior.map((x) => x.pts)), worst = Math.min(...prior.map((x) => x.pts));
+        if (g.pts > best) hi.push({ teamId: t.teamId, actual: g.pts, prev: best, games: prior.length });
+        if (g.pts < worst) lo.push({ teamId: t.teamId, actual: g.pts, prev: worst, games: prior.length });
+      }
+      if (hi.length) wk.awards.cloud9 = { value: Math.max(...hi.map((x) => x.actual)), winners: hi };
+      if (lo.length) wk.awards.rockbottom = { value: Math.min(...lo.map((x) => x.actual)), winners: lo };
+    }
   }
 
   async function renderAwards() {
@@ -2636,13 +2712,13 @@
 
   // Record Watch: every Hall of Fame list, checked against this season. Same metrics, same list sizes,
   // all time first, then the Median era. Entries on the same list share one card.
-  async function renderRecordWatch() {
-    const box = $("rwatch");
-    if (!state.hist) { box.innerHTML = `<div class="empty">Checking the record books…</div>`; await ensureHist(); }
-    if (state.histErr) { box.innerHTML = `<div class="empty">Couldn't load league history: ${esc(state.histErr)}</div>`; return; }
+  // Shared by Story's Record Watch and the weekly recap card, so both always show the same records.
+  async function recordWatchEntries() {
+    if (!state.hist) await ensureHist();
+    if (state.histErr) return { error: state.histErr, entries: [], missingP: [], missingAcc: [] };
     const R = computeRecords(), cy = R.currentYear;
     const curSeason = state.hist.seasons.find((x) => x.year === cy);
-    if (!curSeason) { box.innerHTML = `<div class="empty">Nobody's on a Hall of Fame list yet this season.</div>`; return; }
+    if (!curSeason) return { entries: [], missingP: [], missingAcc: [] };
     const MED = (y) => y >= 2022, MIN_LONG = 7; // luck and accuracy need 7+ games
     const entries = [];
     // Where a value lands: all time first, then the Median era
@@ -2732,9 +2808,9 @@
     // Start accuracy (top 10, Median era), after 7 games
     const medYears = state.hist.seasons.filter((x) => x.complete && MED(x.year)).map((x) => x.year);
     const missingAcc = medYears.filter((y) => !state.histIfman[y]?.complete);
-    if (missingAcc.length && !state.rwAccLoading) { state.rwAccLoading = true; (async () => { for (const y of missingAcc) await loadIfman(y); state.rwAccLoading = false; if (isOn("story")) renderRecordWatch(); })(); }
+    if (missingAcc.length && !state.rwAccLoading) { state.rwAccLoading = true; (async () => { for (const y of missingAcc) await loadIfman(y); state.rwAccLoading = false; refreshRecordViews(); })(); }
     const W = state.ifman?.weekly;
-    if (!W && !state.ifmanLoading && !state.ifmanErr) state.ifmanLoading = getJSON("/api/ifman").then((d) => { state.ifman = d; if (isOn("story")) renderRecordWatch(); }).catch((e) => { state.ifmanErr = e.message; });
+    if (!W && !state.ifmanLoading && !state.ifmanErr) state.ifmanLoading = getJSON("/api/ifman").then((d) => { state.ifman = d; refreshRecordViews(); }).catch((e) => { state.ifmanErr = e.message; });
     if (!missingAcc.length && W) {
       const pool = [];
       for (const season of state.hist.seasons) { if (!season.complete || !MED(season.year)) continue; for (const t of season.teams) { const a2 = seasonAccuracy(season, t); if (a2 && a2.weeks >= 6) pool.push({ v: a2.acc, year: season.year }); } }
@@ -2750,7 +2826,7 @@
     // Best individual player performances (top 10)
     const years = state.hist.seasons.map((x) => x.year);
     const missingP = years.filter((y) => !state.hofPlayers[y]?.complete);
-    if (missingP.length && !state.rwPlayersLoading) { state.rwPlayersLoading = true; (async () => { for (const y of missingP) await loadPlayers(y); state.rwPlayersLoading = false; if (isOn("story")) renderRecordWatch(); })(); }
+    if (missingP.length && !state.rwPlayersLoading) { state.rwPlayersLoading = true; (async () => { for (const y of missingP) await loadPlayers(y); state.rwPlayersLoading = false; refreshRecordViews(); })(); }
     if (!missingP.length) {
       const perf = years.flatMap((y) => (state.hofPlayers[y]?.tops || []).map((t) => ({ ...t, year: y })));
       for (const t of perf.filter((x) => x.year === cy)) {
@@ -2759,7 +2835,28 @@
         add("Best individual performances", "⭐", pl, "done", o.key, `<b>${esc(t.name)}</b>, ${fmt(t.pts)} for ${esc(fixName(o.name))} in week ${t.week}`);
       }
     }
-
+    return { entries, missingP, missingAcc };
+  }
+  // Recap card: the same records as Story's Record Watch, same rules, in a compact list (yours first).
+  async function drawRecapRecords() {
+    const el = $("rcRecords"); if (!el) return;
+    const { entries, error } = await recordWatchEntries();
+    if (error || !$("rcRecords")) return;
+    const me = myKey();
+    const rows = [...entries].sort((x, y) => (y.key === me ? 1 : 0) - (x.key === me ? 1 : 0) || (x.kind === "done" ? 0 : 1) - (y.kind === "done" ? 0 : 1) || x.rank - y.rank);
+    const MAX = 6, shown = rows.slice(0, MAX);
+    const eraTxt = (e) => e.era === "both" ? `#${e.rank} all time, #${e.medRank} Median era` : e.rank <= 10 ? `#${e.rank} ${e.era === "all" ? "all time" : "Median era"}` : "";
+    el.innerHTML = rows.length ? `<div class="rc-sec">Record books</div><div class="rb">${shown.map((e) => `<div class="rb-i ${e.key === me ? "me" : ""}"><span class="rw-tag ${e.kind === "done" ? "done" : ""}">${e.kind === "done" ? "In the books" : e.rank <= 10 ? "On pace" : "Close"}</span><span class="rb-t"><span class="rb-l">${esc(e.list)}${eraTxt(e) ? `, ${eraTxt(e)}` : ""}</span>${e.line}</span></div>`).join("")}</div>${rows.length > MAX ? `<div class="rc-sub" style="margin-top:4px">${rows.length - MAX} more on The Week → Story.</div>` : ""}` : "";
+  }
+  function refreshRecordViews() {
+    if (isOn("story")) renderRecordWatch();
+    if (state.recapShown && !$("meRecap").hidden) drawRecapRecords();
+  }
+  async function renderRecordWatch() {
+    const box = $("rwatch");
+    if (!state.hist) box.innerHTML = `<div class="empty">Checking the record books…</div>`;
+    const { entries, missingP, missingAcc, error } = await recordWatchEntries();
+    if (error) { box.innerHTML = `<div class="empty">Couldn't load league history: ${esc(error)}</div>`; return; }
     // Group: era section, then one card per list, entries ranked
     const me = myKey();
     const section = (era, heading) => {
@@ -2789,7 +2886,7 @@
       `<div class="table-scroll"><table class="faab-table"><thead><tr><th>#</th><th>Manager</th><th>Left</th><th>Spent</th></tr></thead><tbody>${rows.map((r, i) => `
         <tr class="${r.teamId === state.me ? "me" : ""}"><td class="rank">${i + 1}</td><td><div class="tcell">${logo(teamById(r.teamId))}<div>${esc(mgr(r.teamId))}${r.start !== F.budget ? `<div class="owner" style="display:block">started with $${r.start}</div>` : ""}</div></div></td><td class="strong">${money(r.left)}</td><td>${money(r.spent)}</td></tr>`).join("")}</tbody></table></div>
       <p class="note" style="margin-top:6px">Budget $${F.budget}${rows.some((r) => r.start !== F.budget) ? ", with a few managers starting higher" : ""}.</p>`) +
-      `<div class="hof" style="margin-top:12px">${hofList("Best buys (The Estime Quotient)", "💸", F.bestBuys, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, $${b.bid}, ${fmt(b.pts)} pts in ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${b.perDollar.toFixed(2)}</span></div>`, "The Estime Quotient: points a paid pickup has scored in that team's starting lineup, from the week of the pickup on, divided by the FAAB bid. 3.44 means 3.44 points per dollar. Pickups that haven't scored in a starting lineup yet aren't listed.")}
+      `<div class="hof" style="margin-top:12px">${hofList("Best buys (The Estime Quotient)", "💸", F.bestBuys, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, $${b.bid}, ${fmt(b.pts)} pts in ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${b.perDollar.toFixed(2)}</span></div>`, "The Estime Quotient: points a paid pickup has scored in that team's starting lineup, from the week of the pickup on, divided by the FAAB bid. 3.44 means 3.44 points per dollar. Only buys at 1.0 or better count as a best buy (less than a point per dollar isn't good value).")}
         ${hofList("Free finds ($0 pickups)", "🎁", F.freeFinds, (b, i) => `<div class="hrow ${b.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(b.teamId))}<div class="who"><div class="nm">${esc(b.name)}${b.pos ? `, ${esc(b.pos)}` : ""}</div><div class="sub">${esc(mgr(b.teamId))}, ${b.starts} start${b.starts === 1 ? "" : "s"}</div></div><span class="val">${fmt(b.pts)}</span></div>`, "The best $0 pickups (free agents or $0 waiver claims), ranked by points scored in that team's starting lineup since the pickup.")}</div>`;
     $("twelfth").innerHTML = D.twelfthMan.length ? `<div class="hcard">${D.twelfthMan.map((x, i) => `<div class="hrow ${x.teamId === state.me ? "me" : ""}"><span class="n">${i + 1}</span>${logo(teamById(x.teamId))}<div class="who"><div class="nm">${esc(x.name)}${x.pos ? `, ${esc(x.pos)}` : ""}</div><div class="sub">${esc(mgr(x.teamId))}'s bench, ${fmt(x.avg)} a week over ${x.weeks} week${x.weeks === 1 ? "" : "s"}</div></div><span class="val">${fmt(x.pts)}</span></div>`).join("")}</div>`
       : `<div class="empty">No bench points yet.</div>`;
@@ -2904,21 +3001,7 @@
         }
         if ($("rcPicks") && voted) $("rcPicks").outerHTML = tile("", "Pick 'em crowd", `${right}/${voted}`, "matchups called right");
       } catch {}
-      try {
-        await ensureHist();
-        const R = computeRecords(), cy = R.currentYear, items = [];
-        const scored = R.games.filter((x) => x.pts > 0);
-        [...scored].sort((a, b) => b.pts - a.pts).slice(0, 10).forEach((x, i) => { if (x.year === cy && x.week === N) items.push(`${esc(x.name)}'s ${fmt(x.pts)} is the #${i + 1} score of all time`); });
-        [...scored].sort((a, b) => a.pts - b.pts).slice(0, 10).forEach((x, i) => { if (x.year === cy && x.week === N) items.push(`${esc(x.name)}'s ${fmt(x.pts)} is the #${i + 1} lowest score of all time`); });
-        for (const [runs, label] of [[R.h2hRuns, "head-to-head"], [R.medRuns, "median"]]) for (const type of ["W", "L"]) {
-          const all = runs.filter((r) => r.type === type).sort((a, b) => b.len - a.len);
-          for (const r of all.filter((x) => x.active && x.len >= 3 && x.end.week === N && x.end.year === cy)) {
-            const rec = all.find((x) => x !== r);
-            items.push(`${esc(r.name)} has ${type === "W" ? "won" : "lost"} ${r.len} straight${label === "median" ? " against the median" : ""}${rec ? (r.len >= rec.len ? ", a league record" : `, ${rec.len - r.len} off the record`) : ""}`);
-          }
-        }
-        if ($("rcRecords")) $("rcRecords").innerHTML = items.length ? `<div class="rc-sec">Record books</div><div class="rb">${items.map((t) => `<div class="rb-i">📜 ${t}.</div>`).join("")}</div>` : "";
-      } catch { if ($("rcRecords")) $("rcRecords").innerHTML = ""; }
+      drawRecapRecords();
     })();
   }
   // ---------- Trade Review ----------

@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.3.4)
+# Boys of Chantilly dashboard (v2.4.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -331,3 +331,17 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   The "What ESPN returned" note shows how Saffa's posts start and which fields ESPN sent. Saved editions reset (`power/archive/v3`).
 - Trade Review: trade items without a real player (draft-pick trades, blank entries) are dropped, and trades left without a
   player on both sides are removed. Cache `hist/trades/v8`.
+
+## 2.4
+- New awards: Cloud 9 / Rock Bottom (a manager's best / worst score of their whole league history, 10+ earlier games,
+  worked out from league history in the page) and Dr. Strange (won after being under 25% to win once the Sunday 4 PM
+  games ended). Dr. Strange uses a snapshot saved the first time `/api/week` sees every pre-Sunday-night game final
+  (`pre-snf/v1/w<N>`), so it starts with the next Sunday the site sees live. Trophies: #tr-cloud9, #tr-rockbottom, #tr-drstrange.
+- Weekly recap card: record books follow Record Watch rules (that week's scores on a top-10 list; live streaks on a top-5
+  list or within 3 games), max 4, yours first, with In the books / Close tags. Tighter spacing; no empty tiles.
+- Best buys need an Estime Quotient of 1.0 or better.
+
+## 2.4.1
+- Weekly recap card's Record books now shows the same records as Story's Record Watch, with the same rules (one shared
+  builder, `recordWatchEntries()`): top 6 shown, yours first, with a pointer to Story for the rest.
+- Dr. Strange threshold: 36% or less to win once the Sunday 4 PM games ended.

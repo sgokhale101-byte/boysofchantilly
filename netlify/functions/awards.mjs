@@ -1,7 +1,7 @@
 // Weekly awards for every finished week, served at /api/awards.
 import { EspnError } from "../lib/espn.mjs";
 import { loadSeason } from "../lib/season.mjs";
-import { median } from "../lib/model.mjs";
+import { median, readSundaySnapshot } from "../lib/model.mjs";
 
 // Big Brain: a team that made the median by starting someone under 60% started across ESPN,
 // who scored more than the team's margin over the median (without him, no median win).
@@ -52,6 +52,19 @@ export default async () => {
   catch (e) { return json(e instanceof EspnError ? e.status : 500, { error: e.message || "Couldn't build the awards." }); }
 
   const acc = (t) => (t.optimal ? Math.min(1, t.actual / t.optimal) * 100 : null);
+  const snaps = Object.fromEntries(await Promise.all(season.weeks.map(async ({ week }) => [week, await readSundaySnapshot(week)])));
+  // Dr. Strange: won after being 36% or less to win once the Sunday 4 PM games ended. Lowest pre-Sunday-night chance wins.
+  const drStrange = (week, teams) => {
+    const shot = snaps[week]; if (!shot?.matchups) return null;
+    const cands = [];
+    for (const m of Object.values(shot.matchups)) for (const [tid, p] of Object.entries(m)) {
+      const t = teams.find((x) => x.teamId === Number(tid));
+      if (t && t.result === "W" && p != null && p <= 0.36) cands.push({ teamId: t.teamId, actual: t.actual, oppId: t.oppId, oppScore: teams.find((x) => x.teamId === t.oppId)?.actual, preSnf: p });
+    }
+    if (!cands.length) return null;
+    cands.sort((a, b) => a.preSnf - b.preSnf);
+    return { value: cands[0].preSnf, winners: [cands[0]] };
+  };
   const weeks = season.weeks.map(({ week, teams }) => {
     const hasProj = teams.some((t) => t.projected > 0);
     const med = median(teams.map((t) => t.actual));
@@ -70,6 +83,7 @@ export default async () => {
         noah: fmtWin(pick(teams.filter((t) => t.result === "L"), (t) => t.actual, hi), (r) => ({ oppScore: opp(r)?.actual })),
         srimanth: fmtWin(pick(teams.filter((t) => t.result === "W"), (t) => t.actual, lo), (r) => ({ oppScore: opp(r)?.actual })),
         bigbrain: teams.some((t) => t.starters) ? bigBrain(teams) : null,
+        drstrange: drStrange(week, teams),
       },
     };
   });

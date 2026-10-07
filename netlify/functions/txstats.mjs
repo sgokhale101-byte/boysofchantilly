@@ -122,7 +122,7 @@ export default async () => {
     const freePts = mine.filter((b) => b.bid === 0).reduce((a, b) => a + b.pts, 0);
     return { teamId: t.id, start, left: usesFaab ? start - spent : null, spent, paidPts: r2(paidPts), freePts: r2(freePts), perDollar: spentHere ? r2(paidPts / spentHere) : null, buys: mine.length };
   });
-  const bestBuys = buys.filter((b) => b.bid > 0 && b.pts > 0).map((b) => ({ ...b, perDollar: r2(b.pts / b.bid) })).sort((a, b) => b.perDollar - a.perDollar || b.pts - a.pts).slice(0, 10);
+  const bestBuys = buys.filter((b) => b.bid > 0 && b.pts > 0).map((b) => ({ ...b, perDollar: r2(b.pts / b.bid) })).filter((b) => b.perDollar >= 1).sort((a, b) => b.perDollar - a.perDollar || b.pts - a.pts).slice(0, 10);
   const freeFinds = buys.filter((b) => b.bid === 0 && b.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 5);
 
   return json(200, {
