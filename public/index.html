@@ -953,8 +953,9 @@
   .gwl b { font-family: var(--display); font-weight: 900; font-size: 13px; }
   .gwl.hi, .gwl.hi b { color: var(--white); }
   /* Recap: awards and record books side by side */
-  .rc-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: start; }
-  .rc-pair.solo, .rc-pair:has(> #rcRecords:empty) { grid-template-columns: minmax(0, 1fr); }
+  .rc-pair { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: column; gap: 8px; align-items: start; }
+  .rc-pair > * { grid-row: 1; }
+  .rc-pair.solo { grid-template-columns: minmax(0, 1fr); }
   .rc-aw, #rcRecords { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .rc-aw > *, #rcRecords > * { min-width: 0; }
   .aw-list { display: grid; gap: 4px; }
@@ -967,7 +968,7 @@
   .rc-pair .rb-i .rb-t { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .rc-pair .rw-tag { align-self: flex-start; font-size: 9.5px; }
   .rc-pair .rc-sub { font-size: 11px; }
-  .rc-pair.solo .rb-i, .rc-pair:has(> #rcRecords:only-child) .rb-i { flex-direction: row; font-size: 12.5px; }
+  .rc-pair.solo .rb-i { flex-direction: row; font-size: 12.5px; }
   .mv { font-size: 10.5px; font-weight: 800; margin-left: 2px; }
   .mv.up { color: #22C55E; } .mv.down { color: #EF4444; }
   /* Profile ranks: tap for the full league ranking */
@@ -2956,11 +2957,14 @@
     if (N == null && state.recapShown) N = Number(String(state.recapShown).split(":")[1]);
     const { entries, error } = await recordWatchEntries();
     if (error || !$("rcRecords")) return;
+    // awards alone (no records) take the full width; otherwise the two sit side by side
+    const pair = el.closest(".rc-pair");
     const me = myKey();
     // 1) broken that week, 2) still current (live streaks, season totals already on a list), 3) on pace to break soon, 4) the rest
     const tier = (e) => (e.week === N ? 0 : e.current ? 1 : e.kind === "pace" || e.soon ? 2 : 3);
     const rows = [...entries].sort((x, y) => tier(x) - tier(y) || (y.key === me ? 1 : 0) - (x.key === me ? 1 : 0) || x.rank - y.rank);
     const MAX = 4, shown = rows.slice(0, MAX);
+    if (pair) pair.classList.toggle("solo", !rows.length || !pair.querySelector(".rc-aw"));
     const eraTxt = (e) => e.era === "both" ? `#${e.rank} all time, #${e.medRank} Median era` : e.rank <= 10 ? `#${e.rank} ${e.era === "all" ? "all time" : "Median era"}` : "";
     el.innerHTML = rows.length ? `<div class="rc-sec">Record books</div><div class="rb">${shown.map((e) => `<div class="rb-i ${e.key === me ? "me" : ""}"><span class="rw-tag ${e.kind === "done" ? "done" : ""}">${e.week === N ? `Set in week ${N}` : e.current ? "Still going" : e.kind === "done" ? "In the books" : e.rank <= 10 ? "On pace" : "Close"}</span><span class="rb-t"><span class="rb-l">${esc(e.list)}${eraTxt(e) ? `, ${eraTxt(e)}` : ""}</span>${e.line}</span></div>`).join("")}</div>${rows.length > MAX ? `<div class="rc-sub" style="margin-top:4px">${rows.length - MAX} more on The Week → Story.</div>` : ""}` : "";
   }

@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.6.1)
+# Boys of Chantilly dashboard (v2.6.2)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -377,3 +377,7 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   (record books show the top 4, the rest are on Story).
 - Manager profiles: every "Nth of N" rank (average finish, points per game, allowed per game, start accuracy, luck) is a
   link. Tapping it opens the full league ranking for that stat in the chosen season or era, with the manager highlighted.
+
+## 2.6.2
+- Recap card: Awards and Record books are locked side by side (left and right) on every phone. The layout no longer
+  depends on a CSS feature (`:has`) that some phone browsers don't refresh after the record books load.
