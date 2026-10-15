@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.4.2)
+# Boys of Chantilly dashboard (v2.6)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -349,3 +349,24 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
 ## 2.4.2
 - Weekly recap Record books ordered by tier: set that week ("Set in week N"), still current ("Still going": active streaks
   on a list, season totals already on a list), on pace to break soon ("On pace" / "Close"), then the rest. Yours first within a tier.
+
+## 2.5
+- "Point Distribution" replaces "Where the points come from" / "Points by position".
+- Standings: new All-play view (record vs. every team every week, win %, H2H for comparison); "IF man..." renamed
+  "Best Case Scenario" (button shows "Best Case" on phones) everywhere.
+- Draft: a player who missed a big part of the season is judged on his PPG in the games he played (`healthyPpgRank`,
+  2+ games): a bust only if that pace ranks like one. Bust cards say so. Cache `hist/draft/v7`.
+
+## 2.5.1
+- Best Case Scenario renamed "If-Man" everywhere (Standings button, notes, profiles).
+
+## 2.6
+- Luck = schedule luck + injury luck, both in wins, everywhere (Standings luck view shows Luck / Sched. / Injury / BB-LW;
+  profiles show both parts; Hall of Fame and Record Watch use the combined number).
+- Injury luck (`seasonInjury` in netlify/lib/history.mjs, `/api/history?part=injury&season=Y`): public nflverse data
+  (GitHub releases: players.csv ID map, snap_counts_YYYY.csv, injuries_YYYY.csv; 2018 on). Counts a starter leaving early
+  (snap share under 60% of his normal, then on the next injury report or out next week), a starter who did not play while
+  his NFL team did, and a regular starter (2 of his last 3 available weeks) missing games, including season-ending
+  injuries after a drop. Points lost = healthy average minus what replaced him (or what he scored), turned into wins via the
+  all-play, then centered on the league average. Cached: `nflverse/idmap/v1` (14 days), `nflverse/season/v1/Y`,
+  `hist/injury/v1/Y` (finished seasons).

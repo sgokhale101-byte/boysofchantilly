@@ -331,7 +331,7 @@
     .pick .opt { min-height: 104px; padding: 10px; }
     .pick .opt .chance b { font-size: 22px; }
 
-    .toggle { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; border-radius: 999px; gap: 0; }
+    .toggle { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; border-radius: 16px; gap: 2px; }
     .toggle button { font-size: 13px; }
     .toggle button { padding: 9px 4px; }
     .toggle .full { display: none; } .toggle .short { display: inline; }
@@ -948,6 +948,9 @@
 
   .rb-l { display: block; font-size: 11px; font-weight: 700; color: var(--muted); }
   .rb-i.me .rb-t b { color: var(--violet); }
+
+  .sm-only { display: none; }
+  @media (max-width: 640px) { .lg-only { display: none; } .sm-only { display: inline; } }
 </style>
 </head>
 <body>
@@ -1168,7 +1171,8 @@
         <button data-view="current" aria-pressed="true">Current</button>
         <button data-view="h2h" aria-pressed="false">H2H</button>
         <button data-view="median" aria-pressed="false">Median</button>
-        <button data-view="ifman" aria-pressed="false">IF man...</button>
+        <button data-view="ifman" aria-pressed="false">If-Man</button>
+        <button data-view="allplay" aria-pressed="false">All-play</button>
         <button data-view="luck" aria-pressed="false">Luck</button>
       </div>
       <details class="explain"><summary>Explain It</summary><p class="note" id="standNote"></p></details>
@@ -1176,7 +1180,7 @@
       <div id="cutLegend"></div>
     </section>
     <section aria-labelledby="pieH">
-      <h2 id="pieH">Where the points come from</h2>
+      <h2 id="pieH">Point Distribution</h2>
       <details class="explain"><summary>Explain It</summary><p class="note">Each manager's starting-lineup points this season by position, over finished weeks. Flex players count at their real position.</p></details>
       <div class="pies" id="pies"></div>
     </section>
@@ -1193,7 +1197,7 @@
   <div class="panel" id="panel-hof" role="tabpanel" aria-labelledby="tab-hof" hidden>
     <section aria-labelledby="hofH">
       <div class="aw-pick"><h2 id="hofH">Hall of Fame</h2><label class="me-pick"><span>Show</span><select id="hofYear" aria-label="All time, an era, or one season"></select></label></div>
-      <details class="explain"><summary>Explain It</summary><p class="note">League records across every season on record. Scores, weeks, and streaks count regular-season games. Streaks follow a manager across seasons. Median streaks start in 2022. Luck lists use finished seasons; luck is actual head-to-head wins minus the wins a team's scores earned against the whole league each week. Accuracy lists show for the Median era, using finished seasons with weekly lineup data (at least 6 weeks). Season lists rank finished seasons by median points per game (the middle weekly score), so one huge or tiny week doesn't swing a season. Player performances use your league's scoring and include bench players, marked as benched. The dropdown switches every list between all time, the Plumber era (through 2021), the Median era (2022 on), and single seasons. Streaks only count games inside the chosen span. Median streaks show for the Median era and seasons from 2022 on.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">League records across every season on record. Scores, weeks, and streaks count regular-season games. Streaks follow a manager across seasons. Median streaks start in 2022. Luck lists use finished seasons; luck is schedule luck (actual head-to-head wins minus the wins a team's scores earned against the whole league each week) plus injury luck (wins lost to injured starters, compared with the league average). Accuracy lists show for the Median era, using finished seasons with weekly lineup data (at least 6 weeks). Season lists rank finished seasons by median points per game (the middle weekly score), so one huge or tiny week doesn't swing a season. Player performances use your league's scoring and include bench players, marked as benched. The dropdown switches every list between all time, the Plumber era (through 2021), the Median era (2022 on), and single seasons. Streaks only count games inside the chosen span. Median streaks show for the Median era and seasons from 2022 on.</p></details>
       <div class="hof" id="hof"></div>
     </section>
   </div>
@@ -1228,7 +1232,7 @@
   <div class="panel" id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
     <section aria-labelledby="profH">
       <h2 id="profH">Manager Profiles</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">Every manager who has played in the league, current and former, across every season ESPN has on record. Weeks and head-to-head records count regular-season games. Cakewalk is the manager they beat most often, Their Daddy is the one who owns them, and Rival is their closest head-to-head series. For current managers, all three are other current managers. Favorite player: the player on this manager's roster for the most weeks; ties go to the one with more starting points in their wins. Luck index: actual head-to-head wins minus the wins your scores earned against the whole league each week (the all-play record). Positive means the schedule has helped, negative means it has hurt. Bad beats are losses while scoring above that week's median; lucky wins are wins while scoring below it.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">Every manager who has played in the league, current and former, across every season ESPN has on record. Weeks and head-to-head records count regular-season games. Cakewalk is the manager they beat most often, Their Daddy is the one who owns them, and Rival is their closest head-to-head series. For current managers, all three are other current managers. Favorite player: the player on this manager's roster for the most weeks; ties go to the one with more starting points in their wins. Luck index: schedule luck (actual head-to-head wins minus the wins your scores earned against the whole league each week) plus injury luck (wins your injured starters cost you compared with the league average, from NFL snap counts and injury reports). Positive means luck has helped, negative means it has hurt. Bad beats are losses while scoring above that week's median; lucky wins are wins while scoring below it.</p></details>
       <div class="hist-controls">
         <label class="me-pick"><span>Manager</span><select id="histManager" aria-label="Choose a manager"></select></label>
         <label class="me-pick"><span>Records</span><select id="histYear" aria-label="Choose all time or one season"></select></label>
@@ -1318,7 +1322,7 @@
   const state = {
     league: null, week: null, currentWeek: null, lastWeek: null, tab: "scoreboard",
     wk: null, picks: null, pickErr: {}, players: null, timer: null, view: "current", ifman: null, ifmanErr: null, medFrac: 0,
-    sorts: {}, story: {}, storyWeek: null, histLoading: null, hofPlayers: {}, hofYear: "all", power: null, powerErr: null, powerIdx: null, rosters: {}, trades: {}, tradeYear: null, recap: null, recapErr: null, recapWeek: null, txstats: null, txstatsErr: null, ifmanLoading: null, drafts: {}, draftYear: null, draftView: null, draftRound: null, draftMgr: "", hist: null, histErr: null, histIfman: {}, histFav: {}, histManager: null, histYear: "all", histSeason: null,
+    sorts: {}, injury: {}, injuryLoading: {}, story: {}, storyWeek: null, histLoading: null, hofPlayers: {}, hofYear: "all", power: null, powerErr: null, powerIdx: null, rosters: {}, trades: {}, tradeYear: null, recap: null, recapErr: null, recapWeek: null, txstats: null, txstatsErr: null, ifmanLoading: null, drafts: {}, draftYear: null, draftView: null, draftRound: null, draftMgr: "", hist: null, histErr: null, histIfman: {}, histFav: {}, histManager: null, histYear: "all", histSeason: null,
     awards: null, awardsErr: null, awardsLoading: null, awardsPersonal: false, awardWeek: null, animated: new Set(),
     me: (() => { try { return Number(localStorage.getItem("boc-me")) || null; } catch { return null; } })(),
   };
@@ -1652,7 +1656,7 @@
     return state.league.teams.map((t) => { const o = t.record?.overall || {}; return { t, r: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 }, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0, seed: t.playoffSeed || 99 }; })
       .sort((a, b) => a.seed - b.seed || winPct(b.r) - winPct(a.r) || b.pf - a.pf);
   }
-  const LUCK_EXPLAIN_SHORT = "Luck = actual head-to-head wins minus the wins your scores earned against the whole league each week (your all-play record). Positive means the schedule has helped; negative means it has hurt. Bad beats: losses while scoring above the median. Lucky wins: wins while scoring below it.";
+  const LUCK_EXPLAIN_SHORT = "Luck = schedule luck + injury luck, both counted in wins. Schedule: actual head-to-head wins minus the wins your scores earned against the whole league each week (your all-play record). Injuries: wins your injured starters cost you (games they missed or left early, from NFL snap counts and injury reports), compared with the league average, so staying healthier than average counts as lucky. Bad beats / lucky wins: losses above the median / wins below it.";
   async function renderPies() {
     const box = $("pies"); if (!box) return;
     if (!state.recap && !state.recapErr) {
@@ -1670,8 +1674,9 @@
     current: "Official standings as ESPN has them, in playoff-seed order.",
     h2h: "H2H: records from head-to-head matchups only.",
     median: "One game per completed week against the league median: a win for finishing above it, a loss for finishing below.",
-    ifman: "IF man...: what the standings would be if every team had started its best possible lineup every week, against opponents who did the same.",
+    ifman: "If-Man: what the standings would be if every team had started its best possible lineup every week, against opponents who did the same.",
     luck: LUCK_EXPLAIN_SHORT,
+    allplay: "All-play: your record if you'd played every team every week. Each week you get a win for every team you outscored and a loss for every team that outscored you, so it rewards scoring, not the schedule. H2H is your actual head-to-head record for comparison.",
     accuracy: "Season-long start accuracy: points scored out of the best lineup each team could have started, over every finished week. Perfect weeks are weeks with nothing better left on the bench.",
   };
   // Dashed lines: under the regular-season winner (rank 1) and under the last playoff spot.
@@ -1688,7 +1693,7 @@
       tr.after(lab);
     });
   }
-  async function renderStandings() { await renderStandingsTable(); renderPies(); makeSortable($("standings"), `standings:${state.view}`); const srt = state.sorts[`standings:${state.view}`]; if (srt && !(srt.col === 0 && srt.dir === 1)) return; if (state.view !== "accuracy" && state.view !== "luck") labelCuts(); else $("standings").querySelectorAll("tr.cut-first, tr.cut-playoff").forEach((tr) => tr.classList.remove("cut-first", "cut-playoff")); }
+  async function renderStandings() { await renderStandingsTable(); renderPies(); makeSortable($("standings"), `standings:${state.view}`); const srt = state.sorts[`standings:${state.view}`]; if (srt && !(srt.col === 0 && srt.dir === 1)) return; if (state.view !== "accuracy" && state.view !== "luck" && state.view !== "allplay") labelCuts(); else $("standings").querySelectorAll("tr.cut-first, tr.cut-playoff").forEach((tr) => tr.classList.remove("cut-first", "cut-playoff")); }
   async function renderStandingsTable() {
     const L = state.league; if (!L) return;
     const v = state.view, table = $("standings");
@@ -1709,7 +1714,7 @@
       const med = medianRecords();
       const rows = L.teams.map((t) => ({ t, r: med[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
       table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Median record</th><th>Points for</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.r.pf)}</td></tr>`).join("")}</tbody>`;
-    } else if (v === "luck") {
+    } else if (v === "allplay") {
       const wk = {};
       for (const g of L.schedule || []) {
         if (g.matchupPeriodId > regCount() || !decided(g) || !g.away) continue;
@@ -1717,10 +1722,25 @@
         (wk[g.matchupPeriodId] ||= []).push({ teamId: g.home.teamId, pts: g.home.totalPoints || 0, r: r[0] }, { teamId: g.away.teamId, pts: g.away.totalPoints || 0, r: r[1] });
       }
       const lk = luckFromWeeks(wk);
+      const pctOf = (x) => (x.apW + x.apT / 2) / Math.max(1, x.apW + x.apL + x.apT);
+      const rows = L.teams.map((t) => ({ t, x: lk[t.id] })).filter((r) => r.x).sort((a, b) => pctOf(b.x) - pctOf(a.x));
+      if (!rows.length) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Fills in after the first week is final.</td></tr></tbody>`; return; }
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>All-play</th><th>Win %</th><th>H2H</th></tr></thead><tbody>${rows.map(({ t, x }, i) => `
+        <tr class="${t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(t)}<td class="strong">${recStr({ w: x.apW, l: x.apL, t: x.apT })}</td><td>${(pctOf(x) * 100).toFixed(1)}%</td><td>${recStr({ w: x.w, l: x.l, t: x.t })}</td></tr>`).join("")}</tbody>`;
+    } else if (v === "luck") {
+      const wk = {};
+      for (const g of L.schedule || []) {
+        if (g.matchupPeriodId > regCount() || !decided(g) || !g.away) continue;
+        const r = g.winner === "HOME" ? ["W", "L"] : g.winner === "AWAY" ? ["L", "W"] : ["T", "T"];
+        (wk[g.matchupPeriodId] ||= []).push({ teamId: g.home.teamId, pts: g.home.totalPoints || 0, r: r[0] }, { teamId: g.away.teamId, pts: g.away.totalPoints || 0, r: r[1] });
+      }
+      const cy = Number(L.seasonId) || Number(state.league?.seasonId);
+      ensureInjury([cy], () => { if (state.view === "luck") renderStandings(); });
+      const lk = withInjury(cy, luckFromWeeks(wk));
       const rows = L.teams.map((t) => ({ t, x: lk[t.id] })).filter((r) => r.x).sort((a, b) => b.x.luck - a.x.luck);
       if (!rows.length) { table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Fills in after the first week is final.</td></tr></tbody>`; return; }
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Luck</th><th class="hide-m">All-play</th><th>Bad beats</th><th>Lucky wins</th></tr></thead><tbody>${rows.map(({ t, x }, i) => `
-        <tr class="${t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(t)}<td class="strong ${x.luck > 0.05 ? "up" : x.luck < -0.05 ? "down" : ""}">${luckText(x.luck)}</td><td class="hide-m">${recStr({ w: x.apW, l: x.apL, t: x.apT })}</td><td>${x.badBeats}</td><td>${x.luckyWins}</td></tr>`).join("")}</tbody>`;
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Luck</th><th>Sched.</th><th>Injury</th><th><span class="lg-only">Bad beats / lucky wins</span><span class="sm-only" title="Bad beats / lucky wins">BB / LW</span></th></tr></thead><tbody>${rows.map(({ t, x }, i) => `
+        <tr class="${t.id === state.me ? "me" : ""}"><td class="rank">${i + 1}</td>${teamCell(t)}<td class="strong ${x.luck > 0.05 ? "up" : x.luck < -0.05 ? "down" : ""}">${luckText(x.luck)}</td><td>${luckText(x.sched)}</td><td>${x.injKnown ? luckText(x.inj) : "…"}</td><td>${x.badBeats} / ${x.luckyWins}</td></tr>`).join("")}</tbody>`;
     } else if (v === "accuracy") {
       if (!state.ifman && !state.ifmanErr) {
         table.innerHTML = `<tbody><tr><td class="empty" style="text-align:left">Working out every lineup…</td></tr></tbody>`;
@@ -2059,8 +2079,32 @@
     for (const t of season.teams) for (const g of t.games || []) (wk[g.w] ||= []).push({ teamId: t.teamId, pts: g.pts, r: g.r });
     return wk;
   };
+  // Injury luck per season (from the server: public NFL snap counts + injury reports), loaded in the background.
+  const injuryLuck = (year, teamId) => { const I = state.injury[year]; return I?.available ? (I.teams?.[teamId]?.luck ?? 0) : null; };
+  async function loadInjury(year) {
+    if (state.injury[year]?.complete) return state.injury[year];
+    for (let i = 0; i < 8; i++) {
+      try { const r = await getJSON(`/api/history?part=injury&season=${year}`); state.injury[year] = r; if (r.complete) return r; }
+      catch { state.injury[year] = { complete: true, available: false, teams: {} }; return state.injury[year]; }
+    }
+    return state.injury[year];
+  }
+  // Load any missing seasons, then call after() once (returns true if it started loading).
+  function ensureInjury(years, after) {
+    const miss = [...new Set(years)].filter((y) => !state.injury[y]?.complete && !state.injuryLoading[y]);
+    if (!miss.length) return false;
+    miss.forEach((y) => (state.injuryLoading[y] = true));
+    (async () => { for (const y of miss) { await loadInjury(y); delete state.injuryLoading[y]; } after(); })();
+    return true;
+  }
+  // Season luck = schedule luck + injury luck, keeping both parts (sched, inj).
+  function withInjury(year, lk) {
+    for (const [tid, x] of Object.entries(lk)) { const inj = injuryLuck(year, Number(tid)); x.sched = x.luck; x.inj = inj ?? 0; x.injKnown = inj != null; x.luck = Math.round((x.sched + x.inj) * 100) / 100; }
+    return lk;
+  }
+  const seasonLuck = (season) => withInjury(season.year, luckFromWeeks(seasonWeeksMap(season)));
   const luckText = (x) => `${x > 0 ? "+" : ""}${x.toFixed(1)}`;
-  const LUCK_EXPLAIN = "Luck compares your head-to-head record with your all-play record, meaning your record if you'd played every team every week. Each week your score is ranked against the whole league: beating 9 of 11 teams means you'd win about 82% of the time. Adding that up gives your expected wins. Luck is actual wins minus expected wins. +2.0 means you've won two more games than your scores earned; -2.0 means the schedule has cost you two. Bad beats are losses while scoring above that week's median, and lucky wins are wins while scoring below it.";
+  const LUCK_EXPLAIN = "Luck adds two things, both in wins. Schedule luck: your head-to-head wins minus your expected wins from the all-play record (your record if you'd played every team every week). Injury luck: for each week, the points your starters lost to injuries (missed games, or leaving a game early) are added back and the all-play is re-run; the wins those points would have bought are your injury cost, compared with the league average. +2.0 means two more wins than your scores and health deserved; -2.0 means two fewer.";
 
   // Position pies
   const POS_COLORS = { QB: "#B98CFF", RB: "#22C55E", WR: "#38BDF8", TE: "#F59E0B", "D/ST": "#94A3B8", K: "#F472B6" };
@@ -2077,7 +2121,7 @@
       paths += v / tot >= 0.9999 ? `<circle cx="${c}" cy="${c}" r="${r}" fill="${POS_COLORS[k]}"/>` : `<path d="M${c},${c} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${POS_COLORS[k]}"/>`;
       ang = a2;
     }
-    return `<svg class="pie" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Points by position">${paths}<circle cx="${c}" cy="${c}" r="${r * 0.42}" fill="var(--black)"/></svg>`;
+    return `<svg class="pie" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Point Distribution">${paths}<circle cx="${c}" cy="${c}" r="${r * 0.42}" fill="var(--black)"/></svg>`;
   }
   function pieLegend(parts) {
     const tot = POS_ORDER.reduce((a, k) => a + (parts[k] || 0), 0);
@@ -2156,6 +2200,7 @@
     // Load best-lineup records for this manager's seasons, then redraw.
     const need = M.seasons.map((x) => x.season.year).filter((y) => !state.histIfman[y]?.complete);
     for (const y of need) { await loadIfman(y); if (state.histManager === M.id) renderProfile(M); }
+    ensureInjury(M.seasons.map((x) => x.season.year), () => { if (state.histManager === M.id) renderProfile(M); });
     const needFav = M.seasons.map((x) => x.season.year).filter((y) => !state.histFav[y]?.complete);
     for (const y of needFav) { await loadFav(y); if (state.histManager === M.id) renderProfile(M); }
   }
@@ -2241,22 +2286,22 @@
     const favHtml = fav ? esc(fav.name) : favPending ? "…" : "–";
     const favSub = fav ? `${fav.pos ? `${esc(fav.pos)}, ` : ""}${fav.weeks} weeks on the roster${fav.seasons > 1 ? ` across ${fav.seasons} seasons` : ""}` : "";
     // Luck over the chosen span, with a league rank
-    const lk = { w: 0, l: 0, t: 0, apW: 0, apL: 0, apT: 0, expected: 0, luck: 0, badBeats: 0, luckyWins: 0 };
-    for (const { season, team } of pick) { const x = luckFromWeeks(seasonWeeksMap(season))[team.teamId]; if (!x) continue; for (const k of Object.keys(lk)) lk[k] += x[k] || 0; }
+    const lk = { w: 0, l: 0, t: 0, apW: 0, apL: 0, apT: 0, expected: 0, luck: 0, sched: 0, inj: 0, badBeats: 0, luckyWins: 0 };
+    for (const { season, team } of pick) { const x = seasonLuck(season)[team.teamId]; if (!x) continue; for (const k of Object.keys(lk)) lk[k] += x[k] || 0; }
     const hasLuck = lk.w + lk.l + lk.t > 0;
     const luckRank = (() => {
       if (!hasLuck) return "";
-      const all = managers().map((m) => { let v = 0, n = 0; for (const x of m.seasons) { if (!inScope(state.histYear, x.season.year)) continue; const r = luckFromWeeks(seasonWeeksMap(x.season))[x.team.teamId]; if (r) { v += r.luck; n++; } } return n ? { id: m.id, v } : null; }).filter(Boolean);
+      const all = managers().map((m) => { let v = 0, n = 0; for (const x of m.seasons) { if (!inScope(state.histYear, x.season.year)) continue; const r = seasonLuck(x.season)[x.team.teamId]; if (r) { v += r.luck; n++; } } return n ? { id: m.id, v } : null; }).filter(Boolean);
       const pos = all.filter((x) => x.v > lk.luck + 1e-9).length + 1;
       return `${pos === 1 ? "Luckiest" : pos === all.length ? "Unluckiest" : `${ordinal(pos)} luckiest`} of ${all.length}`;
     })();
     // Points by position (seasons with weekly lineup data)
     const posParts = {};
     for (const { season, team } of pick) { const P = state.histIfman[season.year]?.positions?.[team.teamId]; if (P) for (const [k, v] of Object.entries(P)) posParts[k] = (posParts[k] || 0) + v; }
-    const pieHtml = Object.keys(posParts).length ? `<div class="prof-pie"><div><div class="k" style="color:var(--muted);font-size:12.5px">Points by position</div>${pieLegend(posParts)}</div>${pieSvg(posParts, 92)}</div>` : "";
+    const pieHtml = Object.keys(posParts).length ? `<div class="prof-pie"><div><div class="k" style="color:var(--muted);font-size:12.5px">Point Distribution</div>${pieLegend(posParts)}</div>${pieSvg(posParts, 92)}</div>` : "";
     const extras = `
       <div class="prof-more">
-        <div><div class="v ${lk.luck > 0.05 ? "up" : lk.luck < -0.05 ? "down" : ""}">${hasLuck ? luckText(lk.luck) : "–"}</div><div class="k">Luck index</div><div class="d">${hasLuck ? luckRank : ""}</div></div>
+        <div><div class="v ${lk.luck > 0.05 ? "up" : lk.luck < -0.05 ? "down" : ""}">${hasLuck ? luckText(lk.luck) : "–"}</div><div class="k">Luck index</div><div class="d">${hasLuck ? `${luckRank}. Schedule ${luckText(lk.sched)}, injuries ${luckText(lk.inj)}` : ""}</div></div>
         <div><div class="v">${hasLuck ? recStr({ w: lk.apW, l: lk.apL, t: lk.apT }) : "–"}</div><div class="k">All-play record</div><div class="d">${hasLuck ? `${((lk.apW + lk.apT / 2) / Math.max(1, lk.apW + lk.apL + lk.apT) * 100).toFixed(1)}% vs. the whole league each week` : ""}</div></div>
         <div><div class="v">${hasLuck ? `${lk.badBeats} / ${lk.luckyWins}` : "–"}</div><div class="k">Bad beats / lucky wins</div><div class="d">${hasLuck ? "Losses above the median / wins below it" : ""}</div></div>
         <div><div class="v">${myAcc == null ? (ifPending ? "…" : "–") : `${(myAcc * 100).toFixed(1)}%`}</div><div class="k">Start accuracy</div><div class="d">${myAcc == null ? "" : `${accRank} in the league, ${accPerfect} perfect week${accPerfect === 1 ? "" : "s"}`}</div></div>
@@ -2275,8 +2320,8 @@
     const teamsBy = [...pick].sort((a, b) => b.season.year - a.season.year).map((x) => `<button class="team-link" data-roster="${x.season.year}:${x.team.teamId}">${x.season.year}: ${esc(x.team.teamName)}${x.season.complete && x.team.finalRank ? ` (${ordinal(x.team.finalRank)})` : x.season.complete ? "" : " (in progress)"}</button>`).join("");
     const ifText = ifPending && !ifSeasons ? "…" : ifSeasons ? recStr(ifm) : "–";
     let foot = [];
-    if (ifPending) foot.push("If man is still being worked out for some seasons.");
-    if (ifMissing) foot.push(`If man isn't available for ${ifMissing} season${ifMissing === 1 ? "" : "s"}, because ESPN didn't keep lineups that far back.`);
+    if (ifPending) foot.push("If-Man is still being worked out for some seasons.");
+    if (ifMissing) foot.push(`If-Man isn't available for ${ifMissing} season${ifMissing === 1 ? "" : "s"}, because ESPN didn't keep lineups that far back.`);
     if (typeof state.histYear !== "number" && !finishes.length) foot.push("Average finish starts counting after a full season.");
     if (!pick.length) foot.push(`${esc(M.name)} didn't play in the ${scopeLabel(state.histYear)}.`);
     $("profile").innerHTML = `<div class="prof">
@@ -2292,7 +2337,7 @@
         <div><div class="v">${recStr(off)}</div><div class="k">Official record</div></div>
         <div><div class="v">${recStr(h2h)}</div><div class="k">H2H</div></div>
         <div><div class="v">${recStr(med)}</div><div class="k">Median</div></div>
-        <div><div class="v">${ifText}</div><div class="k">IF man...</div></div>
+        <div><div class="v">${ifText}</div><div class="k">If-Man</div></div>
       </div>
       ${extras}
       <div class="prof-teams">${teamsBy}</div>
@@ -2472,11 +2517,13 @@
     const byPick = Object.fromEntries(D.picks.map((p) => [p.overall, p]));
     const who = (p) => { const t = D.teams[p.teamId] || {}; const a = assignedTo(y, t.name); return fixName((a ? a.split(" ")[0] : t.manager) || t.name || ""); };
     const where = (p) => D.auction ? `$${p.bid}` : `${p.round}.${String(p.roundPick).padStart(2, "0")}`;
-    const story = (p) => `Drafted ${p.pos}${p.posDraftRank} (${where(p)}), ${D.complete ? "finished" : "now"} ${p.pos}${p.posPpgRank} in points per game (${fmt(p.ppg)})`;
+    const story = (p) => p.posPpgRank == null || p.tagNote
+      ? `Drafted ${p.pos}${p.posDraftRank} (${where(p)}), played ${p.gp} game${p.gp === 1 ? "" : "s"} and averaged ${fmt(p.ppg)}: a ${p.pos}${p.healthyPpgRank} pace`
+      : `Drafted ${p.pos}${p.posDraftRank} (${where(p)}), ${D.complete ? "finished" : "now"} ${p.pos}${p.posPpgRank} in points per game (${fmt(p.ppg)})`;
     const card = (title, cls, list) => `<div class="tcol ${cls}"><h3><span class="arrow">${cls === "up" ? "▲" : "▼"}</span>${title}</h3>${list.length ? list.map((o) => { const p = byPick[o]; return `<div class="ti"><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="why">${esc(who(p))}. ${esc(story(p))}</div></div></div>`; }).join("") : `<div class="why" style="color:var(--muted)">None.</div>`}</div>`;
     $("draftTop").innerHTML = !D.statsAvailable ? `<div class="empty">Couldn't find season stats for ${y}, so steals and busts can't be worked out.</div>` :
       `<div class="trends">${card(D.complete ? "Biggest steals" : "Steals so far", "up", D.steals)}${card(D.complete ? "Biggest busts" : "Busts so far", "down", D.busts)}</div>`;
-    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Everything is judged by half-PPR points per game${D.complete ? ` (minimum ${D.minGames} games), so injuries don't sink a player's rank` : ` so far (minimum ${D.minGames} game${D.minGames === 1 ? "" : "s"})`}, ranked against ${D.rankScope === "all" ? "every player at the position, drafted or not" : "drafted players at the position"}. Steals and busts compare where a player went at his position in this draft with his PPG rank${D.complete ? "" : ""}. Keepers get a yellow Keeper tag instead of steal or bust, and a player who missed a big part of the season isn't called a bust. Kickers and defenses are left out. Tap a player for his draft history in the league.`;
+    $("drNote").textContent = `${D.auction ? "Auction" : "Snake"} draft, ${D.rounds} rounds. Everything is judged by half-PPR points per game${D.complete ? ` (minimum ${D.minGames} games), so injuries don't sink a player's rank` : ` so far (minimum ${D.minGames} game${D.minGames === 1 ? "" : "s"})`}, ranked against ${D.rankScope === "all" ? "every player at the position, drafted or not" : "drafted players at the position"}. Steals and busts compare where a player went at his position in this draft with his PPG rank${D.complete ? "" : ""}. Keepers get a yellow Keeper tag instead of steal or bust, and a player who missed a big part of the season is judged on his points per game in the games he played, so he's only a bust if that pace was. Kickers and defenses are left out. Tap a player for his draft history in the league.`;
     // Board: by round or by manager
     const mgrs = [...new Set(Object.keys(D.teams).map((id) => who({ teamId: Number(id) })).filter(Boolean))].sort();
     if (state.draftRound == null) state.draftRound = "1";
@@ -2651,10 +2698,11 @@
     const luckRows = [];
     for (const season of state.hist.seasons) {
       if (!season.complete || !inYear({ year: season.year })) continue;
-      const lk = luckFromWeeks(seasonWeeksMap(season));
+      const lk = seasonLuck(season);
       for (const t of season.teams) { const x = lk[t.teamId]; if (!x || !x.games) continue; const who = identity(season, t); luckRows.push({ ...x, year: season.year, key: who.key, name: fixName(who.name), teamName: t.teamName }); }
     }
-    const luckRow = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}</div><div class="sub">${x.year}, ${recStr(x)} but all-play ${recStr({ w: x.apW, l: x.apL, t: x.apT })}</div></div><span class="val">${luckText(x.luck)}</span></div>`;
+    ensureInjury(state.hist.seasons.filter((x) => x.complete && inYear({ year: x.year })).map((x) => x.year), () => { if (isOn("hof")) renderHof(); });
+    const luckRow = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}</div><div class="sub">${x.year}, schedule ${luckText(x.sched)}, injuries ${x.injKnown ? luckText(x.inj) : "–"}</div></div><span class="val">${luckText(x.luck)}</span></div>`;
     const beatRow = (x, i) => `<div class="hrow ${x.key === me ? "me" : ""}"><span class="n">${i + 1}</span>${face(x.name)}<div class="who"><div class="nm">${esc(x.name)}</div><div class="sub">${x.year}, ${recStr(x)}</div></div><span class="val">${x.badBeats}</span></div>`;
     html += hofList(`Luckiest seasons, ${L}`, "🍀", [...luckRows].sort((a, b) => b.luck - a.luck).slice(0, 10), luckRow)
       + hofList(`Unluckiest seasons, ${L}`, "⛈️", [...luckRows].sort((a, b) => a.luck - b.luck).slice(0, 10), luckRow)
@@ -2783,10 +2831,11 @@
     const pastLuck = [];
     for (const season of state.hist.seasons) {
       if (!season.complete) continue;
-      const lk = luckFromWeeks(seasonWeeksMap(season));
+      const lk = seasonLuck(season);
       for (const t of season.teams) { const x = lk[t.teamId]; if (x && x.games) pastLuck.push({ ...x, year: season.year }); }
     }
-    const nowLuck = luckFromWeeks(seasonWeeksMap(curSeason));
+    ensureInjury(state.hist.seasons.map((x) => x.year), () => refreshRecordViews());
+    const nowLuck = seasonLuck(curSeason);
     for (const t of curSeason.teams) {
       const x = nowLuck[t.teamId]; if (!x || x.games < MIN_LONG) continue;
       const who = identity(curSeason, t), name = esc(fixName(who.name)), scale = regWeeks / x.games;

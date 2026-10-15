@@ -495,3 +495,189 @@ export async function seasonFavorites(year, deadline) {
   if (past) await store().setJSON(key, out).catch(() => {});
   return out;
 }
+
+// ======================= Injury luck =======================
+// Points each team lost to injuries, turned into wins, from public NFL data (nflverse on GitHub):
+// weekly snap counts (who played, and how much), weekly injury reports, and a player ID map (ESPN <-> NFL ids).
+//   Left early: a starter whose snap share was well under his normal, who then landed on the next injury report or sat out.
+//   Missed a game: a regular starter (started 2 of his team's previous 3 weeks) who didn't play while his NFL team did,
+//     including after a season-ending injury, even if he was dropped (as long as he never played again that season).
+// Points lost = his healthy average (games he started at a normal snap share) minus what replaced him (missed games)
+// or minus what he scored (left early). Wins lost = how many more all-play wins those points would have bought that week.
+// Injury luck = league average wins lost minus the team's, so a healthier-than-average team is positive.
+const NFLV = "https://github.com/nflverse/nflverse-data/releases/download";
+
+function parseCsv(text) {
+  const rows = []; let row = [], field = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; } else field += c; continue; }
+    if (c === '"') q = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  const head = rows.shift() || [];
+  return { head, rows, col: (name) => head.indexOf(name) };
+}
+async function nflvText(path) {
+  const r = await fetch(`${NFLV}/${path}`, { redirect: "follow" });
+  if (!r.ok) throw new Error(`nflverse ${path}: ${r.status}`);
+  return r.text();
+}
+// ESPN player id -> [pfr id (snap counts), gsis id (injury reports)]
+async function nflIdMap() {
+  const key = "nflverse/idmap/v1";
+  const hit = await store().get(key, { type: "json" }).catch(() => null);
+  if (hit && Date.now() - (hit.at || 0) < 14 * 864e5) return hit.map;
+  const t = parseCsv(await nflvText("players/players.csv"));
+  const e = t.col("espn_id"), p = t.col("pfr_id"), g = t.col("gsis_id");
+  const map = {};
+  for (const r of t.rows) if (r[e]) map[r[e]] = [r[p] || "", r[g] || ""];
+  await store().setJSON(key, { at: Date.now(), map }).catch(() => {});
+  return map;
+}
+// One season of NFL data, slimmed: snaps[pfr][week] = offense share, team[pfr][week] = NFL team,
+// played[team] = weeks the team played, inj[gsis][week] = report status.
+async function nflSeason(year) {
+  const Y = Number(year), past = Y < Number(SEASON);
+  const key = `nflverse/season/v1/${Y}`;
+  const hit = await store().get(key, { type: "json" }).catch(() => null);
+  if (hit && (past || Date.now() - (hit.at || 0) < 6 * 3600e3)) return hit;
+  const out = { at: Date.now(), snaps: {}, team: {}, played: {}, inj: {} };
+  const s = parseCsv(await nflvText(`snap_counts/snap_counts_${Y}.csv`));
+  const [gt, wk, id, tm, pct] = ["game_type", "week", "pfr_player_id", "team", "offense_pct"].map(s.col);
+  for (const r of s.rows) {
+    if (r[gt] && r[gt] !== "REG") continue;
+    const w = Number(r[wk]); if (!w || !r[id]) continue;
+    ((out.snaps[r[id]] ||= {})[w] = Number(r[pct]) || 0);
+    ((out.team[r[id]] ||= {})[w] = r[tm]);
+    (out.played[r[tm]] ||= {})[w] = 1;
+  }
+  try {
+    const j = parseCsv(await nflvText(`injuries/injuries_${Y}.csv`));
+    const [jt, jw, jg, js] = ["game_type", "week", "gsis_id", "report_status"].map(j.col);
+    for (const r of j.rows) {
+      if (r[jt] && r[jt] !== "REG") continue;
+      const w = Number(r[jw]); if (!w || !r[jg] || !r[js]) continue;
+      (out.inj[r[jg]] ||= {})[w] = r[js];
+    }
+  } catch {}
+  await store().setJSON(key, out).catch(() => {});
+  return out;
+}
+
+export async function seasonInjury(year, deadline) {
+  const Y = Number(year), past = Y < Number(SEASON);
+  const key = `hist/injury/v1/${Y}`;
+  if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
+  const summary = await seasonSummaryCached(Y);
+  const reg = summary.regularSeasonWeeks || 14;
+  // Weekly lineups: { week: [{ teamId, starters: [{ id, pos, pts }], roster: [ids] }] }
+  let lineups = {};
+  if (past) {
+    const sw = await seasonWeeks(Y, deadline);
+    if (!sw.done) return { year: Y, complete: false, teams: {} };
+    for (const [w, wk] of Object.entries(sw.results)) if (Number(w) <= reg) lineups[w] = wk.rows || [];
+  } else {
+    const cur = await loadSeason();
+    for (const { week, teams } of cur.weeks) lineups[week] = teams.map((t) => ({ teamId: t.teamId, starters: (t.starters || []).map((p) => ({ id: p.id, pos: p.pos, pts: p.pts })), roster: [...(t.starters || []), ...(t.bench || [])].map((p) => p.id) }));
+  }
+  const weeks = Object.keys(lineups).map(Number).sort((a, b) => a - b);
+  if (!weeks.length) return { year: Y, complete: true, available: false, teams: {} };
+  if (Date.now() > deadline) return { year: Y, complete: false, teams: {} };
+  let ids, nfl;
+  try { ids = await nflIdMap(); if (Date.now() > deadline + 2500) return { year: Y, complete: false, teams: {} }; nfl = await nflSeason(Y); }
+  catch { return { year: Y, complete: true, available: false, teams: {}, note: "NFL injury data unavailable" }; }
+
+  // Team scores per week (regular season), for the all-play math
+  const scores = {};
+  for (const t of summary.teams) for (const g of t.games || []) if (g.w <= reg) (scores[g.w] ||= {})[t.teamId] = g.pts;
+  const pfr = (pid) => ids[String(pid)]?.[0], gsis = (pid) => ids[String(pid)]?.[1];
+  const snap = (pid, w) => { const k = pfr(pid); return k ? nfl.snaps[k]?.[w] : undefined; };
+  const nflTeam = (pid, w) => {
+    const t = nfl.team[pfr(pid)] || {}; if (t[w]) return t[w];
+    const ks = Object.keys(t).map(Number); if (!ks.length) return null;
+    const near = ks.reduce((a, b) => (Math.abs(b - w) < Math.abs(a - w) ? b : a)); return t[near];
+  };
+  const teamPlayed = (pid, w) => { const tm = nflTeam(pid, w); return tm ? Boolean(nfl.played[tm]?.[w]) : false; };
+  const onReport = (pid, w) => { const st = nfl.inj[gsis(pid)]?.[w]; return st && st !== ""; };
+  const playedAt = (pid, w) => (snap(pid, w) || 0) > 0;
+  const lastWeekPlayed = (pid) => Math.max(0, ...Object.entries(nfl.snaps[pfr(pid)] || {}).filter(([, v]) => v > 0).map(([w]) => Number(w)));
+
+  const result = {};
+  for (const tid of [...new Set(weeks.flatMap((w) => lineups[w].map((r) => r.teamId)))]) {
+    const rowAt = (w) => lineups[w]?.find((r) => r.teamId === tid);
+    // every player who started for this team: weeks started, points, snap share
+    const st = {};
+    for (const w of weeks) for (const p of rowAt(w)?.starters || []) (st[p.id] ||= { pos: p.pos, wk: {} }).wk[w] = p.pts;
+    const medianShare = (pid) => { const v = Object.keys(st[pid].wk).map((w) => snap(pid, w)).filter((x) => x > 0).sort((a, b) => a - b); return v.length >= 3 ? v[Math.floor(v.length / 2)] : null; };
+    const healthyAvg = (pid) => {
+      const m = medianShare(pid);
+      const pts = Object.entries(st[pid].wk).filter(([w]) => { const s = snap(pid, w); return s == null || m == null || s >= 0.6 * m; }).map(([, v]) => v);
+      return pts.length ? pts.reduce((a, b) => a + b, 0) / pts.length : null;
+    };
+    const events = [];
+    const lostByWeek = {};
+    for (const w of weeks) {
+      const row = rowAt(w); if (!row) continue;
+      const started = new Set((row.starters || []).map((p) => p.id));
+      // Left early, or started but never played (NFL team played, he didn't)
+      for (const p of row.starters || []) {
+        if (["K", "D/ST"].includes(p.pos) || !st[p.id]) continue;
+        const s = snap(p.id, w), m = medianShare(p.id);
+        if (!playedAt(p.id, w) && teamPlayed(p.id, w) && (pfr(p.id))) {
+          const others = Object.entries(st[p.id].wk).filter(([x]) => Number(x) !== w && playedAt(p.id, x)).map(([, v]) => v);
+          const avg = others.length ? others.reduce((a, b) => a + b, 0) / others.length : null;
+          const lost = avg == null ? 0 : Math.max(0, avg - p.pts);
+          if (lost > 0.5) { events.push({ week: w, playerId: p.id, kind: "started but didn't play", lost: r2(lost) }); lostByWeek[w] = (lostByWeek[w] || 0) + lost; }
+          continue;
+        }
+        if (s == null || m == null || m < 0.4 || s >= 0.6 * m || s === 0) continue;
+        if (!(onReport(p.id, w + 1) || (teamPlayed(p.id, w + 1) && !playedAt(p.id, w + 1)))) continue;
+        const avg = healthyAvg(p.id); if (avg == null) continue;
+        const lost = Math.max(0, avg - p.pts);
+        if (lost > 0.5) { events.push({ week: w, playerId: p.id, kind: "left early", lost: r2(lost) }); lostByWeek[w] = (lostByWeek[w] || 0) + lost; }
+      }
+      // Missed games by a regular starter
+      for (const [pidS, info] of Object.entries(st)) {
+        const pid = Number(pidS);
+        if (started.has(pid) || ["K", "D/ST"].includes(info.pos)) continue;
+        // a regular starter: started 2 of this team's last 3 weeks in which he was healthy enough to play
+        const prior = weeks.filter((x) => x < w && (playedAt(pid, x) || info.wk[x] != null)).slice(-3);
+        if (prior.filter((x) => info.wk[x] != null).length < 2) continue;
+        if (!teamPlayed(pid, w) || playedAt(pid, w)) continue;                           // his NFL team played; he didn't
+        const onRoster = (row.roster || []).includes(pid);
+        const elsewhere = lineups[w].some((r) => r.teamId !== tid && (r.roster || []).includes(pid));
+        if (elsewhere) continue;                                                        // traded or dropped and picked up
+        if (!onRoster && lastWeekPlayed(pid) > w) continue;                              // dropped but healthy later
+        const avg = healthyAvg(pid); if (avg == null) continue;
+        const same = (row.starters || []).filter((x) => x.pos === info.pos).map((x) => x.pts);
+        const repl = same.length ? Math.min(...same) : 0;
+        const lost = Math.max(0, avg - repl);
+        if (lost > 0.5) { events.push({ week: w, playerId: pid, kind: "missed", lost: r2(lost) }); lostByWeek[w] = (lostByWeek[w] || 0) + lost; }
+      }
+    }
+    // wins lost through the all-play: same opponents' scores, this team's score plus what injuries cost it
+    let winsLost = 0, pointsLost = 0;
+    for (const [w, lost] of Object.entries(lostByWeek)) {
+      const sc = scores[w]; if (!sc || sc[tid] == null) continue;
+      const others = Object.entries(sc).filter(([t]) => Number(t) !== tid).map(([, v]) => v);
+      if (!others.length) continue;
+      const exp = (x) => others.reduce((a, o) => a + (x > o ? 1 : x === o ? 0.5 : 0), 0) / others.length;
+      winsLost += exp(sc[tid] + lost) - exp(sc[tid]);
+      pointsLost += lost;
+    }
+    result[tid] = { pointsLost: r2(pointsLost), winsLost: r2(winsLost), events: events.sort((a, b) => b.lost - a.lost).slice(0, 6) };
+  }
+  const tids = Object.keys(result);
+  const avg = tids.reduce((a, t) => a + result[t].winsLost, 0) / Math.max(1, tids.length);
+  for (const t of tids) result[t].luck = r2(avg - result[t].winsLost);
+  const need = [...new Set(Object.values(result).flatMap((x) => x.events.map((e) => e.playerId)))];
+  const names = await tradeNames(Y, need).catch(() => ({}));
+  for (const x of Object.values(result)) for (const e of x.events) e.name = names[e.playerId]?.name || `Player ${e.playerId}`;
+  const out = { year: Y, complete: true, available: true, avgWinsLost: r2(avg), teams: result };
+  if (past) await store().setJSON(key, out).catch(() => {});
+  return out;
+}

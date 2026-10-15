@@ -133,28 +133,37 @@ async function buildDraft(year) {
       r.ppg = r.points != null && r.gp ? Math.round((r.points / r.gp) * 100) / 100 : null;
       // The yardstick: PPG rank for finished seasons, total points rank for the current one.
       r.metric = r.posPpgRank;
+      // Where his PPG in the games he did play would rank among qualified players (for injured players).
+      if (r.points != null && r.gp >= 2) {
+        const mine = r.points / r.gp;
+        r.healthyPpgRank = byPpg.filter((id) => { const h = pool.get(id); return id !== r.playerId && h.points / h.gp > mine; }).length + 1;
+      } else r.healthyPpgRank = null;
     });
   }
 
   // Tags on the draft board, against where the player went in this league.
   // Keepers get a "keeper" tag instead of steal/bust. A player who missed a big part of the season
-  // (played under 60% of the most games anyone played) is never called a bust.
+  // (played under 60% of the most games anyone played) is judged on his PPG in the games he played:
+  // a bust only if that pace would have ranked like a bust.
   const seasonGames = Math.max(1, ...Object.values(hp.players).map((h) => h.gp || 0), ...rows.map((r) => r.gp || 0));
   const hurt = (r) => complete && r.gp != null && r.gp < 0.6 * seasonGames;
+  const bustRank = (r) => (hurt(r) || r.metric == null ? r.healthyPpgRank : r.metric);
   for (const r of rows) {
     if (r.keeper) { r.tag = "keeper"; continue; }
     if (SKIP.has(r.pos) || !TIER[r.pos]) continue;
     const early = r.posDraftRank <= TIER[r.pos];
     if (r.metric != null && r.metric <= TIER[r.pos] && r.posDraftRank - r.metric >= JUMP[r.pos]) r.tag = "steal";
-    else if (early && !hurt(r) && r.metric != null && r.metric - r.posDraftRank >= JUMP[r.pos]) r.tag = "bust";
+    else if (early && bustRank(r) != null && bustRank(r) - r.posDraftRank >= JUMP[r.pos]) { r.tag = "bust"; if (hurt(r) || r.metric == null) r.tagNote = `judged on ${r.ppg} a game in ${r.gp} games`; }
   }
 
   // Top 5 steals and busts: where he went at his position in this draft vs. his PPG rank.
   // Keepers are left out of finished seasons.
   const boxable = rows.filter((r) => TIER[r.pos] && r.metric != null && !r.keeper);
+  const bustable = rows.filter((r) => TIER[r.pos] && bustRank(r) != null && !r.keeper);
   const vsAdp = (r) => r.posDraftRank - r.metric;
   const steals = boxable.filter((r) => vsAdp(r) >= 3 && r.metric <= TIER[r.pos]).sort((a, b) => vsAdp(b) - vsAdp(a) || a.metric - b.metric).slice(0, 5);
-  const busts = boxable.filter((r) => !hurt(r) && vsAdp(r) <= -3 && r.posDraftRank <= TIER[r.pos]).sort((a, b) => vsAdp(a) - vsAdp(b) || a.posDraftRank - b.posDraftRank).slice(0, 5);
+  const vsBust = (r) => r.posDraftRank - bustRank(r);
+  const busts = bustable.filter((r) => vsBust(r) <= -3 && r.posDraftRank <= TIER[r.pos]).sort((a, b) => vsBust(a) - vsBust(b) || a.posDraftRank - b.posDraftRank).slice(0, 5);
 
   return {
     year, available: true, auction, complete, statsAvailable: rows.filter((r) => r.points != null).length >= rows.length * 0.5,
@@ -169,7 +178,7 @@ export default async (req) => {
   const year = Number(new URL(req.url).searchParams.get("season") || SEASON);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return json(400, { error: "Invalid season." });
   const store = getStore({ name: "cache", consistency: "strong" });
-  const key = `hist/draft/v6/${year}`;
+  const key = `hist/draft/v7/${year}`;
   try {
     if (year < Number(SEASON)) {
       const hit = await store.get(key, { type: "json" }).catch(() => null);
