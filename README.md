@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.6)
+# Boys of Chantilly dashboard (v2.6.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -370,3 +370,10 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   injuries after a drop. Points lost = healthy average minus what replaced him (or what he scored), turned into wins via the
   all-play, then centered on the league average. Cached: `nflverse/idmap/v1` (14 days), `nflverse/season/v1/Y`,
   `hist/injury/v1/Y` (finished seasons).
+
+## 2.6.1
+- Week recap card is shorter: the Standings tile is gone (last week's move now shows next to Standing at the top of the
+  card, like "▲3"); High, Low, and Game of the Week sit in one compact row; Awards and Record books sit side by side
+  (record books show the top 4, the rest are on Story).
+- Manager profiles: every "Nth of N" rank (average finish, points per game, allowed per game, start accuracy, luck) is a
+  link. Tapping it opens the full league ranking for that stat in the chosen season or era, with the manager highlighted.
