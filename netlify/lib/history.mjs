@@ -186,7 +186,7 @@ function tally(weeks) {
 // Every team's end-of-season roster for one season, with season points (league scoring) and how
 // each player was acquired. Finished seasons are cached.
 export async function seasonRosters(year) {
-  const key = `hist/roster/v1/${year}`;
+  const key = `hist/roster/v2/${year}`;
   const past = Number(year) < Number(SEASON);
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const L = await seasonLeague(year, ["mRoster", "mTeam"]);
@@ -199,7 +199,7 @@ export async function seasonRosters(year) {
         if (st.statSourceId === 0 && st.scoringPeriodId === 0 && (st.seasonId == null || Number(st.seasonId) === Number(year)) && (st.statSplitTypeId == null || st.statSplitTypeId === 0)) pts = st.appliedTotal ?? pts;
       }
       return {
-        name: p.fullName || `Player ${e.playerId}`, pos: POSITIONS[p.defaultPositionId] || "",
+        id: p.id ?? e.playerId, name: p.fullName || `Player ${e.playerId}`, pos: POSITIONS[p.defaultPositionId] || "",
         acquired: e.acquisitionType || null, pts: pts == null ? null : r2(pts), slotId: e.lineupSlotId,
       };
     }).sort((a, b) => (ORDER[a.pos] ?? 9) - (ORDER[b.pos] ?? 9) || (b.pts ?? -1) - (a.pts ?? -1));
@@ -505,7 +505,7 @@ export async function seasonFavorites(year, deadline) {
 // can build each manager's all-time lineup (best players he ever had) and each season's all-star lineup (and who had them).
 export async function seasonAllTime(year, deadline) {
   const Y = Number(year), past = Y < Number(SEASON);
-  const key = `hist/alltime/v2/${Y}`;
+  const key = `hist/alltime/v3/${Y}`;
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const summary = await seasonSummaryCached(Y);
   const reg = summary.regularSeasonWeeks || 14;
@@ -526,20 +526,19 @@ export async function seasonAllTime(year, deadline) {
     const a = ((agg[p.id] ||= {})[r.teamId] ||= [0, 0, 0, 0]);             // points, weeks rostered, starts, games played
     a[0] += p.pts || 0; a[1]++; if (p.s) a[2]++; if (p.pts) a[3]++;
   }
-  // keep each team's top 8 per position and the league's top 30 per position
-  const keep = new Set();
+  // every player who was on a roster (small enough to keep them all)
+  const keep = new Set(Object.keys(agg));
   const byPos = {};
   for (const [pid, teams] of Object.entries(agg)) (byPos[posOf[pid]] ||= []).push([pid, Object.values(teams).reduce((s, x) => s + x[0], 0)]);
-  for (const list of Object.values(byPos)) list.sort((a, b) => b[1] - a[1]).slice(0, 30).forEach(([pid]) => keep.add(pid));
-  const teamIds = new Set(Object.values(agg).flatMap((t) => Object.keys(t)));
-  for (const tid of teamIds) for (const pos of Object.keys(byPos)) {
-    Object.entries(agg).filter(([pid, t]) => posOf[pid] === pos && t[tid]).sort((a, b) => b[1][tid][0] - a[1][tid][0]).slice(0, 8).forEach(([pid]) => keep.add(pid));
-  }
+  for (const list of Object.values(byPos)) list.sort((a, b) => b[1] - a[1]);
   // positional rank: season points while on any roster in the league, among every player at the position
   const posRank = {};
   for (const list of Object.values(byPos)) list.forEach(([pid], i) => (posRank[pid] = i + 1));
   const ids = [...keep].map(Number);
-  const names = await tradeNames(Y, ids).catch(() => ({}));
+  // names only for players an all-star lineup could use (10+ starts or games) or a league top 30, looked up in parallel
+  const named = ids.filter((id) => (posRank[id] || 99) <= 30 || Object.values(agg[id]).some((x) => x[2] >= 10) || Object.values(agg[id]).reduce((a, x) => a + x[3], 0) >= 10);
+  const chunks = []; for (let i = 0; i < named.length; i += 50) chunks.push(named.slice(i, i + 50));
+  const names = Object.assign({}, ...(await Promise.all(chunks.map((c) => tradeNames(Y, c).catch(() => ({}))))));
   const players = ids.map((id) => ({ id, name: names[id]?.name || `Player ${id}`, pos: posOf[id], rank: posRank[id],
     teams: Object.fromEntries(Object.entries(agg[id]).map(([t, [pts, wk, st, g]]) => [t, [r2(pts), wk, st, g]])) }));
   const out = { year: Y, complete: true, regularSeasonWeeks: reg, weeks: Object.keys(weekly).length, slotCounts, players };

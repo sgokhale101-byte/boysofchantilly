@@ -732,9 +732,10 @@
   .modal-body { overflow-y: auto; padding: 8px 16px 16px; }
   .modal-note { color: var(--muted); font-size: 12.5px; margin: 4px 0 8px; }
   .roster td.dim { color: var(--muted); font-size: 12.5px; }
-  .roster th:nth-child(1), .roster td:nth-child(1) { text-align: left; width: 44px; }
-  .roster th:nth-child(2), .roster td:nth-child(2) { text-align: left; }
-  .roster th:nth-child(3), .roster td:nth-child(3) { text-align: left; }
+  .roster th:nth-child(1), .roster td:nth-child(1) { text-align: left; }
+  .roster th:nth-child(2), .roster td:nth-child(2) { text-align: left; width: 48px; max-width: none; overflow: visible; color: var(--muted); }
+  .roster td:nth-child(1) { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .roster th:nth-child(4), .roster td:nth-child(4) { width: 64px; }
 
   .dwrow { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
   .dwrow:first-child { border-top: 0; }
@@ -1005,6 +1006,15 @@
   .at-strip svg line { stroke: var(--muted); stroke-width: 1.5; opacity: .45; }
   .at-strip svg line.on { stroke: var(--violet); stroke-width: 2.5; opacity: 1; }
   .at-strip svg line.med { stroke: var(--lilac); stroke-dasharray: 2 3; opacity: .9; }
+  .at-strip { position: relative; } .at-strip svg { cursor: pointer; }
+  .at-strip svg line.pick { stroke: #F59E0B; stroke-width: 3.5; opacity: 1; }
+  .at-tip { position: relative; margin-top: 8px; border: 1px solid var(--royal); border-radius: 12px; padding: 8px 34px 8px 10px; background: var(--black); font-size: 13px; }
+  .at-tip[hidden] { display: none; }
+  .at-tip::before { content: ""; position: absolute; top: -6px; left: var(--x, 50%); width: 10px; height: 10px; background: inherit; border-left: 1px solid var(--royal); border-top: 1px solid var(--royal); transform: translateX(-50%) rotate(45deg); }
+  .at-tip-t { font-weight: 800; } .at-tip-s { color: var(--muted); font-size: 12px; }
+  .at-tip-g { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; }
+  .at-tip-x { position: absolute; top: 2px; right: 4px; background: none; border: 0; color: var(--muted); font-size: 22px; width: 30px; height: 30px; cursor: pointer; }
+  .at-tip-go { margin-top: 6px; background: none; border: 1px solid var(--line); color: var(--violet); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer; }
   .at-axis { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
   .at-pager { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 13px; color: var(--muted); }
   .at-pager button { background: none; border: 1px solid var(--line); color: inherit; border-radius: 999px; min-width: 40px; height: 36px; padding: 0 12px; font: inherit; cursor: pointer; }
@@ -1339,8 +1349,8 @@
   <div class="panel" id="panel-alltime" role="tabpanel" hidden>
     <section aria-labelledby="atH">
       <div class="aw-pick"><h2 id="atH">All-Time</h2><label class="me-pick"><span>View</span><select id="atView" aria-label="Choose a view">
-        <option value="teams">Team rankings</option><option value="mgr">All-star team by manager</option><option value="year">All-star team by season</option></select></label></div>
-      <details class="explain"><summary>Explain It</summary><p class="note">Team rankings: every team from every season, ranked by points per game in the regular season, so seasons of different lengths compare fairly. # is the all-time rank, Reg. is where the team finished the regular season, and Final is where it finished after the playoffs. Filter by manager or season; the strip shows every team at once (lowest PPG on the left, highest on the right) with the filtered teams marked. Tap a team to see its roster.</p><p class="note">All-star teams: the best QB, RB, RB, WR, WR, TE, FLEX, D/ST and K by points per game. A manager's team uses every player he has ever had (points per game while on his roster, in the regular season), each player's best season with him counting once. A season's team uses every player that season, with the manager who had him most (others listed if he moved). A player needs to have played 40% of the regular season (of the weeks so far, this season) to count. The position rank (RB3) is his rank that season by points scored on league rosters. Combined PPG adds up the nine players; tap the rank to see every manager or season.</p></details>
+        <option value="teams">Team Rankings</option><option value="mgr">All Stars: By Manager</option><option value="year">All Stars: By Year</option></select></label></div>
+      <details class="explain"><summary>Explain It</summary><p class="note">Team Rankings: every team from every season, ranked by points per game in the regular season, so seasons of different lengths compare fairly. The season in progress isn't included until it's over. # is the all-time rank, Reg. is where the team finished the regular season, and Final is where it finished after the playoffs. Filter by manager or season; the strip shows every team at once (lowest PPG on the left, highest on the right) with the filtered teams marked; tap the strip for the team at that spot. Tap a team in the table to see its roster.</p><p class="note">All Stars: the best QB, RB, RB, WR, WR, TE, FLEX and K by points per game (no defenses, since they're usually streamed), from finished seasons. By Manager uses every player he has ever had (points per game while on his roster, in the regular season), each player's best season with him counting once; a player has to have started at least 10 games for him that season. By Year uses every player that season, with the manager who had him most (others listed if he moved); a player needs to have played at least 10 games that season. The position rank (RB3) is his rank that season by points scored on league rosters. Combined PPG adds up the eight players; tap the rank to see every manager or season.</p></details>
       <div class="at-controls" id="atControls"></div>
       <div id="atBody"></div>
     </section>
@@ -2478,10 +2488,22 @@
       catch (e) { box.querySelector(".modal-body").innerHTML = `<div class="empty">Couldn't load the roster: ${esc(e.message)}</div>`; return; }
     }
     const list = state.rosters[year].teams?.[teamId] || [];
-    box.querySelector(".modal-body").innerHTML = list.length
-      ? `<p class="modal-note">${season.complete ? "Roster at the end of the season" : "Current roster"}. Points are season totals in your league's scoring.</p>
-        <table class="roster"><thead><tr><th>Pos</th><th>Player</th><th>How</th><th>Pts</th></tr></thead><tbody>${list.map((p) => `<tr><td>${esc(p.pos)}</td><td>${esc(p.name)}</td><td class="dim">${esc(ACQ[p.acquired] || "")}</td><td>${p.pts == null ? "–" : fmt(p.pts)}</td></tr>`).join("")}</tbody></table>`
+    // PPG and position rank from the league's weekly rosters (same numbers as All-Time), loaded if needed
+    const draw = () => {
+      const D = state.atData?.[year], byId = {};
+      for (const pl of D?.players || []) {
+        const t = Object.values(pl.teams), pts = t.reduce((a, x) => a + x[0], 0), g = t.reduce((a, x) => a + (x[3] ?? x[1]), 0);
+        byId[pl.id] = { ppg: g ? pts / g : null, rank: pl.rank };
+      }
+      const posIdx = (pos) => { const i = list.findIndex((x) => x.pos === pos); return i < 0 ? 99 : i; };
+      const rows = list.map((p) => ({ ...p, ...(byId[p.id] || {}) })).sort((a, b) => posIdx(a.pos) - posIdx(b.pos) || (a.rank || 999) - (b.rank || 999));
+      box.querySelector(".modal-body").innerHTML = rows.length
+      ? `<p class="modal-note">${season.complete ? "Roster at the end of the season" : "Current roster"}. PPG is points per game played while on a league roster that season, in your league's scoring; rank is his position rank that season by points.${D?.complete ? "" : " Loading PPG and ranks…"}</p>
+        <table class="roster"><thead><tr><th>Player</th><th>Pos</th><th>PPG</th><th>Rank</th></tr></thead><tbody>${rows.map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.pos)}</td><td>${p.ppg == null ? "–" : p.ppg.toFixed(1)}</td><td>${p.rank ? `${esc(p.pos)}${p.rank}` : "–"}</td></tr>`).join("")}</tbody></table>`
       : `<div class="empty">ESPN doesn't have a roster on file for this team.</div>`;
+    };
+    draw();
+    if (!state.atData?.[year]?.complete) loadAllTimeData([year], () => { if (document.body.contains(box)) draw(); });
   }
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-roster]"); if (!el) return;
@@ -2492,12 +2514,14 @@
   // ---------- All-Time ----------
   // 1) every team from every season ranked by points per game, 2) each manager's all-star team, 3) each season's.
   const AT_PAGE = 10;
-  const AT_LINEUP = [["QB", ["QB"]], ["RB", ["RB"]], ["RB", ["RB"]], ["WR", ["WR"]], ["WR", ["WR"]], ["TE", ["TE"]], ["FLEX", ["RB", "WR", "TE"]], ["D/ST", ["D/ST"]], ["K", ["K"]]];
+  const AT_MIN_STARTS = 10;     // All Stars: By Manager: starts for that manager that season
+  const AT_MIN_GAMES_YEAR = 10; // All Stars: By Year: games played that season
+  const AT_LINEUP = [["QB", ["QB"]], ["RB", ["RB"]], ["RB", ["RB"]], ["WR", ["WR"]], ["WR", ["WR"]], ["TE", ["TE"]], ["FLEX", ["RB", "WR", "TE"]], ["K", ["K"]]]; // no D/ST: usually streamed
   state.atData = {}; state.atLoading = {};
   function allTimeTeams() {
     const out = [];
     for (const S of state.hist.seasons) for (const t of S.teams) {
-      if (!t.regGames) continue;
+      if (!t.regGames || !S.complete) continue;                                      // finished seasons only
       const who = identity(S, t);
       out.push({ year: S.year, complete: S.complete, teamId: t.teamId, team: t.teamName, mgrKey: who.key, mgr: fixName(who.name),
         ppg: t.regPF / t.regGames, rec: t.official, seed: t.seed, finish: S.complete ? t.finalRank : null });
@@ -2512,8 +2536,9 @@
     const X = (v) => (4 + ((v - lo) / span) * 92).toFixed(2);
     const ticks = all.map((x) => { const on = mark(x); return `<line x1="${X(x.ppg)}%" x2="${X(x.ppg)}%" y1="${on ? 4 : 10}" y2="${on ? 30 : 24}"${on ? ' class="on"' : ""}><title>${esc(`${x.team} (${x.mgr}, ${x.year}): ${x.ppg.toFixed(1)}`)}</title></line>`; }).join("");
     const med = [...all].sort((a, b) => a.ppg - b.ppg)[Math.floor(all.length / 2)].ppg;
-    return `<div class="at-strip"><svg width="100%" height="34" role="img" aria-label="Every team's points per game">${ticks}<line x1="${X(med)}%" x2="${X(med)}%" y1="2" y2="32" class="med"></line></svg>
-      <div class="at-axis"><span>${lo.toFixed(1)}</span><span>median ${med.toFixed(1)}</span><span>${hi.toFixed(1)}</span></div></div>`;
+    state.atStrip = { all, lo, span };
+    return `<div class="at-strip"><svg width="100%" height="34" role="img" aria-label="Every team's points per game; tap for a team">${ticks}<line x1="${X(med)}%" x2="${X(med)}%" y1="2" y2="32" class="med"></line></svg>
+      <div class="at-axis"><span>${lo.toFixed(1)}</span><span>median ${med.toFixed(1)}</span><span>${hi.toFixed(1)}</span></div><div class="at-tip" id="atTip" hidden></div></div>`;
   }
   const atSel = (id, label, opts, val) => `<label class="me-pick"><span>${label}</span><select id="${id}" aria-label="${label}">${opts.map(([v, t]) => `<option value="${esc(String(v))}" ${String(v) === String(val) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>`;
   // season data for the all-star teams (players' points on each roster), loaded in the background
@@ -2546,17 +2571,17 @@
   function atMgrCands(M) {
     const out = [];
     for (const { season, team } of M.seasons) {
-      const D = state.atData[season.year]; if (!D?.complete) continue;
-      const min = atMinGames(season.year, true);
-      for (const pl of D.players || []) { const x = pl.teams[team.teamId]; if (!x || (x[3] ?? x[1]) < min) continue;
-        out.push({ id: pl.id, name: pl.name, pos: pl.pos, ppg: x[0] / (x[3] || x[1]), games: x[3] ?? x[1], rank: pl.rank, year: season.year, teamId: team.teamId, inProgress: !season.complete }); }
+      const D = state.atData[season.year]; if (!season.complete || !D?.complete) continue;
+      // he must have started at least AT_MIN_STARTS games for this manager that season
+      for (const pl of D.players || []) { const x = pl.teams[team.teamId]; if (!x || (x[2] || 0) < AT_MIN_STARTS) continue;
+        out.push({ id: pl.id, name: pl.name, pos: pl.pos, ppg: x[0] / (x[3] || x[1]), games: x[3] ?? x[1], starts: x[2], rank: pl.rank, year: season.year, teamId: team.teamId }); }
     }
     return out;
   }
   // a season's candidates: every player, credited to the manager who had him most
   function atYearCands(y) {
     const S = state.hist.seasons.find((x) => x.year === y), D = state.atData[y]; if (!S || !D?.complete) return [];
-    const min = atMinGames(y), out = [];
+    const min = AT_MIN_GAMES_YEAR, out = [];
     for (const pl of D.players || []) {
       const ts = Object.entries(pl.teams).map(([t, x]) => ({ t: Number(t), pts: x[0], wk: x[1], g: x[3] ?? x[1] })).sort((a, b) => b.wk - a.wk || b.pts - a.pts);
       const pts = ts.reduce((a, x) => a + x.pts, 0), g = ts.reduce((a, x) => a + x.g, 0); if (g < min || !pts) continue;
@@ -2569,9 +2594,10 @@
   function renderAllTime() {
     if (!state.hist && !state.histErr) { $("atBody").innerHTML = `<div class="empty">Digging through the league archives…</div>`; ensureHist().then(renderAllTime); return; }
     if (state.histErr) { $("atBody").innerHTML = `<div class="empty">Couldn't load league history: ${esc(state.histErr)}</div>`; return; }
-    const ms = managers();
-    const years = [...new Set(state.hist.seasons.map((x) => x.year))].sort((a, b) => b - a);
-    const yLabel = (y) => `${y}${state.hist.seasons.find((x) => x.year === y)?.complete ? "" : " (in progress)"}`;
+    // finished seasons only: the season in progress joins once it's over
+    const ms = managers().filter((m) => m.seasons.some((x) => x.season.complete));
+    const years = [...new Set(state.hist.seasons.filter((x) => x.complete).map((x) => x.year))].sort((a, b) => b - a);
+    const yLabel = (y) => `${y}`;
     state.atView ||= "teams"; state.atDir ||= "best"; state.atPage ||= 0;
     state.atFMgr ??= ""; state.atFYear ??= "";
     if (!state.atMgr || !ms.some((m) => m.id === state.atMgr)) state.atMgr = state.histManager || ms[0]?.id;
@@ -2617,7 +2643,7 @@
       const pos = all.filter((x) => x.ppg > mine.ppg + 1e-9).length + 1;
       team = mine; key = "atMgr"; title = `${esc(ms.find((m) => m.id === state.atMgr)?.name || "")}'s all-star team`;
       rankHtml = mine.ppg ? rankLink(key, "All-star teams by manager", all.map((x) => ({ id: x.id, v: x.ppg })), state.atMgr, (a, b) => a > b + 1e-9, (v) => `${v.toFixed(1)} PPG`, `${ordinal(pos)} of ${all.length} managers`) : "";
-      if (RANKS[key]) RANKS[key].sub = "Every manager, by the nine players' combined PPG";
+      if (RANKS[key]) RANKS[key].sub = "Every manager, by the eight players' combined PPG";
     } else {
       // seasons are ranked among finished ones; the season in progress shows where it would land
       const done = (y) => state.hist.seasons.find((x) => x.year === y)?.complete;
@@ -2627,11 +2653,11 @@
       team = mineTeam; key = "atYear"; title = `${yLabel(state.atYear)} all-star team`;
       const rows = done(state.atYear) ? all : [...all, { id: state.atYear, ppg: mineTeam.ppg }];
       rankHtml = mineTeam.ppg && all.length ? rankLink(key, "All-star teams by season", rows.map((x) => ({ id: x.id, v: x.ppg })), state.atYear, (a, b) => a > b + 1e-9, (v) => `${v.toFixed(1)} PPG`, done(state.atYear) ? `${ordinal(pos)} of ${all.length} seasons` : `on pace for ${ordinal(pos)} of ${all.length} finished seasons`) : "";
-      if (RANKS[key]) { RANKS[key].names = Object.fromEntries(rows.map((x) => [x.id, yLabel(x.id)])); RANKS[key].sub = "Every season, by the nine players' combined PPG"; RANKS[key].noFace = true; }
+      if (RANKS[key]) { RANKS[key].names = Object.fromEntries(rows.map((x) => [x.id, yLabel(x.id)])); RANKS[key].sub = "Every season, by the eight players' combined PPG"; RANKS[key].noFace = true; }
     }
     const sub = (c) => mode === "mgr"
-      ? `${c.year}${c.inProgress ? " (in progress)" : ""} · ${c.pos}${c.rank || "?"} · ${c.games} gms`
-      : `${c.mgr}${c.also?.length ? ` (also ${c.also.join(", ")})` : ""} · ${c.pos}${c.rank || "?"} · ${c.games} gms`;
+      ? `${c.year} · ${c.pos}${c.rank || "?"} · ${c.starts} starts`
+      : `${c.mgr}${c.also?.length ? ` (also ${c.also.join(", ")})` : ""} · ${c.pos}${c.rank || "?"} · ${c.games} games`;
     $("atBody").innerHTML = `<div class="at-team"><div class="at-team-h"><span>${title}</span></div>
       <div class="at-sum"><b>${team.ppg ? team.ppg.toFixed(1) : "–"}</b> combined PPG${rankHtml ? ` · ${rankHtml}` : ""}</div>
       <div class="table-scroll"><table class="at-lu"><thead><tr><th>Slot</th><th>Player</th><th>PPG</th></tr></thead><tbody>
@@ -2648,6 +2674,23 @@
     if (id === "atFMgr") { state.atFMgr = e.target.value; state.atPage = 0; renderAllTime(); }
     if (id === "atFYear") { state.atFYear = e.target.value; state.atPage = 0; renderAllTime(); }
   });
+  // tap the strip: the team nearest that spot, in a small pop-up under it
+  document.addEventListener("click", (e) => {
+    const svg = e.target.closest(".at-strip svg"); if (!svg || !state.atStrip) return;
+    const { all, lo, span } = state.atStrip, r = svg.getBoundingClientRect();
+    const v = lo + ((((e.clientX - r.left) / r.width) * 100 - 4) / 92) * span;
+    const x = all.reduce((a, b) => (Math.abs(b.ppg - v) < Math.abs(a.ppg - v) ? b : a));
+    const pct = 4 + ((x.ppg - lo) / span) * 92;
+    svg.querySelectorAll("line.pick").forEach((l) => l.classList.remove("pick"));
+    [...svg.querySelectorAll("line:not(.med)")][all.indexOf(x)]?.classList.add("pick");
+    const tip = $("atTip"); tip.hidden = false;
+    tip.style.setProperty("--x", `${Math.min(92, Math.max(8, pct))}%`);
+    tip.innerHTML = `<button class="at-tip-x" aria-label="Close">×</button><div class="at-tip-t">${esc(x.team)}</div>
+      <div class="at-tip-s">${esc(x.mgr)}, ${x.year}</div>
+      <div class="at-tip-g"><span><b>${x.ppg.toFixed(1)}</b> PPG</span><span><b>#${x.rank}</b> all-time</span><span>Reg. <b>${x.seed ? ordinal(x.seed) : "–"}</b></span><span>Final <b>${x.finish ? ordinal(x.finish) : "–"}</b></span><span>${recStr(x.rec)}</span></div>
+      <button class="at-tip-go" data-roster="${x.year}:${x.teamId}">See roster</button>`;
+  });
+  document.addEventListener("click", (e) => { if (e.target.closest(".at-tip-x")) { $("atTip").hidden = true; document.querySelectorAll(".at-strip line.pick").forEach((l) => l.classList.remove("pick")); } });
   document.addEventListener("click", (e) => {
     const p = e.target.closest("[data-at-page]"); if (p && !p.disabled) { state.atPage = Number(p.dataset.atPage); renderAllTime(); return; }
     const d = e.target.closest("[data-at-dir]"); if (d) { state.atDir = d.dataset.atDir; state.atPage = 0; renderAllTime(); }
