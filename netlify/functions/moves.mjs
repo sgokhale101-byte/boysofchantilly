@@ -1,7 +1,7 @@
 // Completed waivers, free-agent moves, and trades for a week, with player names resolved
 // and each team's FAAB left after every move. Served at /api/moves?week=N.
 import { EspnError, espnFetch, leagueUrl } from "../lib/espn.mjs";
-import { seasonMoves, playerNames } from "../lib/tx.mjs";
+import { seasonMoves, playerNames, startingBudget } from "../lib/tx.mjs";
 
 const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(obj), {
   status, headers: { "content-type": "application/json", "cache-control": cache },
@@ -28,7 +28,7 @@ export default async (req) => {
   for (const t of league.teams || []) {
     const spentEspn = t.transactionCounter?.acquisitionBudgetSpent;
     const spentHere = all.filter((x) => x.type === "WAIVER" && x.teamId === t.id).reduce((a, x) => a + x.bid, 0);
-    leftNow[t.id] = budget - (spentEspn ?? spentHere);
+    leftNow[t.id] = startingBudget(t, league.members, budget) - (spentEspn ?? spentHere);
   }
   const chrono = [...all].sort((a, b) => a.date - b.date || a.id.localeCompare?.(b.id) || 0);
   const leftAfter = (tx, teamId) => {

@@ -42,7 +42,7 @@ export async function nflWeek(week) {
     for (const cp of comps) {
       const opp = comps.find((x) => x !== cp);
       out.byTeam[Number(cp.team?.id)] = {
-        state, frac, abbr: cp.team?.abbreviation, oppAbbr: opp?.team?.abbreviation, home: cp.homeAway === "home",
+        state, frac, abbr: cp.team?.abbreviation, oppAbbr: opp?.team?.abbreviation, home: cp.homeAway === "home", kickoff: ev.date || null,
         implied: totals[cp.team?.id] ?? null, oppImplied: opp ? totals[opp.team?.id] ?? null : null,
       };
     }
@@ -83,6 +83,26 @@ export async function readStartPct(week) {
 }
 async function saveStartPct(week, snap) {
   try { await getStore({ name: "cache", consistency: "strong" }).setJSON(startKey(week), snap); } catch {}
+}
+
+// Dr. Strange needs each matchup's win chance right after the Sunday 4 PM games end, before Sunday night kicks off.
+const snapKey = (week) => `pre-snf/v1/w${week}`;
+export async function readSundaySnapshot(week) {
+  try { return await getStore({ name: "cache", consistency: "strong" }).get(snapKey(week), { type: "json" }); } catch { return null; }
+}
+function etParts(iso) {
+  const d = new Date(iso);
+  const f = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", hour12: false }).formatToParts(d);
+  return { day: f.find((x) => x.type === "weekday")?.value, hour: Number(f.find((x) => x.type === "hour")?.value) % 24 };
+}
+// True once every game before Sunday night is final and Sunday night hasn't started.
+function beforeSundayNight(nfl) {
+  const games = Object.values(nfl.byTeam).filter((g, i, arr) => g.home && g.kickoff);
+  const snf = games.filter((g) => { const p = etParts(g.kickoff); return p.day === "Sun" && p.hour >= 19; });
+  if (!snf.length) return false;
+  const snfStart = Math.min(...snf.map((g) => Date.parse(g.kickoff)));
+  const earlier = games.filter((g) => Date.parse(g.kickoff) < snfStart);
+  return earlier.length > 0 && earlier.every((g) => g.state === "post") && snf.every((g) => g.state === "pre");
 }
 
 // ---------- Roster parsing ----------
@@ -209,6 +229,13 @@ export async function computeWeek(week) {
   });
 
   if (snapChanged) await savePregame(week, snap);
+  // Save the pre-Sunday-night win chances once.
+  try {
+    if (beforeSundayNight(nfl) && !(await readSundaySnapshot(week))) {
+      const shot = { at: Date.now(), matchups: Object.fromEntries(matchups.filter((m) => m.home && m.away).map((m) => [m.id, { [m.home.teamId]: m.home.winProb, [m.away.teamId]: m.away.winProb }])) };
+      await getStore({ name: "cache", consistency: "strong" }).setJSON(snapKey(week), shot);
+    }
+  } catch {}
   if (startChanged) await saveStartPct(week, startSnap);
   const sides = matchups.flatMap((m) => [m.home, m.away]).filter(Boolean);
   const started = Object.values(nfl.byTeam).some((g) => g.state !== "pre") || sides.some((x) => x.current > 0);

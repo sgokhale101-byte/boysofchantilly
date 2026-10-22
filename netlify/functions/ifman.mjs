@@ -28,7 +28,9 @@ export default async () => {
     }
   }
   Object.values(teams).forEach((x) => { x.optimalPF = Math.round(x.optimalPF * 100) / 100; x.actualPF = Math.round(x.actualPF * 100) / 100; });
-  return json(200, { weeks: season.weeks.map((w) => w.week), teams }, "public, max-age=120");
+  const weekly = {};
+  for (const { week, teams: rows } of season.weeks) for (const r of rows) (weekly[r.teamId] ||= {})[week] = { actual: r.actual, optimal: r.optimal ?? r.actual };
+  return json(200, { weeks: season.weeks.map((w) => w.week), teams, weekly }, "public, max-age=120");
 };
 
 export const config = { path: "/api/ifman" };

@@ -18,6 +18,7 @@ const WEIGHTS = {
   72: -2,    // fumbles lost
 };
 const r2 = (n) => Math.round(n * 100) / 100;
+export const REC_WEIGHT = WEIGHTS[53]; // points per catch in this league
 export const HALF_PPR_NOTE = "Half-PPR: 0.04 per passing yard, 4 per passing TD, -2 per interception, 0.1 per rushing or receiving yard, 6 per rushing or receiving TD, 0.5 per catch, -2 per fumble lost, 2 per two-point conversion.";
 
 export function halfPprFromRaw(stats) {

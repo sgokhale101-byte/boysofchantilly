@@ -2,6 +2,7 @@
 // and other teams' players they've marked as interested.
 import { EspnError, espnFetch, leagueUrl } from "../lib/espn.mjs";
 import { POS } from "../lib/model.mjs";
+import { playerNames } from "../lib/tx.mjs";
 
 const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(obj), {
   status, headers: { "content-type": "application/json", "cache-control": cache },
@@ -34,6 +35,12 @@ export default async () => {
       const entry = { teamId: t.id, playerId: id, status: String(status), player: info ? { name: info.name, pos: info.pos } : { name: `Player ${id}`, pos: "" }, ownerTeamId: info?.teamId ?? null };
       (info && info.teamId === t.id ? available : interested).push(entry);
     }
+  }
+  // Players nobody rosters (or ESPN left unnamed) get looked up so they don't show as "Player 1234".
+  const unnamed = [...available, ...interested].filter((x) => /^Player \d+$/.test(x.player.name)).map((x) => x.playerId);
+  if (unnamed.length) {
+    const names = await playerNames([...new Set(unnamed)]).catch(() => ({}));
+    [...available, ...interested].forEach((x) => { const n = names[x.playerId]; if (n) x.player = { name: n.name, pos: x.player.pos || n.pos || "" }; });
   }
   return json(200, { fieldSeen, available, interested }, "public, max-age=120");
 };

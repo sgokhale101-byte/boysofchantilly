@@ -76,3 +76,27 @@ export async function currentMoves(league) {
   const current = league.scoringPeriodId || league.status?.latestScoringPeriod || league.status?.currentMatchupPeriod || 1;
   return seasonMoves(current);
 }
+
+// Starting FAAB budgets that differ from the league setting, by manager first name.
+export const FAAB_START = { vivek: 110, cameron: 110, srimanth: 110 };
+export function startingBudget(team, members, base) {
+  const m = (members || []).find((x) => x.id === (team.primaryOwner || (team.owners || [])[0]));
+  const first = String(m?.firstName || m?.displayName || "").trim().split(/\s+/)[0].toLowerCase();
+  return FAAB_START[first] ?? base;
+}
+
+// ESPN's public injury report: is this player out for the season?
+export async function outForSeason(id, seasonYear) {
+  try {
+    const r = await fetch(`https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/${id}`, { headers: { Accept: "application/json" } });
+    if (!r.ok) return false;
+    const a = (await r.json()).athlete || {};
+    for (const inj of a.injuries || []) {
+      const text = `${inj.status || ""} ${inj.shortComment || ""} ${inj.longComment || ""} ${inj.details?.fantasyStatus?.description || ""}`.toLowerCase();
+      if (/season[- ]ending|out for (the )?season|for the season|rest of the season/.test(text)) return true;
+      const ret = inj.details?.returnDate ? new Date(inj.details.returnDate) : null;
+      if (ret && ret > new Date(`${Number(seasonYear) + 1}-01-10`)) return true;
+    }
+  } catch {}
+  return false;
+}

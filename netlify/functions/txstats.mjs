@@ -5,7 +5,7 @@
 import { EspnError, espnFetch, leagueUrl, SEASON } from "../lib/espn.mjs";
 import { POS } from "../lib/model.mjs";
 import { loadSeason } from "../lib/season.mjs";
-import { currentMoves, playerNames } from "../lib/tx.mjs";
+import { currentMoves, playerNames, startingBudget, outForSeason } from "../lib/tx.mjs";
 import { gamesPlayed } from "../lib/halfppr.mjs";
 
 const json = (status, obj, cache = "no-store") => new Response(JSON.stringify(obj), {
@@ -44,15 +44,19 @@ export default async () => {
     for (const p of t.bench || []) {
       const k = `${t.teamId}:${p.id}`;
       const a = (benchAgg[k] ||= { teamId: t.teamId, id: p.id, name: p.name, pos: p.pos, pts: 0, weeks: 0, best: null });
-      a.pts += p.pts; if (p.pts > 0) a.weeks++;
+      a.pts += p.pts; a.weeks++;
       if (!a.best || p.pts > a.best.pts) a.best = { week, pts: p.pts };
     }
   }
   const twelfthMan = Object.values(benchAgg).filter((a) => a.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 10)
-    .map((a) => ({ ...a, pts: r2(a.pts) }));
+    .map((a) => ({ ...a, pts: r2(a.pts), avg: r2(a.pts / Math.max(1, a.weeks)) }));
 
   // ---- dead weight ----
   const deadWeight = [];
+  const irSlots = Number(league.settings?.rosterSettings?.lineupSlotCounts?.[21] || 0);
+  const irOpen = {};
+  for (const t of league.teams || []) irOpen[t.id] = irSlots - (t.roster?.entries || []).filter((e) => e.lineupSlotId === 21).length > 0;
+  const injuredChecks = [];
   for (const t of league.teams || []) for (const e of t.roster?.entries || []) {
     if (e.lineupSlotId !== 20) continue; // bench only
     const p = e.playerPoolEntry?.player || {};
@@ -64,11 +68,22 @@ export default async () => {
     const status = OUT[p.injuryStatus];
     const never = !startedBy.has(`${t.id}:${p.id}`) && weeks.length >= 2;
     let reason = null, score = 0;
-    if (status) { reason = `${p.injuryStatus === "INJURY_RESERVE" ? "On injured reserve" : status === "suspended" ? "Suspended" : "Out"} and taking up a bench spot`; score = 3; }
+    if (status) {
+      // Injured players only count if they're done for the year, or the team has an IR spot open.
+      injuredChecks.push({ t, e, p, pos, avg, owned, open: irOpen[t.id] && p.injuryStatus !== "SUSPENSION" });
+      continue;
+    }
     else if (avg != null && floor && avg < floor && Number.isFinite(owned) && owned < 50) { reason = `Averaging ${avg.toFixed(1)} a game, rostered in only ${Math.round(owned)}% of ESPN leagues`; score = 2 + (50 - owned) / 100; }
     else if (never && avg != null && floor && avg < floor * 1.3) { reason = `Hasn't been started all season, averaging ${avg.toFixed(1)} a game`; score = 1; }
     if (reason) deadWeight.push({ teamId: t.id, name: p.fullName || `Player ${e.playerId}`, pos, avg: avg == null ? null : r2(avg), owned: Number.isFinite(owned) ? Math.round(owned) : null, reason, score });
   }
+  const seasonOut = await Promise.all(injuredChecks.map((c) => outForSeason(c.p.id, SEASON)));
+  injuredChecks.forEach((c, i) => {
+    let reason = null;
+    if (seasonOut[i]) reason = "Out for the season and still taking up a bench spot";
+    else if (c.open) reason = "Injured with an IR spot open. Move him there to free up the bench spot";
+    if (reason) deadWeight.push({ teamId: c.t.id, name: c.p.fullName || `Player ${c.e.playerId}`, pos: c.pos, avg: c.avg == null ? null : r2(c.avg), owned: Number.isFinite(c.owned) ? Math.round(c.owned) : null, reason, score: seasonOut[i] ? 3 : 2.5 });
+  });
   deadWeight.sort((a, b) => b.score - a.score || (a.avg ?? 0) - (b.avg ?? 0));
 
   // ---- FAAB ----
@@ -102,11 +117,12 @@ export default async () => {
     const paid = mine.filter((b) => b.bid > 0);
     const spentHere = paid.reduce((a, b) => a + b.bid, 0);
     const spent = t.transactionCounter?.acquisitionBudgetSpent ?? spentHere;
+    const start = startingBudget(t, league.members, budget);
     const paidPts = paid.reduce((a, b) => a + b.pts, 0);
     const freePts = mine.filter((b) => b.bid === 0).reduce((a, b) => a + b.pts, 0);
-    return { teamId: t.id, left: usesFaab ? budget - spent : null, spent, paidPts: r2(paidPts), freePts: r2(freePts), perDollar: spentHere ? r2(paidPts / spentHere) : null, buys: mine.length };
+    return { teamId: t.id, start, left: usesFaab ? start - spent : null, spent, paidPts: r2(paidPts), freePts: r2(freePts), perDollar: spentHere ? r2(paidPts / spentHere) : null, buys: mine.length };
   });
-  const bestBuys = buys.filter((b) => b.bid > 0).map((b) => ({ ...b, perDollar: r2(b.pts / b.bid) })).sort((a, b) => b.perDollar - a.perDollar || b.pts - a.pts).slice(0, 8);
+  const bestBuys = buys.filter((b) => b.bid > 0 && b.pts > 0).map((b) => ({ ...b, perDollar: r2(b.pts / b.bid) })).filter((b) => b.perDollar >= 1).sort((a, b) => b.perDollar - a.perDollar || b.pts - a.pts).slice(0, 10);
   const freeFinds = buys.filter((b) => b.bid === 0 && b.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 5);
 
   return json(200, {
