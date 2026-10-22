@@ -35,6 +35,9 @@ export async function weekSummary(week, slotCounts) {
         // start %: frozen at kickoff when the site saw the week live, else ESPN's current number
         starters: starters.map((p) => ({ id: p.id, name: p.name, pos: p.pos, pts: r2(p.actual), pct: startSnap[p.id] ?? p.pctStarted, pctLive: startSnap[p.id] == null })),
         bench: players.filter((p) => p.slotId === 20).map((p) => ({ id: p.id, name: p.name, pos: p.pos, pts: r2(p.actual) })),
+        // whole roster incl. IR, and which lineup slots each position can fill (injury luck's best-lineup math)
+        all: players.filter((p) => p.id != null).map((p) => ({ id: p.id, pos: p.pos, pts: r2(p.actual), s: isStarter(p) ? 1 : 0 })),
+        elig: Object.fromEntries(players.filter((p) => p.pos && p.eligible?.length).map((p) => [p.pos, p.eligible])),
       });
     }
   }
@@ -55,7 +58,7 @@ export async function loadSeason() {
 
   const store = getStore({ name: "cache", consistency: "strong" });
   const weeks = await Promise.all(done.map(async (w) => {
-    const key = `weeksum/v4/w${w}`;
+    const key = `weeksum/v5/w${w}`;
     let teams = await store.get(key, { type: "json" });
     if (!teams) {
       teams = await weekSummary(w, slotCounts);

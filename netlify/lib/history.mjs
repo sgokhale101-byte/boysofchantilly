@@ -1,7 +1,8 @@
 // League history across every season ESPN has for this league.
 import { getStore } from "@netlify/blobs";
 import { BASE, LEAGUE_ID, SEASON, espnFetch, seasonLeague } from "./espn.mjs";
-import { median, optimalPoints, parsePlayer, rosterOf } from "./model.mjs";
+import { isStarter, median, optimalPoints, parsePlayer, rosterOf } from "./model.mjs";
+import { REC_WEIGHT } from "./halfppr.mjs";
 import { loadSeason } from "./season.mjs";
 
 const r2 = (n) => Math.round((n || 0) * 100) / 100;
@@ -94,11 +95,11 @@ export async function allSeasons() {
 // One finished week of any season: best-lineup scores per team and the week's top individual
 // performances (every rostered player, starters and bench). Cached per week.
 async function weekDetail(year, w, slotCounts) {
-  const key = `hist/week/v2/${year}/w${w}`;
+  const key = `hist/week/v3/${year}/w${w}`;
   const hit = await store().get(key, { type: "json" }).catch(() => null);
   if (hit) return hit;
   const L = await seasonLeague(year, ["mMatchupScore", "mScoreboard"], w);
-  const rows = [], perf = [];
+  const rows = [], perf = [], elig = {};
   for (const g of (L.schedule || []).filter((x) => x.matchupPeriodId === w)) {
     for (const [s, o] of [[g.home, g.away], [g.away, g.home]]) {
       if (!s) continue;
@@ -108,11 +109,14 @@ async function weekDetail(year, w, slotCounts) {
         optimal: players.length && slotCounts ? Math.max(r2(s.totalPoints), optimalPoints(players, slotCounts)) : null,
         starters: players.filter((p) => p.slotId !== 20 && p.slotId !== 21).map((p) => ({ id: p.id, pos: p.pos, pts: r2(p.actual) })),
         roster: players.map((p) => p.id),
+        // whole roster (starters, bench, IR) with points, for injury luck's best-lineup math
+        lineup: players.filter((p) => p.id != null).map((p) => ({ id: p.id, pos: p.pos, pts: r2(p.actual), s: isStarter(p) ? 1 : 0 })),
       });
+      for (const p of players) if (p.pos && !elig[p.pos] && p.eligible?.length) elig[p.pos] = p.eligible;
       for (const p of players) if (p.actual > 0) perf.push({ name: p.name, pos: p.pos, pts: r2(p.actual), teamId: s.teamId, started: p.slotId !== 20 && p.slotId !== 21, week: w });
     }
   }
-  const out = { rows, tops: perf.sort((a, b) => b.pts - a.pts).slice(0, 15) };
+  const out = { rows, tops: perf.sort((a, b) => b.pts - a.pts).slice(0, 15), elig };
   await store().setJSON(key, out).catch(() => {});
   return out;
 }
@@ -182,7 +186,7 @@ function tally(weeks) {
 // Every team's end-of-season roster for one season, with season points (league scoring) and how
 // each player was acquired. Finished seasons are cached.
 export async function seasonRosters(year) {
-  const key = `hist/roster/v1/${year}`;
+  const key = `hist/roster/v2/${year}`;
   const past = Number(year) < Number(SEASON);
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const L = await seasonLeague(year, ["mRoster", "mTeam"]);
@@ -195,7 +199,7 @@ export async function seasonRosters(year) {
         if (st.statSourceId === 0 && st.scoringPeriodId === 0 && (st.seasonId == null || Number(st.seasonId) === Number(year)) && (st.statSplitTypeId == null || st.statSplitTypeId === 0)) pts = st.appliedTotal ?? pts;
       }
       return {
-        name: p.fullName || `Player ${e.playerId}`, pos: POSITIONS[p.defaultPositionId] || "",
+        id: p.id ?? e.playerId, name: p.fullName || `Player ${e.playerId}`, pos: POSITIONS[p.defaultPositionId] || "",
         acquired: e.acquisitionType || null, pts: pts == null ? null : r2(pts), slotId: e.lineupSlotId,
       };
     }).sort((a, b) => (ORDER[a.pos] ?? 9) - (ORDER[b.pos] ?? 9) || (b.pts ?? -1) - (a.pts ?? -1));
@@ -496,16 +500,84 @@ export async function seasonFavorites(year, deadline) {
   return out;
 }
 
+// ======================= All-time teams =======================
+// For one season: every player's regular-season points on each team that rostered him (starter or bench), so the site
+// can build each manager's all-time lineup (best players he ever had) and each season's all-star lineup (and who had them).
+export async function seasonAllTime(year, deadline) {
+  const Y = Number(year), past = Y < Number(SEASON);
+  const key = `hist/alltime/v3/${Y}`;
+  if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
+  const summary = await seasonSummaryCached(Y);
+  const reg = summary.regularSeasonWeeks || 14;
+  let slotCounts = summary.slotCounts;
+  const weekly = {};                                                               // week -> [{ teamId, players }]
+  if (past) {
+    const sw = await seasonWeeks(Y, deadline);
+    if (!sw.done) return { year: Y, complete: false };
+    for (const [w, wk] of Object.entries(sw.results)) if (Number(w) <= reg) weekly[w] = (wk.rows || []).map((r) => ({ teamId: r.teamId, players: r.lineup || (r.starters || []).map((p) => ({ ...p, s: 1 })) }));
+  } else {
+    const cur = await loadSeason();
+    slotCounts = cur.league?.settings?.rosterSettings?.lineupSlotCounts || slotCounts;
+    for (const { week, teams } of cur.weeks) weekly[week] = teams.map((t) => ({ teamId: t.teamId, players: t.all || [...(t.starters || []), ...(t.bench || [])] }));
+  }
+  const agg = {}, posOf = {};
+  for (const rows of Object.values(weekly)) for (const r of rows) for (const p of r.players || []) {
+    if (p.id == null || !p.pos) continue; posOf[p.id] = p.pos;
+    const a = ((agg[p.id] ||= {})[r.teamId] ||= [0, 0, 0, 0]);             // points, weeks rostered, starts, games played
+    a[0] += p.pts || 0; a[1]++; if (p.s) a[2]++; if (p.pts) a[3]++;
+  }
+  // every player who was on a roster (small enough to keep them all)
+  const keep = new Set(Object.keys(agg));
+  const byPos = {};
+  for (const [pid, teams] of Object.entries(agg)) (byPos[posOf[pid]] ||= []).push([pid, Object.values(teams).reduce((s, x) => s + x[0], 0)]);
+  for (const list of Object.values(byPos)) list.sort((a, b) => b[1] - a[1]);
+  // positional rank: season points while on any roster in the league, among every player at the position
+  const posRank = {};
+  for (const list of Object.values(byPos)) list.forEach(([pid], i) => (posRank[pid] = i + 1));
+  const ids = [...keep].map(Number);
+  // names only for players an all-star lineup could use (10+ starts or games) or a league top 30, looked up in parallel
+  const named = ids.filter((id) => (posRank[id] || 99) <= 30 || Object.values(agg[id]).some((x) => x[2] >= 10) || Object.values(agg[id]).reduce((a, x) => a + x[3], 0) >= 10);
+  const chunks = []; for (let i = 0; i < named.length; i += 50) chunks.push(named.slice(i, i + 50));
+  const names = Object.assign({}, ...(await Promise.all(chunks.map((c) => tradeNames(Y, c).catch(() => ({}))))));
+  const players = ids.map((id) => ({ id, name: names[id]?.name || `Player ${id}`, pos: posOf[id], rank: posRank[id],
+    teams: Object.fromEntries(Object.entries(agg[id]).map(([t, [pts, wk, st, g]]) => [t, [r2(pts), wk, st, g]])) }));
+  const out = { year: Y, complete: true, regularSeasonWeeks: reg, weeks: Object.keys(weekly).length, slotCounts, players };
+  if (past) await store().setJSON(key, out).catch(() => {});
+  return out;
+}
+
 // ======================= Injury luck =======================
-// Points each team lost to injuries, turned into wins, from public NFL data (nflverse on GitHub):
-// weekly snap counts (who played, and how much), weekly injury reports, and a player ID map (ESPN <-> NFL ids).
-//   Left early: a starter whose snap share was well under his normal, who then landed on the next injury report or sat out.
-//   Missed a game: a regular starter (started 2 of his team's previous 3 weeks) who didn't play while his NFL team did,
-//     including after a season-ending injury, even if he was dropped (as long as he never played again that season).
-// Points lost = his healthy average (games he started at a normal snap share) minus what replaced him (missed games)
-// or minus what he scored (left early). Wins lost = how many more all-play wins those points would have bought that week.
-// Injury luck = league average wins lost minus the team's, so a healthier-than-average team is positive.
+// What injuries cost each team, in wins, from public NFL data (nflverse on GitHub): weekly snap counts, injury reports,
+// NFL roster status (injured reserve, PUP, suspended...), every player's weekly stats, Vegas lines, and an ID map.
+//
+// Which weeks count (K and D/ST excluded):
+//   Missed: a player on the team's bench or IR, or a regular starter / early pick it dropped who never played again that
+//     season, whose NFL team played while he didn't, for an injury: on injured reserve, PUP or the non-football-injury
+//     list, on the injury report that week or the week before, out after leaving the previous game early, or still out
+//     from an earlier injury, or a suspension that started after he had played that season. Suspensions known before
+//     the season (already in his draft price), players who left the team, cuts and healthy scratches don't count.
+//   Started but didn't play: a starter who sat for an injury (same test).
+//   Left early: a starter whose snap share was under 60% of his normal (any player who normally plays 20%+ of snaps),
+//     who was on that week's or the next week's injury report, or missed the next game hurt.
+// Expected points (what he'd have scored healthy):
+//   Healthy average = every game he played at a normal snap share, starter or bench, blended with a prior worth 3 games
+//     (last season's points per game, or for a rookie early pick, what the player at his draft rank scored).
+//   x Vegas: his NFL team's implied points that week / its average in his healthy games (0.8 to 1.25).
+//   x Fill-in signal (missed weeks only): how much his position group's production rose without him, against how much
+//     it usually rises when a player at that position is out, given half weight at most and less with few weeks.
+// Cost (the luck number): the best lineup the team could have set with its injured players at their expected points,
+//   minus the best lineup it could actually set, plus expected minus scored for starters locked into the lineup (left
+//   early, started but didn't play). A deep bench softens the hit, like it does for real.
+// Value over replacement (shown next to it): expected minus a league-wide replacement-level player at his position,
+//   for regular starters and early picks, the same baseline for every team.
+// Wins lost = how many more all-play wins those points would have bought that week. Injury luck = the league average
+// wins lost minus the team's, so a healthier-than-average team is positive.
 const NFLV = "https://github.com/nflverse/nflverse-data/releases/download";
+const FANTASY_POS = new Set(["QB", "RB", "WR", "TE"]);
+const INJURED_CODES = new Set(["R01", "R48", "R04", "R05"]);                 // injured reserve, IR-return, PUP, non-football injury
+const SUSPENDED = "R40";
+const NOT_INJURY_CODES = new Set(["R06", "R03", "R02", "R27", "R23"]);        // left squad, didn't report, retired, other lists
+const PRIOR_GAMES = 3;
 
 function parseCsv(text) {
   const rows = []; let row = [], field = "", q = false;
@@ -526,7 +598,18 @@ async function nflvText(path) {
   if (!r.ok) throw new Error(`nflverse ${path}: ${r.status}`);
   return r.text();
 }
-// ESPN player id -> [pfr id (snap counts), gsis id (injury reports)]
+// Cached loader: past seasons forever, the current one for `fresh` ms. Returns null if the deadline passed before a download.
+async function cachedNflv(key, fresh, deadline, build) {
+  const hit = await store().get(key, { type: "json" }).catch(() => null);
+  if (hit && (!fresh || Date.now() - (hit.at || 0) < fresh)) return hit;
+  if (Date.now() > deadline) return hit || null;
+  let out;
+  try { out = await build(); } catch { out = { missing: true }; }
+  out.at = Date.now();
+  await store().setJSON(key, out).catch(() => {});
+  return out;
+}
+// ESPN player id -> [pfr id (snap counts), gsis id (everything else)]
 async function nflIdMap() {
   const key = "nflverse/idmap/v1";
   const hit = await store().get(key, { type: "json" }).catch(() => null);
@@ -538,8 +621,7 @@ async function nflIdMap() {
   await store().setJSON(key, { at: Date.now(), map }).catch(() => {});
   return map;
 }
-// One season of NFL data, slimmed: snaps[pfr][week] = offense share, team[pfr][week] = NFL team,
-// played[team] = weeks the team played, inj[gsis][week] = report status.
+// Snaps and injury reports: snaps[pfr][week] = offense share, team[pfr][week], played[team][week], inj[gsis][week] = status
 async function nflSeason(year) {
   const Y = Number(year), past = Y < Number(SEASON);
   const key = `nflverse/season/v1/${Y}`;
@@ -567,29 +649,89 @@ async function nflSeason(year) {
   await store().setJSON(key, out).catch(() => {});
   return out;
 }
+// Weekly stats for every QB/RB/WR/TE: p[gsis] = { pos, w: { week: [team, standard points, catches] } }
+function nflStats(year, deadline) {
+  const Y = Number(year);
+  return cachedNflv(`nflverse/stats/v1/${Y}`, Y < Number(SEASON) ? 0 : 6 * 3600e3, deadline, async () => {
+    const t = parseCsv(await nflvText(`stats_player/stats_player_week_${Y}.csv`));
+    const [id, pos, wk, st, fp, rec] = ["player_id", "position", "week", "season_type", "fantasy_points", "receptions"].map(t.col);
+    const tm = t.col("team") >= 0 ? t.col("team") : t.col("recent_team");
+    const p = {};
+    for (const r of t.rows) {
+      if (r[st] && r[st] !== "REG") continue;
+      const ps = r[pos] === "FB" ? "RB" : r[pos];
+      if (!FANTASY_POS.has(ps)) continue;
+      const w = Number(r[wk]); if (!w || !r[id]) continue;
+      (p[r[id]] ||= { pos: ps, w: {} }).w[w] = [r[tm], Math.round((Number(r[fp]) || 0) * 100) / 100, Number(r[rec]) || 0];
+    }
+    return { p };
+  });
+}
+// NFL roster status by week, only when it isn't plain "active": s[gsis][week] = code (R01 injured reserve, R40 suspended, INA...)
+function nflRosterStatus(year, deadline) {
+  const Y = Number(year);
+  return cachedNflv(`nflverse/rost/v1/${Y}`, Y < Number(SEASON) ? 0 : 6 * 3600e3, deadline, async () => {
+    const t = parseCsv(await nflvText(`weekly_rosters/roster_weekly_${Y}.csv`));
+    const [pos, st, g, wk, gt, ab] = ["position", "status", "gsis_id", "week", "game_type", "status_description_abbr"].map(t.col);
+    const s = {};
+    for (const r of t.rows) {
+      if (r[gt] && r[gt] !== "REG") continue;
+      if (!FANTASY_POS.has(r[pos] === "FB" ? "RB" : r[pos])) continue;
+      const w = Number(r[wk]); if (!w || !r[g]) continue;
+      const code = r[st] === "CUT" ? "CUT" : r[ab] && r[ab] !== "A01" ? r[ab] : r[st] === "INA" ? "INA" : "";
+      if (code) (s[r[g]] ||= {})[w] = code;
+    }
+    return { s };
+  });
+}
+// Vegas: each team's implied points per game, l[season][week][team] (from the closing spread and total)
+function nflLines(deadline) {
+  return cachedNflv("nflverse/lines/v1", 12 * 3600e3, deadline, async () => {
+    const t = parseCsv(await nflvText("schedules/games.csv"));
+    const [se, gt, wk, at, ht, sp, tot] = ["season", "game_type", "week", "away_team", "home_team", "spread_line", "total_line"].map(t.col);
+    const l = {};
+    for (const r of t.rows) {
+      const y = Number(r[se]); if (y < 2012 || (r[gt] && r[gt] !== "REG")) continue;
+      const total = Number(r[tot]), spread = Number(r[sp]); if (!r[tot] || !Number.isFinite(total) || !Number.isFinite(spread)) continue;
+      const w = Number(r[wk]), x = ((l[y] ||= {})[w] ||= {});
+      x[r[ht]] = Math.round(((total + spread) / 2) * 10) / 10;
+      x[r[at]] = Math.round(((total - spread) / 2) * 10) / 10;
+    }
+    return { l };
+  });
+}
 
 export async function seasonInjury(year, deadline) {
   const Y = Number(year), past = Y < Number(SEASON);
-  const key = `hist/injury/v1/${Y}`;
+  const key = `hist/injury/v3/${Y}`;
+  const incomplete = { year: Y, complete: false, teams: {} };
   if (past) { const hit = await store().get(key, { type: "json" }).catch(() => null); if (hit) return hit; }
   const summary = await seasonSummaryCached(Y);
   const reg = summary.regularSeasonWeeks || 14;
-  // Weekly lineups: { week: [{ teamId, starters: [{ id, pos, pts }], roster: [ids] }] }
-  let lineups = {};
+  let slotCounts = summary.slotCounts;
+  // Weekly rosters: { week: [{ teamId, players: [{ id, pos, pts, s (1 = starter) }], elig: { pos: lineup slots } }] }
+  const lineups = {};
   if (past) {
     const sw = await seasonWeeks(Y, deadline);
-    if (!sw.done) return { year: Y, complete: false, teams: {} };
-    for (const [w, wk] of Object.entries(sw.results)) if (Number(w) <= reg) lineups[w] = wk.rows || [];
+    if (!sw.done) return incomplete;
+    for (const [w, wk] of Object.entries(sw.results)) if (Number(w) <= reg) lineups[w] = (wk.rows || []).map((r) => ({ teamId: r.teamId, players: r.lineup || null, elig: wk.elig || {} }));
   } else {
     const cur = await loadSeason();
-    for (const { week, teams } of cur.weeks) lineups[week] = teams.map((t) => ({ teamId: t.teamId, starters: (t.starters || []).map((p) => ({ id: p.id, pos: p.pos, pts: p.pts })), roster: [...(t.starters || []), ...(t.bench || [])].map((p) => p.id) }));
+    slotCounts = cur.league?.settings?.rosterSettings?.lineupSlotCounts || slotCounts;
+    for (const { week, teams } of cur.weeks) lineups[week] = teams.map((t) => ({ teamId: t.teamId, players: t.all || null, elig: t.elig || {} }));
   }
   const weeks = Object.keys(lineups).map(Number).sort((a, b) => a - b);
-  if (!weeks.length) return { year: Y, complete: true, available: false, teams: {} };
-  if (Date.now() > deadline) return { year: Y, complete: false, teams: {} };
+  if (!weeks.length || !slotCounts) return { year: Y, complete: true, available: false, teams: {} };
+  if (Date.now() > deadline) return incomplete;
+
+  // NFL data, each piece cached on its own, so a cold start finishes over a few calls
   let ids, nfl;
-  try { ids = await nflIdMap(); if (Date.now() > deadline + 2500) return { year: Y, complete: false, teams: {} }; nfl = await nflSeason(Y); }
+  try { ids = await nflIdMap(); if (Date.now() > deadline) return incomplete; nfl = await nflSeason(Y); }
   catch { return { year: Y, complete: true, available: false, teams: {}, note: "NFL injury data unavailable" }; }
+  const stats = await nflStats(Y, deadline); if (!stats) return incomplete;
+  const prev = await nflStats(Y - 1, deadline); if (!prev) return incomplete;
+  const rost = await nflRosterStatus(Y, deadline); if (!rost) return incomplete;
+  const lines = await nflLines(deadline); if (!lines) return incomplete;
 
   // Team scores per week (regular season), for the all-play math
   const scores = {};
@@ -602,82 +744,210 @@ export async function seasonInjury(year, deadline) {
     const near = ks.reduce((a, b) => (Math.abs(b - w) < Math.abs(a - w) ? b : a)); return t[near];
   };
   const teamPlayed = (pid, w) => { const tm = nflTeam(pid, w); return tm ? Boolean(nfl.played[tm]?.[w]) : false; };
-  const onReport = (pid, w) => { const st = nfl.inj[gsis(pid)]?.[w]; return st && st !== ""; };
+  const onReport = (pid, w) => Boolean(nfl.inj[gsis(pid)]?.[w]);
+  const rcode = (pid, w) => rost.s?.[gsis(pid)]?.[w] || "";
   const playedAt = (pid, w) => (snap(pid, w) || 0) > 0;
   const lastWeekPlayed = (pid) => Math.max(0, ...Object.entries(nfl.snaps[pfr(pid)] || {}).filter(([, v]) => v > 0).map(([w]) => Number(w)));
+  const maxW = Math.max(0, ...Object.values(nfl.played).flatMap((x) => Object.keys(x).map(Number)));
+  const nflWeeks = Array.from({ length: maxW }, (_, i) => i + 1);
+  const memo = (fn) => { const m = new Map(); return (...a) => { const k = a.join("|"); if (!m.has(k)) m.set(k, fn(...a)); return m.get(k); }; };
+  const medianShare = memo((pid) => { const v = Object.values(nfl.snaps[pfr(pid)] || {}).filter((x) => x > 0).sort((a, b) => a - b); return v.length >= 3 ? v[Math.floor(v.length / 2)] : null; });
+  const lowSnaps = (pid, w) => { const s = snap(pid, w), m = medianShare(pid); return s > 0 && m != null && m >= 0.2 && s < 0.6 * m; };
+  const healthyAt = (pid, w) => { const s = snap(pid, w); if (!(s > 0)) return false; const m = medianShare(pid); return m == null || s >= 0.6 * m; };
+  // A suspension counts when it starts after he has played that season (a surprise); one known before the season doesn't
+  const suspendedMidSeason = memo((pid) => {
+    const sw = nflWeeks.filter((w) => rcode(pid, w) === SUSPENDED); if (!sw.length) return false;
+    return nflWeeks.some((w) => w < sw[0] && playedAt(pid, w));
+  });
+  // Didn't play because of an injury or a mid-season suspension (not a cut, a healthy scratch or a known suspension)
+  const injuredOut = memo((pid, w) => {
+    const c = rcode(pid, w);
+    if (INJURED_CODES.has(c)) return true;
+    if (c === SUSPENDED) return suspendedMidSeason(pid);
+    if (NOT_INJURY_CODES.has(c) || c === "CUT") return false;
+    if (onReport(pid, w) || onReport(pid, w - 1)) return true;
+    if (w > 1 && lowSnaps(pid, w - 1)) return true;                                     // left last week's game early
+    if (w > 1 && !playedAt(pid, w - 1) && teamPlayed(pid, w - 1)) return injuredOut(pid, w - 1); // still out from earlier
+    return false;
+  });
+  const leftEarly = (pid, w) => lowSnaps(pid, w) && (onReport(pid, w) || onReport(pid, w + 1) || (teamPlayed(pid, w + 1) && !playedAt(pid, w + 1) && injuredOut(pid, w + 1)));
+  const outHurt = (pid, w) => teamPlayed(pid, w) && !playedAt(pid, w) && injuredOut(pid, w);
+
+  // League scoring: ESPN's points when the player was on anyone's roster, otherwise nflverse stats scaled to match
+  const posOf = {}, espnPts = {};
+  for (const w of weeks) for (const r of lineups[w]) for (const p of r.players || []) { if (p.pos) posOf[p.id] = p.pos; (espnPts[p.id] ||= {})[w] = p.pts; }
+  const nflvRaw = (g, w, src = stats) => { const e = src.p?.[g]?.w?.[w]; return e ? e[1] + REC_WEIGHT * e[2] : null; };
+  const calib = {};
+  { const sum = {};
+    for (const [pid, wk] of Object.entries(espnPts)) { const g = gsis(pid), pos = posOf[pid]; if (!g || !FANTASY_POS.has(pos)) continue;
+      for (const [w, v] of Object.entries(wk)) { const n = nflvRaw(g, w); if (n == null || n <= 0 || !playedAt(pid, w)) continue; const s = (sum[pos] ||= [0, 0]); s[0] += v; s[1] += n; } }
+    for (const [pos, [e, n]] of Object.entries(sum)) calib[pos] = n > 50 ? e / n : 1; }
+  const cal = (pos) => calib[pos] || 1;
+  const ptsAt = (pid, w) => espnPts[pid]?.[w] ?? (() => { const n = nflvRaw(gsis(pid), w); return n == null ? null : n * cal(posOf[pid]); })();
+
+  // Replacement level by position: points per start of every player with 3+ starts this season, ranked; replacement =
+  // the first player past the league's starting spots (counted from how many each team actually started there).
+  const starts = {}, slotsUsed = {};
+  let teamWeeks = 0;
+  for (const w of weeks) for (const r of lineups[w]) {
+    if (!r.players) continue; teamWeeks++;
+    for (const p of r.players) { if (!p.s || !p.pos) continue; (starts[p.id] ||= []).push(p.pts); slotsUsed[p.pos] = (slotsUsed[p.pos] || 0) + 1; }
+  }
+  const nTeams = Math.max(1, new Set(weeks.flatMap((w) => lineups[w].map((r) => r.teamId))).size);
+  const minStarts = weeks.length >= 6 ? 3 : 1;
+  const ppgList = {};
+  for (const [pid, arr] of Object.entries(starts)) { if (arr.length < minStarts) continue; (ppgList[posOf[pid]] ||= []).push(arr.reduce((a, b) => a + b, 0) / arr.length); }
+  for (const k of Object.keys(ppgList)) ppgList[k].sort((a, b) => b - a);
+  const replacement = {};
+  for (const [pos, used] of Object.entries(slotsUsed)) {
+    const spots = Math.round((used / Math.max(1, teamWeeks)) * nTeams), list = ppgList[pos] || [];
+    replacement[pos] = list.length ? r2(list[Math.min(spots, list.length - 1)]) : 0;
+  }
+  const repl = (pos) => replacement[pos] ?? 0;
+
+  // Early draft picks (rounds 1-6): position, and what the player at their draft rank at that position scored
+  const early = {};
+  try {
+    const D = await seasonLeague(Y, ["mDraftDetail"]);
+    const picks = (D.draftDetail?.picks || []).filter((pk) => pk.roundId && pk.roundId <= 6 && pk.playerId > 0).sort((a, b) => (a.overallPickNumber || 0) - (b.overallPickNumber || 0));
+    const needPos = picks.map((pk) => pk.playerId).filter((id) => !posOf[id]);
+    const names = needPos.length ? await tradeNames(Y, needPos).catch(() => ({})) : {};
+    const rankAt = {};
+    for (const pk of picks) {
+      const pos = posOf[pk.playerId] || names[pk.playerId]?.pos; if (!pos || pos === "K" || pos === "D/ST") continue;
+      posOf[pk.playerId] ||= pos;
+      const k = (rankAt[pos] = (rankAt[pos] || 0) + 1), list = ppgList[pos] || [];
+      early[pk.playerId] = { teamId: pk.teamId, pos, expected: list.length ? list[Math.min(k - 1, list.length - 1)] : null };
+    }
+  } catch {}
+
+  // Healthy average, blended with a prior worth PRIOR_GAMES games
+  const healthyWeeks = memo((pid) => nflWeeks.filter((w) => healthyAt(pid, w) && ptsAt(pid, w) != null));
+  const priorPpg = memo((pid) => {
+    const e = prev.p?.[gsis(pid)]; if (!e) return null;
+    const v = Object.keys(e.w).map((w) => nflvRaw(gsis(pid), w, prev)).filter((x) => x != null);
+    return v.length >= 4 ? (v.reduce((a, b) => a + b, 0) / v.length) * cal(posOf[pid]) : null;
+  });
+  const base = memo((pid) => {
+    const hw = healthyWeeks(pid), sum = hw.reduce((a, w) => a + ptsAt(pid, w), 0);
+    const prior = priorPpg(pid) ?? early[pid]?.expected ?? null;
+    if (!hw.length && prior == null) return null;
+    return prior == null ? sum / hw.length : (sum + PRIOR_GAMES * prior) / (hw.length + PRIOR_GAMES);
+  });
+  // Vegas: his team's implied points that week against its average in his healthy games
+  const implied = (team, w) => lines.l?.[Y]?.[w]?.[team];
+  const vegas = memo((pid, w) => {
+    const now = implied(nflTeam(pid, w), w); if (!now) return 1;
+    let ref = healthyWeeks(pid).map((x) => implied(nflTeam(pid, x), x)).filter(Boolean);
+    if (!ref.length) ref = Object.values(lines.l?.[Y] || {}).map((x) => x[nflTeam(pid, w)]).filter(Boolean);
+    if (!ref.length) return 1;
+    return Math.min(1.25, Math.max(0.8, now / (ref.reduce((a, b) => a + b, 0) / ref.length)));
+  });
+  // Fill-in signal: his position group's points without him, per week
+  const groupIdx = {};
+  for (const [g, e] of Object.entries(stats.p || {})) for (const [w, x] of Object.entries(e.w)) (groupIdx[`${x[0]}|${e.pos}|${w}`] ||= []).push([g, x[1] + REC_WEIGHT * x[2]]);
+  const groupPts = (team, pos, w, except) => (groupIdx[`${team}|${pos}|${w}`] || []).reduce((a, [g, v]) => a + (g === except ? 0 : v), 0) * cal(pos);
+  const absenceRatios = memo((pid) => {
+    const b = base(pid), pos = posOf[pid], g = gsis(pid);
+    if (!b || !g || !FANTASY_POS.has(pos)) return [];
+    const hw = healthyWeeks(pid); if (!hw.length) return [];
+    const usual = hw.reduce((a, w) => a + groupPts(nflTeam(pid, w), pos, w, g), 0) / hw.length;
+    return nflWeeks.filter((w) => outHurt(pid, w))
+      .map((w) => ((groupPts(nflTeam(pid, w), pos, w, g) - usual) / vegas(pid, w)) / b);
+  });
+  // How much a position group usually picks up when a player there is out (league-wide, this season)
+  const rho = {};
+  { const all = {};
+    for (const pid of Object.keys(espnPts)) { const pos = posOf[pid]; if (!FANTASY_POS.has(pos)) continue; const r = absenceRatios(pid); if (r.length) (all[pos] ||= []).push(r.reduce((a, b) => a + b, 0) / r.length); }
+    for (const pos of FANTASY_POS) { const v = (all[pos] || []).sort((a, b) => a - b); rho[pos] = v.length >= 5 ? Math.max(0.2, v[Math.floor(v.length / 2)]) : 0.6; } }
+  const fillIn = memo((pid) => {
+    const r = absenceRatios(pid), pos = posOf[pid]; if (!r.length || !rho[pos]) return 1;
+    const m = r.length, avg = r.reduce((a, b) => a + b, 0) / m, wgt = 0.5 * (m / (m + 2));
+    return Math.min(1.3, Math.max(0.8, 1 + wgt * (avg / rho[pos] - 1)));
+  });
+  const expected = (pid, w, missed) => { const b = base(pid); return b == null ? null : b * vegas(pid, w) * (missed ? fillIn(pid) : 1); };
 
   const result = {};
-  for (const tid of [...new Set(weeks.flatMap((w) => lineups[w].map((r) => r.teamId)))]) {
+  const teamIds = [...new Set(weeks.flatMap((w) => lineups[w].map((r) => r.teamId)))];
+  for (const tid of teamIds) {
     const rowAt = (w) => lineups[w]?.find((r) => r.teamId === tid);
-    // every player who started for this team: weeks started, points, snap share
-    const st = {};
-    for (const w of weeks) for (const p of rowAt(w)?.starters || []) (st[p.id] ||= { pos: p.pos, wk: {} }).wk[w] = p.pts;
-    const medianShare = (pid) => { const v = Object.keys(st[pid].wk).map((w) => snap(pid, w)).filter((x) => x > 0).sort((a, b) => a - b); return v.length >= 3 ? v[Math.floor(v.length / 2)] : null; };
-    const healthyAvg = (pid) => {
-      const m = medianShare(pid);
-      const pts = Object.entries(st[pid].wk).filter(([w]) => { const s = snap(pid, w); return s == null || m == null || s >= 0.6 * m; }).map(([, v]) => v);
-      return pts.length ? pts.reduce((a, b) => a + b, 0) / pts.length : null;
+    const startedFor = {};                                                                   // pid -> weeks started for this team
+    for (const w of weeks) for (const p of rowAt(w)?.players || []) if (p.s) (startedFor[p.id] ||= new Set()).add(w);
+    // a regular starter: started 2 of his last 3 available weeks for this team, or all of them if fewer than 3
+    const regular = (pid, w) => {
+      const prior = weeks.filter((x) => x < w && (playedAt(pid, x) || startedFor[pid]?.has(x))).slice(-3);
+      const n = prior.filter((x) => startedFor[pid]?.has(x)).length;
+      return prior.length > 0 && n >= Math.min(2, prior.length);
     };
-    const events = [];
-    const lostByWeek = {};
+    const earlyPick = (pid, w) => early[pid]?.teamId === tid && !weeks.some((x) => x < w && (startedFor[pid]?.has(x) || playedAt(pid, x)));
+    const events = [], lostByWeek = {}, vorByWeek = {};
     for (const w of weeks) {
-      const row = rowAt(w); if (!row) continue;
-      const started = new Set((row.starters || []).map((p) => p.id));
-      // Left early, or started but never played (NFL team played, he didn't)
-      for (const p of row.starters || []) {
-        if (["K", "D/ST"].includes(p.pos) || !st[p.id]) continue;
-        const s = snap(p.id, w), m = medianShare(p.id);
-        if (!playedAt(p.id, w) && teamPlayed(p.id, w) && (pfr(p.id))) {
-          const others = Object.entries(st[p.id].wk).filter(([x]) => Number(x) !== w && playedAt(p.id, x)).map(([, v]) => v);
-          const avg = others.length ? others.reduce((a, b) => a + b, 0) / others.length : null;
-          const lost = avg == null ? 0 : Math.max(0, avg - p.pts);
-          if (lost > 0.5) { events.push({ week: w, playerId: p.id, kind: "started but didn't play", lost: r2(lost) }); lostByWeek[w] = (lostByWeek[w] || 0) + lost; }
-          continue;
+      const row = rowAt(w); if (!row?.players) continue;
+      const P = row.players.filter((p) => p.id != null);
+      const onAny = new Set(lineups[w].flatMap((r) => (r.players || []).map((p) => p.id)));
+      const locked = [], missed = [];
+      for (const p of P) {
+        if (!FANTASY_POS.has(p.pos) || !pfr(p.id)) continue;
+        if (p.s) {
+          if (outHurt(p.id, w)) { const e = expected(p.id, w, true); if (e != null) locked.push({ pid: p.id, pos: p.pos, kind: "started but didn't play", exp: e, got: p.pts }); }
+          else if (leftEarly(p.id, w)) { const e = expected(p.id, w, false); if (e != null) locked.push({ pid: p.id, pos: p.pos, kind: "left early", exp: e, got: p.pts }); }
+        } else if (outHurt(p.id, w)) {
+          const e = expected(p.id, w, true); if (e != null) missed.push({ pid: p.id, pos: p.pos, exp: e, onRoster: true, vor: regular(p.id, w) || earlyPick(p.id, w) });
         }
-        if (s == null || m == null || m < 0.4 || s >= 0.6 * m || s === 0) continue;
-        if (!(onReport(p.id, w + 1) || (teamPlayed(p.id, w + 1) && !playedAt(p.id, w + 1)))) continue;
-        const avg = healthyAvg(p.id); if (avg == null) continue;
-        const lost = Math.max(0, avg - p.pts);
-        if (lost > 0.5) { events.push({ week: w, playerId: p.id, kind: "left early", lost: r2(lost) }); lostByWeek[w] = (lostByWeek[w] || 0) + lost; }
       }
-      // Missed games by a regular starter
-      for (const [pidS, info] of Object.entries(st)) {
-        const pid = Number(pidS);
-        if (started.has(pid) || ["K", "D/ST"].includes(info.pos)) continue;
-        // a regular starter: started 2 of this team's last 3 weeks in which he was healthy enough to play
-        const prior = weeks.filter((x) => x < w && (playedAt(pid, x) || info.wk[x] != null)).slice(-3);
-        if (prior.filter((x) => info.wk[x] != null).length < 2) continue;
-        if (!teamPlayed(pid, w) || playedAt(pid, w)) continue;                           // his NFL team played; he didn't
-        const onRoster = (row.roster || []).includes(pid);
-        const elsewhere = lineups[w].some((r) => r.teamId !== tid && (r.roster || []).includes(pid));
-        if (elsewhere) continue;                                                        // traded or dropped and picked up
-        if (!onRoster && lastWeekPlayed(pid) > w) continue;                              // dropped but healthy later
-        const avg = healthyAvg(pid); if (avg == null) continue;
-        const same = (row.starters || []).filter((x) => x.pos === info.pos).map((x) => x.pts);
-        const repl = same.length ? Math.min(...same) : 0;
-        const lost = Math.max(0, avg - repl);
-        if (lost > 0.5) { events.push({ week: w, playerId: pid, kind: "missed", lost: r2(lost) }); lostByWeek[w] = (lostByWeek[w] || 0) + lost; }
+      // dropped regular starters and early picks, hurt, who never played again that season
+      const cands = new Set([...Object.keys(startedFor).map(Number), ...Object.keys(early).map(Number).filter((id) => early[id].teamId === tid)]);
+      for (const pid of cands) {
+        if (onAny.has(pid) || !FANTASY_POS.has(posOf[pid]) || !pfr(pid)) continue;
+        if (!(regular(pid, w) || earlyPick(pid, w)) || !outHurt(pid, w) || lastWeekPlayed(pid) > w) continue;
+        if (!weeks.some((x) => x < w && (rowAt(x)?.players || []).some((p) => p.id === pid)) && !earlyPick(pid, w)) continue;
+        const e = expected(pid, w, true); if (e != null) missed.push({ pid, pos: posOf[pid], exp: e, onRoster: false, vor: true });
+      }
+      if (!locked.length && !missed.length) continue;
+      // Realized cost: best lineup with the injured players at their expected points, minus the best lineup actually available
+      const elig = (pos) => row.elig?.[pos] || [];
+      const lineupWith = (restore) => [
+        ...P.map((p) => ({ id: p.id, eligible: elig(p.pos), actual: restore.has(p.id) ? restore.get(p.id) : p.pts })),
+        ...missed.filter((m) => !m.onRoster && restore.has(m.pid)).map((m) => ({ id: m.pid, eligible: elig(m.pos), actual: restore.get(m.pid) })),
+      ];
+      const best0 = optimalPoints(lineupWith(new Map()), slotCounts);
+      const all = new Map(missed.map((m) => [m.pid, m.exp]));
+      const missedCost = Math.max(0, optimalPoints(lineupWith(all), slotCounts) - best0);
+      const lockedCost = locked.reduce((a, x) => a + Math.max(0, x.exp - x.got), 0);
+      const vorCost = lockedCost + missed.filter((m) => m.vor).reduce((a, m) => a + Math.max(0, m.exp - repl(m.pos)), 0);
+      lostByWeek[w] = missedCost + lockedCost; vorByWeek[w] = vorCost;
+      for (const x of locked) events.push({ week: w, playerId: x.pid, kind: x.kind, expected: r2(x.exp), scored: r2(x.got), lost: r2(Math.max(0, x.exp - x.got)) });
+      for (const m of missed) {
+        const one = Math.max(0, optimalPoints(lineupWith(new Map([[m.pid, m.exp]])), slotCounts) - best0);
+        events.push({ week: w, playerId: m.pid, kind: "missed", expected: r2(m.exp), lost: r2(one), overReplacement: m.vor ? r2(Math.max(0, m.exp - repl(m.pos))) : null });
       }
     }
     // wins lost through the all-play: same opponents' scores, this team's score plus what injuries cost it
-    let winsLost = 0, pointsLost = 0;
-    for (const [w, lost] of Object.entries(lostByWeek)) {
-      const sc = scores[w]; if (!sc || sc[tid] == null) continue;
-      const others = Object.entries(sc).filter(([t]) => Number(t) !== tid).map(([, v]) => v);
-      if (!others.length) continue;
-      const exp = (x) => others.reduce((a, o) => a + (x > o ? 1 : x === o ? 0.5 : 0), 0) / others.length;
-      winsLost += exp(sc[tid] + lost) - exp(sc[tid]);
-      pointsLost += lost;
-    }
-    result[tid] = { pointsLost: r2(pointsLost), winsLost: r2(winsLost), events: events.sort((a, b) => b.lost - a.lost).slice(0, 6) };
+    const toWins = (byWeek) => {
+      let wins = 0, pts = 0;
+      for (const [w, lost] of Object.entries(byWeek)) {
+        const sc = scores[w]; if (!sc || sc[tid] == null) continue;
+        const others = Object.entries(sc).filter(([t]) => Number(t) !== tid).map(([, v]) => v);
+        if (!others.length) continue;
+        const exp = (x) => others.reduce((a, o) => a + (x > o ? 1 : x === o ? 0.5 : 0), 0) / others.length;
+        wins += exp(sc[tid] + lost) - exp(sc[tid]); pts += lost;
+      }
+      return [r2(pts), r2(wins)];
+    };
+    const [pointsLost, winsLost] = toWins(lostByWeek), [vorPoints, vorWins] = toWins(vorByWeek);
+    result[tid] = { pointsLost, winsLost, vorPoints, vorWins, events: events.filter((e) => e.lost > 0.5 || (e.overReplacement || 0) > 0.5).sort((a, b) => b.lost - a.lost).slice(0, 8) };
   }
-  const tids = Object.keys(result);
-  const avg = tids.reduce((a, t) => a + result[t].winsLost, 0) / Math.max(1, tids.length);
-  for (const t of tids) result[t].luck = r2(avg - result[t].winsLost);
+  const tids = Object.keys(result), n = Math.max(1, tids.length);
+  const avg = tids.reduce((a, t) => a + result[t].winsLost, 0) / n, avgV = tids.reduce((a, t) => a + result[t].vorWins, 0) / n;
+  for (const t of tids) { result[t].luck = r2(avg - result[t].winsLost); result[t].vorLuck = r2(avgV - result[t].vorWins); }
   const need = [...new Set(Object.values(result).flatMap((x) => x.events.map((e) => e.playerId)))];
   const names = await tradeNames(Y, need).catch(() => ({}));
   for (const x of Object.values(result)) for (const e of x.events) e.name = names[e.playerId]?.name || `Player ${e.playerId}`;
-  const out = { year: Y, complete: true, available: true, avgWinsLost: r2(avg), teams: result };
+  const out = {
+    year: Y, complete: true, available: true, avgWinsLost: r2(avg), replacement,
+    model: { priorGames: PRIOR_GAMES, scoringScale: Object.fromEntries(Object.entries(calib).map(([k, v]) => [k, r2(v)])), fillInBaseline: Object.fromEntries(Object.entries(rho).map(([k, v]) => [k, r2(v)])) },
+    teams: result,
+  };
   if (past) await store().setJSON(key, out).catch(() => {});
   return out;
 }
