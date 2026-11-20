@@ -806,7 +806,7 @@
   @media (max-width: 640px) { .tr-sides { grid-template-columns: 1fr; } }
 
   /* Old per-section tab buttons stay in the page (for links) but are hidden */
-  .tabs [role=tab]:not([data-tab="live"]):not([data-tab="week"]):not([data-tab="social"]):not([data-tab="library"]) { display: none !important; }
+  .tabs [role=tab]:not([data-tab="live"]):not([data-tab="week"]):not([data-tab="playoffs"]):not([data-tab="library"]) { display: none !important; }
   /* Jump bar */
   .jumpbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: var(--black); display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 8px; margin-top: 4px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
   .jumpbar::-webkit-scrollbar { display: none; }
@@ -1032,6 +1032,58 @@
   .at-lu tr.at-bench-h td { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding-top: 12px; }
   #atTable td .tcell > div { min-width: 0; }
   #atTable td .tcell > div > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46vw; }
+  /* Playoff Predictor */
+  .pp-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+  .pp-tools button, .pp-wkbtns button { background: none; border: 1px solid var(--line); color: var(--violet); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .pp-weeks { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .pp-weeks button { flex: none; display: grid; justify-items: center; gap: 1px; background: none; border: 1px solid var(--line); color: inherit; border-radius: 12px; padding: 6px 12px; font: inherit; font-weight: 800; font-size: 13px; cursor: pointer; }
+  .pp-weeks button span { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .pp-weeks button[aria-selected="true"] { border-color: var(--violet); background: rgba(107,47,179,.16); }
+  .pp-wkhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; margin: 10px 0 8px; font-size: 13px; color: var(--muted); }
+  .pp-wkhead b { color: var(--white); }
+  .pp-wkbtns { display: flex; gap: 6px; } .pp-wkbtns button { padding: 4px 10px; font-size: 12px; }
+  .pp-msg { font-size: 12.5px; color: #F59E0B; margin: -2px 0 8px; }
+  .pp-games { display: grid; gap: 8px; }
+  @media (min-width: 760px) { .pp-games { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .pp-game { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .pp-game.final { opacity: .6; }
+  .pp-side { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px; padding: 6px 8px; }
+  .pp-side + .pp-side { border-top: 1px solid var(--line); }
+  .pp-side.won { background: rgba(34,197,94,.14); box-shadow: inset 4px 0 0 #22C55E; }
+  .pp-side.lost { opacity: .55; }
+  .pp-side.me .pp-nm b { color: var(--violet); }
+  .pp-team { display: flex; align-items: center; gap: 8px; min-width: 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; padding: 4px 0; cursor: pointer; }
+  .pp-team .logo-sm, .pp-team img { flex: none; }
+  .pp-nm { display: grid; min-width: 0; } .pp-nm b, .pp-nm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pp-nm b { font-size: 14px; } .pp-nm span { font-size: 11.5px; color: var(--muted); }
+  .pp-proj { display: grid; justify-items: end; gap: 2px; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 2px 0; min-width: 54px; }
+  .pp-proj b { font-family: var(--display); font-weight: 900; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .pp-proj span:last-child { font-size: 10.5px; color: var(--muted); }
+  .pp-bar { width: 50px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; } .pp-bar i { display: block; height: 100%; background: var(--violet); }
+  .pp-med { display: grid; justify-items: center; min-width: 62px; background: none; border: 1px dashed var(--line); color: var(--muted); border-radius: 10px; padding: 4px 6px; font: inherit; font-size: 11.5px; font-weight: 800; cursor: pointer; }
+  .pp-med span { font-size: 10px; font-weight: 600; }
+  .pp-med.up { border: 1px solid #22C55E; color: #22C55E; background: rgba(34,197,94,.1); }
+  .pp-med.down { border: 1px solid #EF4444; color: #EF4444; background: rgba(239,68,68,.08); }
+  .pp-h3 { margin: 16px 0 6px; font-family: var(--display); font-size: 17px; }
+  .pp-mv { font-weight: 800; font-size: 12px; } .pp-mv.up { color: #22C55E; } .pp-mv.down { color: #EF4444; }
+  .pp-tag { font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+  .pp-tag.in { background: rgba(34,197,94,.16); color: #22C55E; } .pp-tag.out { background: rgba(239,68,68,.14); color: #EF4444; } .pp-tag.bye { background: rgba(107,47,179,.16); color: var(--violet); }
+  .pp-table tr.cut-playoff td { border-bottom: 2px dashed var(--violet); }
+  .pp-table td .owner { display: block; }
+  /* Social button (top right) */
+  .mast { position: relative; }
+  .social-wrap { position: absolute; top: 10px; right: 8px; z-index: 30; }
+  .mast .crest + div { padding-right: 40px; min-width: 0; }
+  .mast h1 { font-size: min(30px, 6.6vw); }
+  .social-btn { position: relative; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--black); color: var(--violet); display: grid; place-items: center; cursor: pointer; }
+  .social-btn[aria-pressed="true"], .social-btn[aria-expanded="true"] { background: var(--violet); color: #fff; border-color: var(--violet); }
+  .social-btn.has-new::after { content: ""; position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%; background: #EF4444; border: 2px solid var(--black); }
+  .social-menu { position: absolute; top: 42px; right: 0; min-width: 190px; background: var(--black); color: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.35); display: grid; gap: 2px; }
+  .social-menu[hidden] { display: none; }
+  .social-h { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 4px 10px 2px; }
+  .social-menu button { background: none; border: 0; color: inherit; font: inherit; font-weight: 700; font-size: 15px; text-align: left; padding: 10px 10px; border-radius: 10px; cursor: pointer; }
+  .social-menu button:hover, .social-menu button:focus-visible { background: rgba(107,47,179,.14); }
+  .new-dot { font-size: 10px; font-weight: 800; background: #EF4444; color: #fff; border-radius: 999px; padding: 1px 6px; margin-left: 4px; vertical-align: 2px; }
 </style>
 </head>
 <body>
@@ -1121,6 +1173,12 @@
 </svg>
 <div class="wrap">
   <header class="mast">
+    <div class="social-wrap">
+      <button class="social-btn" id="socialBtn" aria-label="Social: Pick 'em and more" aria-haspopup="menu" aria-expanded="false" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h8A2.5 2.5 0 0 1 17 5.5v5a2.5 2.5 0 0 1-2.5 2.5H9l-3.6 2.9c-.4.3-.9 0-.9-.4V13A2.5 2.5 0 0 1 4 10.5z" fill="currentColor" opacity=".9"/><path d="M19 8.2a2.5 2.5 0 0 1 1.5 2.3v5A2.5 2.5 0 0 1 19 18v2.3c0 .4-.5.7-.9.4L14.6 18H11a2.5 2.5 0 0 1-2.1-1.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="social-menu" id="socialMenu" role="menu" hidden></div>
+    </div>
     <div class="crest"><img src="logo.png" alt="Boys of Chantilly logo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'C'}))"></div>
     <div>
       <h1>Boys of Chantilly</h1>
@@ -1163,7 +1221,7 @@
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
     <button role="tab" id="tab-live" aria-controls="panel-pecking" data-tab="live"><span class="full">Live</span><span class="short">Live</span></button>
     <button role="tab" id="tab-week" aria-controls="panel-story" data-tab="week"><span class="full">The Week</span><span class="short">The Week</span></button>
-    <button role="tab" id="tab-social" aria-controls="panel-pickem" data-tab="social"><span class="full">Social</span><span class="short">Social</span></button>
+    <button role="tab" id="tab-playoffs" aria-controls="panel-standings" data-tab="playoffs"><span class="full">Playoffs</span><span class="short">Playoffs</span></button>
     <button role="tab" id="tab-library" aria-controls="panel-history" data-tab="library"><span class="full">Library</span><span class="short">Library</span></button>
     <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard"><span class="full">Scoreboard</span><span class="short">Scores</span></button>
     <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Food Chain</span><span class="short">Food<br>Chain</span></button>
@@ -1245,6 +1303,19 @@
     </section>
   </div>
 
+  <div class="panel" id="panel-predictor" role="tabpanel" hidden>
+    <section aria-labelledby="ppH">
+      <h2 id="ppH">Playoff Predictor</h2>
+      <details class="explain"><summary>Explain It</summary>
+        <p class="note">Pick the winner of every game left in the regular season (tap a team; tap again to undo) and, when the league plays the median, whether each team finishes above or below it. Records start from the real standings and add only the games you've picked, so the playoff picture and seeds update as you go. Ties in the standings are broken the way ESPN does for this league, using projected points for the weeks ahead.</p>
+        <p class="note">Projected scores are recalculated every time you open this. This week uses the live Scoreboard projection (the real lineups, ESPN's projection adjusted by Vegas, plus anything already scored). Later weeks use each team's best lineup from its current roster: every player is worth his points per game this season (blended with ESPN's season projection while the sample is small), zero on his NFL team's bye, discounted for his injury status (injured reserve sits out the next 3 weeks), adjusted by Vegas where lines are out, and when players are close the one started in more ESPN leagues gets the spot. The bar is each team's win chance.</p>
+        <p class="note">Clinched / Out, with your picks locked in: a team has clinched when, even if it loses every game you haven't picked, fewer teams than there are playoff spots could reach its number of wins. It's out when enough teams are already sure to finish with more wins than it could reach by winning all of them. Teams that could only tie don't count either way, so a tag only appears when it's certain.</p>
+      </details>
+      <div class="pp-tools"><button data-pp="fillall">Fill with projections</button><button data-pp="clearall">Clear all</button><button data-pp="share">Copy link to my picks</button></div>
+      <div id="ppBody"></div>
+    </section>
+  </div>
+
   <div class="panel" id="panel-standings" role="tabpanel" aria-labelledby="tab-standings" hidden>
     <section aria-labelledby="stH">
       <h2 id="stH">Standings</h2>
@@ -1259,11 +1330,6 @@
       <details class="explain"><summary>Explain It</summary><p class="note" id="standNote"></p></details>
       <div class="table-scroll"><table id="standings"></table></div>
       <div id="cutLegend"></div>
-    </section>
-    <section aria-labelledby="pieH">
-      <h2 id="pieH">Point Distribution</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">Each manager's starting-lineup points this season by position, over finished weeks. Flex players count at their real position.</p></details>
-      <div class="pies" id="pies"></div>
     </section>
   </div>
 
@@ -1291,22 +1357,36 @@
     </section>
   </div>
 
+  <div class="panel" id="panel-rwatch" role="tabpanel" hidden>
+    <section aria-labelledby="rwH">
+      <h2 id="rwH">Record Watch</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">Record Watch is the Hall of Fame, live: anything from this season that's on a Hall of Fame list right now ("In the books") or on track to land on one ("On pace"). It checks every list with the same rules and sizes (top 10, or top 5 for streaks), all time first and then the Median era. Luck, bad beats, lucky wins, and start accuracy wait until a team has played 7 games; median PPG needs 3. Paces project the current rate over a full regular season. Streaks show once they're on a list or within 3 games of one. Several people on the same list share one card. Records that make both the all-time and Median-era lists go under Both; the rest go under All time or Median era. Green "In the books" means it's on the list right now.</p></details>
+      <div class="rwatch" id="rwatch"></div>
+    </section>
+  </div>
+
+  <div class="panel" id="panel-trending" role="tabpanel" hidden>
+    <section aria-labelledby="trendH">
+      <h2 id="trendH">Trending</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">Trends combine each team's current win streak with how far above or below the weekly median it has scored over its last three weeks.</p></details>
+      <div class="trends" id="trends"></div>
+    </section>
+  </div>
+
+  <div class="panel" id="panel-pies" role="tabpanel" hidden>
+    <section aria-labelledby="pieH">
+      <h2 id="pieH">Point Distribution</h2>
+      <details class="explain"><summary>Explain It</summary><p class="note">Each manager's starting-lineup points this season by position, over finished weeks. Flex players count at their real position.</p></details>
+      <div class="pies" id="pies"></div>
+    </section>
+  </div>
+
   <div class="panel" id="panel-story" role="tabpanel" aria-labelledby="tab-story" hidden>
 
     <section aria-labelledby="storyH">
       <div class="aw-pick"><h2 id="storyH">Team of the Week</h2><label class="me-pick"><span>Show</span><select id="storyWeek" aria-label="Choose a week"></select></label></div>
       <details class="explain"><summary>Explain It</summary><p class="note">The best lineup anyone could have started this week, from every player in the league, rostered or not. Owned by shows who had him that week.</p></details>
       <div id="tow"></div>
-    </section>
-    <section aria-labelledby="rwH">
-      <h2 id="rwH">Record Watch</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">Record Watch is the Hall of Fame, live: anything from this season that's on a Hall of Fame list right now ("In the books") or on track to land on one ("On pace"). It checks every list with the same rules and sizes (top 10, or top 5 for streaks), all time first and then the Median era. Luck, bad beats, lucky wins, and start accuracy wait until a team has played 7 games; median PPG needs 3. Paces project the current rate over a full regular season. Streaks show once they're on a list or within 3 games of one. Several people on the same list share one card. Records that make both the all-time and Median-era lists go under Both; the rest go under All time or Median era. Green "In the books" means it's on the list right now.</p></details>
-      <div class="rwatch" id="rwatch"></div>
-    </section>
-    <section aria-labelledby="trendH">
-      <h2 id="trendH">Trending</h2>
-      <details class="explain"><summary>Explain It</summary><p class="note">Trends combine each team's current win streak with how far above or below the weekly median it has scored over its last three weeks.</p></details>
-      <div class="trends" id="trends"></div>
     </section>
   </div>
 
@@ -1350,7 +1430,7 @@
     <section aria-labelledby="atH">
       <div class="aw-pick"><h2 id="atH">All-Time</h2><label class="me-pick"><span>View</span><select id="atView" aria-label="Choose a view">
         <option value="teams">Team Rankings</option><option value="mgr">All Stars: By Manager</option><option value="year">All Stars: By Year</option></select></label></div>
-      <details class="explain"><summary>Explain It</summary><p class="note">Team Rankings: every team from every season, ranked by points per game in the regular season, so seasons of different lengths compare fairly. The season in progress isn't included until it's over. # is the all-time rank, Reg. is where the team finished the regular season, and Final is where it finished after the playoffs. Filter by manager or season; the strip shows every team at once (lowest PPG on the left, highest on the right) with the filtered teams marked; tap the strip for the team at that spot. Tap a team in the table to see its roster.</p><p class="note">All Stars: the best QB, RB, RB, WR, WR, TE, FLEX, D/ST and K by points per game, from finished seasons. By Manager uses every player he has ever had (points per game while on his roster, in the regular season), each player's best season with him counting once; a player has to have started at least 10 games for him that season. By Year uses every player that season, with the manager who had him most (others listed if he moved); a player needs to have played at least 10 games that season. The position rank (RB3) is his rank that season by points scored on league rosters. Combined PPG adds up the nine players; tap the rank to see every manager or season.</p></details>
+      <details class="explain"><summary>Explain It</summary><p class="note">Team Rankings: every team from every season, ranked by points per game in the regular season, so seasons of different lengths compare fairly. The season in progress isn't included until it's over. # is the all-time rank, Reg. is where the team finished the regular season, and Final is where it finished after the playoffs. Filter by manager or season; the strip shows every team at once (lowest PPG on the left, highest on the right) with the filtered teams marked; tap the strip for the team at that spot. Tap a team in the table to see its roster.</p><p class="note">All Stars: the best QB, RB, RB, WR, WR, TE, FLEX and K by points per game (no defenses, since they're usually streamed), from finished seasons. By Manager uses every player he has ever had (points per game while on his roster, in the regular season), each player's best season with him counting once; a player has to have started at least 10 games for him that season. By Year uses every player that season, with the manager who had him most (others listed if he moved); a player needs to have played at least 10 games that season. The position rank (RB3) is his rank that season by points scored on league rosters. Combined PPG adds up the eight players; tap the rank to see every manager or season.</p></details>
       <div class="at-controls" id="atControls"></div>
       <div id="atBody"></div>
     </section>
@@ -1399,10 +1479,12 @@
 (() => {
   const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
   // Top-level tabs. Live, The Week, and Library each hold several sections with a jump bar.
-  const TABS = ["live", "week", "social", "library"];
+  const TABS = ["live", "week", "playoffs", "library"];
   const GROUPS = {
     live: [["pecking", "Food Chain"], ["scoreboard", "Scoreboard"], ["pot", "Weekly Pot"], ["sharks", "The Sharks"]],
-    week: [["standings", "Standings"], ["story", "Story"], ["awards", "Awards"], ["moves", "Transactions"], ["waivers", "Waivers"]],
+    week: [["story", "Team of the Week"], ["rwatch", "Record Watch"], ["awards", "Awards"], ["trending", "Trending"], ["pies", "Point Distribution"], ["moves", "Transactions"], ["waivers", "Waivers"]],
+    playoffs: [["standings", "Standings"], ["predictor", "Playoff Predictor"]],
+    // Social isn't in the tab bar: it opens from the button in the top right corner
     social: [["pickem", "Pick 'em"], ["power", "Power Rankings"]],
     library: [["history", "Manager Profiles"], ["seasons", "Final Standings"], ["hof", "Hall of Fame"], ["draft", "Draft"], ["alltime", "All-Time"], ["trades", "Trade Review"]],
   };
@@ -2516,7 +2598,7 @@
   const AT_PAGE = 10;
   const AT_MIN_STARTS = 10;     // All Stars: By Manager: starts for that manager that season
   const AT_MIN_GAMES_YEAR = 10; // All Stars: By Year: games played that season
-  const AT_LINEUP = [["QB", ["QB"]], ["RB", ["RB"]], ["RB", ["RB"]], ["WR", ["WR"]], ["WR", ["WR"]], ["TE", ["TE"]], ["FLEX", ["RB", "WR", "TE"]], ["D/ST", ["D/ST"]], ["K", ["K"]]];
+  const AT_LINEUP = [["QB", ["QB"]], ["RB", ["RB"]], ["RB", ["RB"]], ["WR", ["WR"]], ["WR", ["WR"]], ["TE", ["TE"]], ["FLEX", ["RB", "WR", "TE"]], ["K", ["K"]]]; // no D/ST: usually streamed
   state.atData = {}; state.atLoading = {};
   function allTimeTeams() {
     const out = [];
@@ -2643,7 +2725,7 @@
       const pos = all.filter((x) => x.ppg > mine.ppg + 1e-9).length + 1;
       team = mine; key = "atMgr"; title = `${esc(ms.find((m) => m.id === state.atMgr)?.name || "")}'s all-star team`;
       rankHtml = mine.ppg ? rankLink(key, "All-star teams by manager", all.map((x) => ({ id: x.id, v: x.ppg })), state.atMgr, (a, b) => a > b + 1e-9, (v) => `${v.toFixed(1)} PPG`, `${ordinal(pos)} of ${all.length} managers`) : "";
-      if (RANKS[key]) RANKS[key].sub = "Every manager, by the nine players' combined PPG";
+      if (RANKS[key]) RANKS[key].sub = "Every manager, by the eight players' combined PPG";
     } else {
       // seasons are ranked among finished ones; the season in progress shows where it would land
       const done = (y) => state.hist.seasons.find((x) => x.year === y)?.complete;
@@ -2653,7 +2735,7 @@
       team = mineTeam; key = "atYear"; title = `${yLabel(state.atYear)} all-star team`;
       const rows = done(state.atYear) ? all : [...all, { id: state.atYear, ppg: mineTeam.ppg }];
       rankHtml = mineTeam.ppg && all.length ? rankLink(key, "All-star teams by season", rows.map((x) => ({ id: x.id, v: x.ppg })), state.atYear, (a, b) => a > b + 1e-9, (v) => `${v.toFixed(1)} PPG`, done(state.atYear) ? `${ordinal(pos)} of ${all.length} seasons` : `on pace for ${ordinal(pos)} of ${all.length} finished seasons`) : "";
-      if (RANKS[key]) { RANKS[key].names = Object.fromEntries(rows.map((x) => [x.id, yLabel(x.id)])); RANKS[key].sub = "Every season, by the nine players' combined PPG"; RANKS[key].noFace = true; }
+      if (RANKS[key]) { RANKS[key].names = Object.fromEntries(rows.map((x) => [x.id, yLabel(x.id)])); RANKS[key].sub = "Every season, by the eight players' combined PPG"; RANKS[key].noFace = true; }
     }
     const sub = (c) => mode === "mgr"
       ? `${c.year} · ${c.pos}${c.rank || "?"} · ${c.starts} starts`
@@ -2768,7 +2850,7 @@
   const powerSeen = () => { try { return localStorage.getItem("boc-power-seen"); } catch { return null; } };
   const markPowerSeen = (id) => { try { if (id) localStorage.setItem("boc-power-seen", id); } catch {} setPowerBadge(false); };
   function setPowerBadge(on) {
-    $("tab-social").classList.toggle("has-new", on);
+    $("socialBtn").classList.toggle("has-new", on);
     $("moreBtn").classList.toggle("has-new", on && moreTabs.includes("power"));
   }
   async function checkPower() {
@@ -3613,18 +3695,217 @@
 
   // ---------- Tabs ----------
   // Draw one section's content (sections load when they come near the screen).
+
+
+  // ---------- Social menu (top right): Pick 'em, Power Rankings / tier lists ----------
+  function openSocialMenu(open) {
+    const m = $("socialMenu"), b = $("socialBtn");
+    if (open) m.innerHTML = `<div class="social-h">Social</div>` + GROUPS.social.map(([id, label]) => `<button role="menuitem" data-social="${id}">${esc(label)}${id === "power" && b.classList.contains("has-new") ? ' <span class="new-dot">New</span>' : ""}</button>`).join("");
+    m.hidden = !open; b.setAttribute("aria-expanded", String(open));
+  }
+  $("socialBtn").addEventListener("click", (e) => { e.stopPropagation(); openSocialMenu($("socialMenu").hidden); });
+  document.addEventListener("click", (e) => {
+    const it = e.target.closest("[data-social]");
+    if (it) { openSocialMenu(false); showTab(it.dataset.social); return; }
+    if (!e.target.closest(".social-wrap")) openSocialMenu(false);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") openSocialMenu(false); });
+  // ---------- Playoff Predictor ----------
+  state.pp = { data: null, err: null, loading: false, week: null, picks: {}, med: {}, msg: "" };
+  const ppKey = () => `pp:${state.league?.seasonId || ""}`;
+  function ppSave() { try { localStorage.setItem(ppKey(), JSON.stringify({ picks: state.pp.picks, med: state.pp.med })); } catch {} }
+  function ppLoad() {
+    try { const j = JSON.parse(localStorage.getItem(ppKey()) || "null"); if (j) { state.pp.picks = j.picks || {}; state.pp.med = j.med || {}; } } catch {}
+    const m = /[?&]pp=([^&#]+)/.exec(location.search);           // shared link
+    if (m) { try { const j = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))); state.pp.picks = j.p || {}; state.pp.med = j.m || {}; ppSave(); } catch {} }
+  }
+  async function ppFetch() {
+    if (state.pp.loading) return; state.pp.loading = true;
+    try { state.pp.data = await getJSON("/api/predictor"); state.pp.err = null; } catch (e) { state.pp.err = e.message; }
+    state.pp.loading = false; renderPredictor();
+  }
+  const ppMedOn = () => leagueUsesMedian(h2hRecords());
+  // Records: the real standings plus every picked game
+  function ppStandings() {
+    const D = state.pp.data, L = state.league, medOn = ppMedOn();
+    const rec = {}, h2h = {};
+    for (const t of L.teams) { const o = t.record?.overall || {}; rec[t.id] = { id: t.id, w: o.wins || 0, l: o.losses || 0, t: o.ties || 0, pf: o.pointsFor || 0, projPf: 0, seed0: t.playoffSeed || 99 }; }
+    const hh = (a, b, r) => { const x = ((h2h[a] ||= {})[b] ||= { w: 0, l: 0, t: 0 }); x[r]++; };
+    for (const g of L.schedule || []) {
+      if (g.matchupPeriodId > regCount() || !g.home || !g.away || !decided(g)) continue;
+      const hw = g.winner === "HOME" ? "w" : g.winner === "AWAY" ? "l" : "t", aw = hw === "w" ? "l" : hw === "l" ? "w" : "t";
+      hh(g.home.teamId, g.away.teamId, hw); hh(g.away.teamId, g.home.teamId, aw);
+    }
+    for (const wk of D?.weeks || []) {
+      for (const [tid, v] of Object.entries(wk.proj)) if (rec[tid]) rec[tid].projPf += v;
+      wk.games.forEach((g, i) => {
+        const pick = state.pp.picks[wk.week]?.[i]; if (!pick || g.winner) return;
+        const win = pick === "H" ? g.home : g.away, lose = pick === "H" ? g.away : g.home;
+        rec[win].w++; rec[lose].l++; hh(win, lose, "w"); hh(lose, win, "l");
+      });
+      if (medOn) for (const [tid, v] of Object.entries(state.pp.med[wk.week] || {})) if (rec[tid]) v ? rec[tid].w++ : rec[tid].l++;
+    }
+    const pct = (r) => winPct(r);
+    const rule = String(L.settings?.scheduleSettings?.playoffSeedingRule || "TOTAL_POINTS_SCORED");
+    const list = Object.values(rec);
+    const pf = (r) => r.pf + r.projPf;
+    list.sort((a, b) => pct(b) - pct(a) || pf(b) - pf(a));
+    if (rule.includes("H2H")) {
+      // within each group tied on win %, head-to-head record among the tied teams first
+      const out = []; let i = 0;
+      while (i < list.length) {
+        let j = i; while (j + 1 < list.length && Math.abs(pct(list[j + 1]) - pct(list[i])) < 1e-9) j++;
+        const grp = list.slice(i, j + 1), ids = grp.map((x) => x.id);
+        const hp = (x) => { let w = 0, l = 0, t = 0; for (const o of ids) { const r = h2h[x.id]?.[o]; if (r) { w += r.w; l += r.l; t += r.t; } } return w + l + t ? (w + t / 2) / (w + l + t) : 0.5; };
+        out.push(...grp.sort((a, b) => hp(b) - hp(a) || pf(b) - pf(a))); i = j + 1;
+      }
+      return out;
+    }
+    return list;
+  }
+  // every game not yet picked, for the clinched / eliminated check
+  function ppOpen() {
+    const D = state.pp.data, open = [], medOpen = [];
+    for (const wk of D?.weeks || []) {
+      wk.games.forEach((g, i) => { if (!g.winner && !state.pp.picks[wk.week]?.[i]) open.push({ week: wk.week, i, g }); });
+      if (ppMedOn()) for (const tid of Object.keys(wk.proj)) if (state.pp.med[wk.week]?.[tid] == null) medOpen.push({ week: wk.week, tid: Number(tid) });
+    }
+    return { open, medOpen };
+  }
+  // Clinched / Out, from wins alone (safe both ways): a team has clinched when fewer teams than there are playoff spots
+  // can even reach its minimum wins (it loses every unpicked game), and it's out when enough teams are already sure to
+  // finish with more wins than its maximum (it wins every unpicked game). Ties count against clinching and eliminating.
+  function ppStatus(order) {
+    const n = playoffTeams(), { open, medOpen } = ppOpen(), out = {};
+    if (!open.length && !medOpen.length) return out;
+    const left = {};
+    for (const { g } of open) { left[g.home] = (left[g.home] || 0) + 1; left[g.away] = (left[g.away] || 0) + 1; }
+    for (const { tid } of medOpen) left[tid] = (left[tid] || 0) + 1;
+    const minW = (r) => r.w + r.t / 2, maxW = (r) => r.w + r.t / 2 + (left[r.id] || 0);
+    for (const r of order) {
+      const canCatch = order.filter((o) => o.id !== r.id && maxW(o) >= minW(r)).length;
+      const sureAhead = order.filter((o) => o.id !== r.id && minW(o) > maxW(r)).length;
+      if (canCatch < n) out[r.id] = "clinched"; else if (sureAhead >= n) out[r.id] = "eliminated";
+    }
+    return out;
+  }
+  function renderPredictor() {
+    const box = $("ppBody"); if (!box || !state.league) return;
+    if (!state.pp.data && !state.pp.err) { box.innerHTML = `<div class="empty">Projecting the rest of the season…</div>`; ppLoad(); ppFetch(); return; }
+    if (state.pp.err && !state.pp.data) { box.innerHTML = `<div class="empty">Couldn't load the predictor: ${esc(state.pp.err)}</div>`; return; }
+    const D = state.pp.data;
+    if (D.done || !D.weeks.length) { box.innerHTML = `<div class="empty">The regular season is over: the playoff picture is set.</div>`; return; }
+    // drop picks for weeks that are already final
+    const live = new Set(D.weeks.map((w) => String(w.week)));
+    for (const k of Object.keys(state.pp.picks)) if (!live.has(k)) delete state.pp.picks[k];
+    for (const k of Object.keys(state.pp.med)) if (!live.has(k)) delete state.pp.med[k];
+    if (!state.pp.week || !D.weeks.some((w) => w.week === state.pp.week)) state.pp.week = D.weeks[0].week;
+    const wk = D.weeks.find((w) => w.week === state.pp.week);
+    const medOn = ppMedOn(), half = Math.floor(Object.keys(wk.proj).length / 2);
+    const order = ppStandings(), n = playoffTeams(), status = ppStatus(order);
+    const recOf = Object.fromEntries(order.map((r) => [r.id, r]));
+    const byes = (() => { let p = 1; while (p < n) p *= 2; return p - n; })();
+    const picked = (w) => Object.keys(state.pp.picks[w.week] || {}).length + (medOn ? Object.keys(state.pp.med[w.week] || {}).length : 0);
+    const total = (w) => w.games.filter((g) => !g.winner).length + (medOn ? Object.keys(w.proj).length : 0);
+    const medAbove = Object.values(state.pp.med[wk.week] || {}).filter((v) => v === 1).length, medBelow = Object.values(state.pp.med[wk.week] || {}).filter((v) => v === 0).length;
+    const side = (g, i, tid, key) => {
+      const t = teamById(tid), pick = state.pp.picks[wk.week]?.[i], won = pick === key, lost = pick && !won;
+      const winP = key === "H" ? g.homeWin : 1 - g.homeWin, m = state.pp.med[wk.week]?.[tid];
+      return `<div class="pp-side ${won ? "won" : ""} ${lost ? "lost" : ""} ${tid === state.me ? "me" : ""}">
+        <button class="pp-team" data-pp-pick="${wk.week}:${i}:${key}" ${g.winner ? "disabled" : ""} aria-pressed="${won}">${logo(t)}<span class="pp-nm"><b>${esc(teamName(t))}</b><span>${esc(mgr(tid))} · ${recStr(recOf[tid] || {})}</span></span></button>
+        <button class="pp-proj" data-pp-lineup="${wk.week}:${tid}" title="Projected lineup"><b>${(wk.proj[tid] ?? 0).toFixed(1)}</b><span class="pp-bar"><i style="width:${Math.round(winP * 100)}%"></i></span><span>${Math.round(winP * 100)}%</span></button>
+        ${medOn ? `<button class="pp-med ${m === 1 ? "up" : m === 0 ? "down" : ""}" data-pp-med="${wk.week}:${tid}" aria-label="Median result">${m === 1 ? "Above" : m === 0 ? "Below" : "Median?"}<span>${Math.round((wk.medWin[tid] ?? 0.5) * 100)}%</span></button>` : ""}
+      </div>`;
+    };
+    const seedRow = (r, i) => {
+      const moved = (r.seed0 < 99 ? r.seed0 : null), now = i + 1, d = moved ? moved - now : 0;
+      const st = status[r.id];
+      return `<tr class="${r.id === state.me ? "me" : ""} ${i + 1 === n ? "cut-playoff" : ""}"><td class="rank">${now}</td>${teamCell(teamById(r.id))}
+        <td class="strong">${recStr(r)}</td><td>${d ? `<span class="pp-mv ${d > 0 ? "up" : "down"}">${d > 0 ? "▲" : "▼"}${Math.abs(d)}</span>` : "–"}</td>
+        <td>${st === "clinched" ? `<span class="pp-tag in">Clinched</span>` : st === "eliminated" ? `<span class="pp-tag out">Out</span>` : i < byes ? `<span class="pp-tag bye">Bye</span>` : ""}</td></tr>`;
+    };
+    box.innerHTML = `
+      <div class="pp-weeks" role="tablist">${D.weeks.map((w) => `<button role="tab" data-pp-week="${w.week}" aria-selected="${w.week === wk.week}">Wk ${w.week}${w.live ? " · live" : ""}<span>${picked(w)}/${total(w)}</span></button>`).join("")}</div>
+      <div class="pp-wkhead"><span>Projected median <b>${wk.median.toFixed(1)}</b>${medOn ? ` · above ${medAbove}/${half}, below ${medBelow}/${half}` : ""}</span>
+        <span class="pp-wkbtns"><button data-pp="fillweek">Fill week</button><button data-pp="clearweek">Clear week</button></span></div>
+      ${state.pp.msg ? `<div class="pp-msg">${esc(state.pp.msg)}</div>` : ""}
+      <div class="pp-games">${wk.games.map((g, i) => `<div class="pp-game ${g.winner ? "final" : ""}">${side(g, i, g.home, "H")}${side(g, i, g.away, "A")}</div>`).join("")}</div>
+      <h3 class="pp-h3">Playoff picture</h3>
+      <div class="table-scroll"><table class="pp-table"><thead><tr><th>#</th><th>Team</th><th>Record</th><th>Move</th><th></th></tr></thead><tbody>${order.map(seedRow).join("")}</tbody></table></div>
+      <p class="note">Move is against the real standings right now. Ties use ${String(state.league.settings?.scheduleSettings?.playoffSeedingRule || "").includes("H2H") ? "head-to-head record among the tied teams, then points for" : "points for"} (projected points included for the weeks ahead).</p>`;
+    state.pp.msg = "";
+  }
+  function ppPick(week, i, key) {
+    const W = (state.pp.picks[week] ||= {});
+    if (W[i] === key) delete W[i]; else W[i] = key;
+    // keep the median consistent: a winner can't be below the median while its loser is above it
+    const wk = state.pp.data.weeks.find((w) => w.week === Number(week)), g = wk.games[i], M = state.pp.med[week] || {};
+    if (W[i]) { const win = W[i] === "H" ? g.home : g.away, lose = W[i] === "H" ? g.away : g.home;
+      if (M[lose] === 1 && M[win] === 0) { delete M[win]; state.pp.msg = `${mgr(win)} beat ${mgr(lose)}, who was above the median, so ${mgr(win)}'s median result was cleared.`; } }
+    ppSave(); renderPredictor();
+  }
+  function ppMed(week, tid) {
+    const wk = state.pp.data.weeks.find((w) => w.week === Number(week)), half = Math.floor(Object.keys(wk.proj).length / 2);
+    const M = (state.pp.med[week] ||= {}), cur = M[tid], next = cur == null ? 1 : cur === 1 ? 0 : null;
+    const count = (v) => Object.entries(M).filter(([t, x]) => Number(t) !== Number(tid) && x === v).length;
+    if (next === 1 && count(1) >= half) { state.pp.msg = `Only ${half} teams can finish above the median each week.`; M[tid] = 0; if (count(0) >= half) delete M[tid]; }
+    else if (next === 0 && count(0) >= half) { state.pp.msg = `Only ${half} teams can finish below the median each week.`; delete M[tid]; }
+    else if (next == null) delete M[tid]; else M[tid] = next;
+    // h2h consistency: above-median loser means the winner is above too; below-median winner means the loser is below too
+    wk.games.forEach((g, i) => { const p = state.pp.picks[week]?.[i]; if (!p) return; const win = p === "H" ? g.home : g.away, lose = p === "H" ? g.away : g.home;
+      if (Number(tid) === lose && M[lose] === 1 && M[win] !== 1 && count(1) < half) M[win] = 1;
+      if (Number(tid) === win && M[win] === 0 && M[lose] !== 0) M[lose] = 0; });
+    ppSave(); renderPredictor();
+  }
+  function ppFill(weeks) {
+    for (const wk of weeks) {
+      const W = (state.pp.picks[wk.week] ||= {});
+      wk.games.forEach((g, i) => { if (!g.winner) W[i] = g.homeWin >= 0.5 ? "H" : "A"; });
+      if (ppMedOn()) { const ids = Object.keys(wk.proj).sort((a, b) => wk.proj[b] - wk.proj[a]), half = Math.floor(ids.length / 2);
+        state.pp.med[wk.week] = Object.fromEntries(ids.map((t, k) => [t, k < half ? 1 : 0])); }
+    }
+    ppSave(); renderPredictor();
+  }
+  function ppLineup(week, tid) {
+    const wk = state.pp.data.weeks.find((w) => w.week === Number(week)), lu = wk?.lineups?.[tid] || [], t = teamById(Number(tid));
+    const box = document.createElement("div"); box.className = "modal";
+    box.addEventListener("click", (e) => { if (e.target === box || e.target.closest(".modal-x")) box.remove(); });
+    box.innerHTML = `<div class="modal-card"><div class="modal-head"><div class="modal-who">${logo(t)}<div><div class="modal-t">${esc(teamName(t))}</div><div class="modal-s">Week ${week} projection: ${(wk.proj[tid] ?? 0).toFixed(1)}</div></div></div><button class="modal-x" aria-label="Close">×</button></div>
+      <div class="modal-body"><p class="modal-note">${wk.live ? "This week's real lineup and live projection." : "Best projected lineup from the current roster."}</p><table class="roster"><thead><tr><th>Player</th><th>Pos</th><th>Proj</th><th></th></tr></thead><tbody>${lu.map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.pos)}</td><td>${p.proj.toFixed(1)}</td><td></td></tr>`).join("")}</tbody></table></div></div>`;
+    document.body.appendChild(box);
+  }
+  document.addEventListener("click", async (e) => {
+    const t = e.target.closest("[data-pp-pick],[data-pp-med],[data-pp-week],[data-pp-lineup],[data-pp]"); if (!t || !state.pp.data) return;
+    if (t.dataset.ppPick) { const [w, i, k] = t.dataset.ppPick.split(":"); ppPick(w, Number(i), k); }
+    else if (t.dataset.ppMed) { const [w, id] = t.dataset.ppMed.split(":"); ppMed(w, id); }
+    else if (t.dataset.ppWeek) { state.pp.week = Number(t.dataset.ppWeek); renderPredictor(); }
+    else if (t.dataset.ppLineup) { const [w, id] = t.dataset.ppLineup.split(":"); ppLineup(w, id); }
+    else if (t.dataset.pp === "fillall") ppFill(state.pp.data.weeks);
+    else if (t.dataset.pp === "fillweek") ppFill(state.pp.data.weeks.filter((w) => w.week === state.pp.week));
+    else if (t.dataset.pp === "clearall") { state.pp.picks = {}; state.pp.med = {}; ppSave(); renderPredictor(); }
+    else if (t.dataset.pp === "clearweek") { delete state.pp.picks[state.pp.week]; delete state.pp.med[state.pp.week]; ppSave(); renderPredictor(); }
+    else if (t.dataset.pp === "share") {
+      const code = btoa(unescape(encodeURIComponent(JSON.stringify({ p: state.pp.picks, m: state.pp.med }))));
+      const url = `${location.origin}${location.pathname}?pp=${encodeURIComponent(code)}#predictor`;
+      try { await navigator.clipboard.writeText(url); t.textContent = "Link copied"; } catch { prompt("Copy this link:", url); }
+      setTimeout(() => (t.textContent = "Copy link to my picks"), 2000);
+    }
+  });
   function renderSection(n) {
     if (!state.league && !["pecking", "scoreboard", "pickem", "pot", "sharks"].includes(n)) return;
     if (n === "pecking") requestAnimationFrame(placeMedian);
     if (n === "standings") renderStandings();
     if (n === "awards") renderAwards();
-    if (n === "story") { renderStory(); renderRecordWatch(); }
+    if (n === "story" || n === "trending") renderStory();
+    if (n === "rwatch") renderRecordWatch();
+    if (n === "pies") renderPies();
     if (n === "hof") renderHof();
     if (n === "history" || n === "seasons") renderHistory();
     if (n === "alltime") renderAllTime();
     if (n === "pot") renderPot();
     if (n === "sharks") renderPecking();
     if (n === "power") renderPower();
+    if (n === "predictor") { state.pp.data = null; state.pp.err = null; renderPredictor(); }
     if (n === "draft") renderDraft();
     if (n === "trades") renderTrades();
     if (n === "moves") { renderTradeBlock(); renderTxStats(); }
@@ -3636,8 +3917,9 @@
     if (legacy[name]) name = legacy[name];
     let scrollTo = null;
     if (SECTION_GROUP[name]) { scrollTo = name; name = SECTION_GROUP[name]; }
-    if (!TABS.includes(name)) name = MODES[mode][0];
+    if (!TABS.includes(name) && !GROUPS[name]) name = MODES[mode][0];
     state.tab = name;
+    $("socialBtn")?.setAttribute("aria-pressed", String(name === "social")); $("socialMenu").hidden = true;
     document.querySelectorAll(".tabs [role=tab]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.tab === name); b.tabIndex = b.dataset.tab === name ? 0 : -1; });
     const sections = GROUPS[name] ? GROUPS[name].map(([id]) => id) : [name];
     // Put this tab's sections in jump-bar order

@@ -53,7 +53,7 @@ export async function nflWeek(week) {
   return out;
 }
 
-function vegasFactor(pos, g, avg) {
+export function vegasFactor(pos, g, avg) {
   if (!g || !avg) return 1;
   let ratio;
   if (pos === "D/ST") { if (!g.oppImplied) return 1; ratio = avg / g.oppImplied; }

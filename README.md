@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v2.9.4)
+# Boys of Chantilly dashboard (v3.1)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -457,3 +457,33 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   column is gone. PPG and rank come from the league's weekly rosters (same numbers as All-Time): points per game played
   while on a league roster that season, and position rank by those points. Rosters now include player ids
   (`hist/roster/v2`); all-time data keeps every rostered player (`hist/alltime/v3`).
+
+## 2.9.5
+- All Stars lineups drop D/ST (usually streamed): QB/RB/RB/WR/WR/TE/FLEX/K, combined PPG over eight players.
+
+## 3.0
+- New Social section, Playoff Predictor (after Pick 'em): pick the winner of every remaining regular-season game and,
+  with the median, whether each team finishes above or below it; records start from the real standings and the playoff
+  picture (seeds, byes, moves against the real standings, Clinched / Out) updates with every pick. Week tabs show how
+  many picks are made; Fill with projections, Fill week, Clear week, Clear all; picks are saved on the phone and can be
+  shared with "Copy link to my picks" (`?pp=` in the link). Median picks are capped at half the league each week and
+  kept consistent with the head-to-head picks. Tap a projected score for that lineup.
+- Projections (`/api/predictor`, `netlify/lib/predictor.mjs`, recomputed on every open; 60-second CDN cache): this week
+  is the live Scoreboard projection; later weeks are each team's best lineup from its current roster, with players worth
+  their points per game this season (blended with ESPN's season projection, worth 4 games), zero on byes (ESPN NFL
+  schedule), discounted for injury status next week (suspended 0, out 40%, doubtful 70%, questionable 95%; injured
+  reserve out 3 weeks), Vegas where lines exist, start % breaking near ties, and K/D/ST streamers (85% of the league's
+  average start) when a team's own is on bye. Win chances use the Scoreboard's spread (65% of each starter's projection).
+- Clinched / Out use wins only and are always safe: clinched when fewer teams than playoff spots can reach the team's
+  minimum wins; out when enough teams are sure to finish with more than its maximum. Ties in the standings follow the
+  league's seeding rule, with projected points for the weeks ahead.
+- `vegasFactor` is exported from model.mjs.
+
+## 3.1
+- Tab bar: Live, The Week, Playoffs, Library. Playoffs holds Standings and the Playoff Predictor.
+- The Week, in order: Team of the Week, Record Watch, Awards, Trending, Point Distribution, Transactions, Waivers (Record
+  Watch, Trending and Point Distribution are their own sections now, each with a jump-bar button).
+- Social moved off the tab bar to a chat-bubble button in the top right of the header; it opens a menu for
+  Pick 'em and Power Rankings. The new-power-rankings badge now shows on that button. Old links (#pickem, #power, #social,
+  #standings, #story) still work.
+- Playoff Predictor: the week in progress is included (only weeks that are completely final are left out).
