@@ -1,4 +1,4 @@
-# Boys of Chantilly dashboard (v3.1)
+# Boys of Chantilly dashboard (v3.2)
 
 Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
 Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
@@ -487,3 +487,12 @@ Build command blank, publish directory `public`. Environment variables `ESPN_S2`
   Pick 'em and Power Rankings. The new-power-rankings badge now shows on that button. Old links (#pickem, #power, #social,
   #standings, #story) still work.
 - Playoff Predictor: the week in progress is included (only weeks that are completely final are left out).
+
+## 3.2
+- Transactions and Waivers are one section, Transactions (this week's waiver moves first, then the rest). Old #waivers
+  links open it.
+- Playoffs: Playoff Predictor first, then Standings.
+- Dashed lines and labels under seed 1 (Regular season winner), seed 4 (Home Field Advantage) and the last playoff spot,
+  in both the Standings (Current view) and the Predictor's playoff picture. Clinch tags in both: Clinched #1, Clinched
+  home field (top 4), Clinched, Out, shown only when certain from wins alone (`clinchLevels`); Standings uses the real
+  records with every remaining game (and median game) open, the Predictor uses your picks.

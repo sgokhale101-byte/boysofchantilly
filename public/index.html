@@ -470,7 +470,7 @@
   }
 
   /* Standings cut lines */
-  tr.cut-first td, tr.cut-playoff td { border-bottom: 0; }
+  tr.cut-first td, tr.cut-hfa td, tr.cut-playoff td { border-bottom: 0; }
   tr.cut-label td { padding: 0; border-bottom: 2px dashed var(--violet); height: 0; position: relative; text-align: left !important; }
   tr.cut-label td span { position: absolute; right: 0; top: -9px; font-size: 11px; font-weight: 700; color: var(--violet); background: var(--black); padding: 0 6px; letter-spacing: .02em; white-space: nowrap; }
   .cut-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
@@ -1067,8 +1067,8 @@
   .pp-h3 { margin: 16px 0 6px; font-family: var(--display); font-size: 17px; }
   .pp-mv { font-weight: 800; font-size: 12px; } .pp-mv.up { color: #22C55E; } .pp-mv.down { color: #EF4444; }
   .pp-tag { font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
-  .pp-tag.in { background: rgba(34,197,94,.16); color: #22C55E; } .pp-tag.out { background: rgba(239,68,68,.14); color: #EF4444; } .pp-tag.bye { background: rgba(107,47,179,.16); color: var(--violet); }
-  .pp-table tr.cut-playoff td { border-bottom: 2px dashed var(--violet); }
+  .pp-tag.in { background: rgba(34,197,94,.16); color: #22C55E; } .pp-tag.c1 { background: #F59E0B; color: #1a1300; } .pp-tag.hfa { background: rgba(245,158,11,.18); color: #D97706; }
+  .ctag { margin-top: 2px; line-height: 1; } .pp-tag.out { background: rgba(239,68,68,.14); color: #EF4444; } .pp-tag.bye { background: rgba(107,47,179,.16); color: var(--violet); }
   .pp-table td .owner { display: block; }
   /* Social button (top right) */
   .mast { position: relative; }
@@ -1221,7 +1221,7 @@
   <nav class="tabs" role="tablist" aria-label="Dashboard sections">
     <button role="tab" id="tab-live" aria-controls="panel-pecking" data-tab="live"><span class="full">Live</span><span class="short">Live</span></button>
     <button role="tab" id="tab-week" aria-controls="panel-story" data-tab="week"><span class="full">The Week</span><span class="short">The Week</span></button>
-    <button role="tab" id="tab-playoffs" aria-controls="panel-standings" data-tab="playoffs"><span class="full">Playoffs</span><span class="short">Playoffs</span></button>
+    <button role="tab" id="tab-playoffs" aria-controls="panel-predictor" data-tab="playoffs"><span class="full">Playoffs</span><span class="short">Playoffs</span></button>
     <button role="tab" id="tab-library" aria-controls="panel-history" data-tab="library"><span class="full">Library</span><span class="short">Library</span></button>
     <button role="tab" id="tab-scoreboard" aria-controls="panel-scoreboard" data-tab="scoreboard"><span class="full">Scoreboard</span><span class="short">Scores</span></button>
     <button role="tab" id="tab-pecking" aria-controls="panel-pecking" data-tab="pecking"><span class="full">Food Chain</span><span class="short">Food<br>Chain</span></button>
@@ -1237,7 +1237,7 @@
         <button role="tab" id="tab-history" aria-controls="panel-history" data-tab="history"><span class="full">History</span><span class="short">History</span></button>
         <button role="tab" id="tab-draft" aria-controls="panel-draft" data-tab="draft"><span class="full">Draft</span><span class="short">Draft</span></button>
         <button role="tab" id="tab-trades" aria-controls="panel-trades" data-tab="trades"><span class="full">Trade Review</span><span class="short">Trade Review</span></button>
-        <button role="tab" id="tab-waivers" aria-controls="panel-waivers" data-tab="waivers"><span class="full">Waivers</span><span class="short">Waivers</span></button>
+        <button role="tab" id="tab-waivers" aria-controls="panel-moves" data-tab="waivers"><span class="full">Waivers</span><span class="short">Waivers</span></button>
         <button role="tab" id="tab-moves" aria-controls="panel-moves" data-tab="moves"><span class="full">Transactions</span><span class="short">Transactions</span></button>
       </div>
     </div>
@@ -1309,7 +1309,7 @@
       <details class="explain"><summary>Explain It</summary>
         <p class="note">Pick the winner of every game left in the regular season (tap a team; tap again to undo) and, when the league plays the median, whether each team finishes above or below it. Records start from the real standings and add only the games you've picked, so the playoff picture and seeds update as you go. Ties in the standings are broken the way ESPN does for this league, using projected points for the weeks ahead.</p>
         <p class="note">Projected scores are recalculated every time you open this. This week uses the live Scoreboard projection (the real lineups, ESPN's projection adjusted by Vegas, plus anything already scored). Later weeks use each team's best lineup from its current roster: every player is worth his points per game this season (blended with ESPN's season projection while the sample is small), zero on his NFL team's bye, discounted for his injury status (injured reserve sits out the next 3 weeks), adjusted by Vegas where lines are out, and when players are close the one started in more ESPN leagues gets the spot. The bar is each team's win chance.</p>
-        <p class="note">Clinched / Out, with your picks locked in: a team has clinched when, even if it loses every game you haven't picked, fewer teams than there are playoff spots could reach its number of wins. It's out when enough teams are already sure to finish with more wins than it could reach by winning all of them. Teams that could only tie don't count either way, so a tag only appears when it's certain.</p>
+        <p class="note">Clinched tags, with your picks locked in: a team has clinched a spot when, even if it loses every game you haven't picked, too few teams could reach its number of wins to pass it: nobody for the #1 seed (Regular season winner), at most 3 teams for home field (Home Field Advantage, top 4), and fewer teams than there are playoff spots for a playoff spot. It's out when enough teams are already sure to finish with more wins than it could reach by winning all of them. Teams that could only tie don't count either way, so a tag only appears when it's certain. The Standings table uses the same check on the real records, with every remaining game open.</p>
       </details>
       <div class="pp-tools"><button data-pp="fillall">Fill with projections</button><button data-pp="clearall">Clear all</button><button data-pp="share">Copy link to my picks</button></div>
       <div id="ppBody"></div>
@@ -1444,15 +1444,13 @@
     </section>
   </div>
 
-  <div class="panel" id="panel-waivers" role="tabpanel" aria-labelledby="tab-waivers" hidden>
+
+  <div class="panel" id="panel-moves" role="tabpanel" aria-labelledby="tab-moves" hidden>
     <section aria-labelledby="txH">
       <h2 id="txH">Waivers</h2>
       <details class="explain"><summary>Explain It</summary><p class="note">Completed adds, drops, and trades for the selected week, with each team's FAAB left after the move.</p></details>
       <ul class="tx" id="tx"></ul>
     </section>
-  </div>
-
-  <div class="panel" id="panel-moves" role="tabpanel" aria-labelledby="tab-moves" hidden>
     <section aria-labelledby="tbH">
       <h2 id="tbH">Trade Block</h2>
       <details class="explain"><summary>Explain It</summary><p class="note">Players managers have put on the block, and players they've marked themselves as interested in.</p></details>
@@ -1482,8 +1480,8 @@
   const TABS = ["live", "week", "playoffs", "library"];
   const GROUPS = {
     live: [["pecking", "Food Chain"], ["scoreboard", "Scoreboard"], ["pot", "Weekly Pot"], ["sharks", "The Sharks"]],
-    week: [["story", "Team of the Week"], ["rwatch", "Record Watch"], ["awards", "Awards"], ["trending", "Trending"], ["pies", "Point Distribution"], ["moves", "Transactions"], ["waivers", "Waivers"]],
-    playoffs: [["standings", "Standings"], ["predictor", "Playoff Predictor"]],
+    week: [["story", "Team of the Week"], ["rwatch", "Record Watch"], ["awards", "Awards"], ["trending", "Trending"], ["pies", "Point Distribution"], ["moves", "Transactions"]],
+    playoffs: [["predictor", "Playoff Predictor"], ["standings", "Standings"]],
     // Social isn't in the tab bar: it opens from the button in the top right corner
     social: [["pickem", "Pick 'em"], ["power", "Power Rankings"]],
     library: [["history", "Manager Profiles"], ["seasons", "Final Standings"], ["hof", "Hall of Fame"], ["draft", "Draft"], ["alltime", "All-Time"], ["trades", "Trade Review"]],
@@ -1770,7 +1768,7 @@
       rows.sort((a, b) => { const x = cellValue(a.cells[col]), y = cellValue(b.cells[col]); return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y))) * dir; });
       rows.forEach((r) => body.appendChild(r));
       const isDefault = col === 0 && dir === 1;
-      rows.forEach((r) => { if (!isDefault) r.classList.remove("cut-first", "cut-playoff"); });
+      rows.forEach((r) => { if (!isDefault) r.classList.remove("cut-first", "cut-hfa", "cut-playoff"); });
       ths.forEach((th, i) => th.classList.toggle("sorted", i === col && !isDefault) || th.classList.remove("asc", "desc"));
       if (!isDefault) ths[col].classList.add(dir === 1 ? "asc" : "desc");
     };
@@ -1824,6 +1822,7 @@
     return state.league.teams.some((t) => { const o = t.record?.overall || {}; return (o.wins || 0) + (o.losses || 0) + (o.ties || 0) > gp(h2h[t.id]); });
   }
   const teamCell = (t) => `<td><div class="tcell">${logo(t)}<div><div>${esc(teamName(t))}</div><div class="owner">${esc(ownerName(t))}</div></div></div></td>`;
+  const teamCellTag = (t, tag) => tag ? `<td><div class="tcell">${logo(t)}<div><div>${esc(teamName(t))}</div><div class="owner">${esc(ownerName(t))}</div><div class="ctag">${tag}</div></div></div></td>` : teamCell(t);
 
   function officialOrder() {
     return state.league.teams.map((t) => { const o = t.record?.overall || {}; return { t, r: { w: o.wins || 0, l: o.losses || 0, t: o.ties || 0 }, pf: o.pointsFor || 0, pa: o.pointsAgainst || 0, seed: t.playoffSeed || 99 }; })
@@ -1844,7 +1843,7 @@
       : `<div class="empty">Fills in after the first week is final.</div>`;
   }
   const NOTES = {
-    current: "Official standings as ESPN has them, in playoff-seed order.",
+    current: "Official standings as ESPN has them, in playoff-seed order. Dashed lines mark the #1 seed (Regular season winner), the top 4 (Home Field Advantage) and the last playoff spot. Tags appear only once they're certain from wins alone: Clinched #1, Clinched home field, Clinched (a playoff spot), or Out.",
     h2h: "H2H: records from head-to-head matchups only.",
     median: "One game per completed week against the league median: a win for finishing above it, a loss for finishing below.",
     ifman: "If-Man: what the standings would be if every team had started its best possible lineup every week, against opponents who did the same.",
@@ -1854,19 +1853,48 @@
   };
   // Dashed lines: under the regular-season winner (rank 1) and under the last playoff spot.
   const playoffTeams = () => state.league?.settings?.scheduleSettings?.playoffTeamCount || 8;
-  const cutClass = (i) => (i === 0 ? "cut-first" : "") + (i + 1 === playoffTeams() ? " cut-playoff" : "");
-  const cutLegend = () => "";
-  // Labels on the dashed lines, added after each table renders.
-  function labelCuts() {
-    const cols = [...($("standings").querySelector("thead tr")?.children || [])].filter((c) => getComputedStyle(c).display !== "none").length || 4;
-    $("standings").querySelectorAll("tr.cut-first, tr.cut-playoff").forEach((tr) => {
-      const text = tr.classList.contains("cut-first") && !tr.classList.contains("cut-playoff") ? "Regular season winner" : "Cancun on 3";
+
+  // Clinch levels from wins alone, safe both ways. rows: [{ id, w, l, t }], left: games (incl. median games) still to play.
+  // A team has clinched spot k when fewer than k other teams can even reach its minimum wins (ties count against it);
+  // it's out when at least as many teams as there are playoff spots are already sure to finish with more wins.
+  function clinchLevels(rows, left) {
+    const n = playoffTeams(), out = {};
+    const minW = (r) => r.w + r.t / 2, maxW = (r) => minW(r) + (left[r.id] || 0);
+    for (const r of rows) {
+      const canCatch = rows.filter((o) => o.id !== r.id && maxW(o) >= minW(r)).length;
+      const sureAhead = rows.filter((o) => o.id !== r.id && minW(o) > maxW(r)).length;
+      out[r.id] = canCatch < 1 ? "seed1" : n >= 4 && canCatch < 4 ? "top4" : canCatch < n ? "in" : sureAhead >= n ? "out" : null;
+    }
+    return out;
+  }
+  const CLINCH_TAG = { seed1: ["c1", "Clinched #1"], top4: ["hfa", "Clinched home field"], in: ["in", "Clinched"], out: ["out", "Out"] };
+  const clinchTag = (lv) => (lv && CLINCH_TAG[lv] ? `<span class="pp-tag ${CLINCH_TAG[lv][0]}">${CLINCH_TAG[lv][1]}</span>` : "");
+  // Real standings: games left from ESPN's schedule (plus a median game per week when the league plays the median)
+  function realClinch() {
+    const L = state.league, left = {}, medOn = leagueUsesMedian(h2hRecords()), weeks = new Set();
+    for (const g of L.schedule || []) {
+      if (g.matchupPeriodId > regCount() || !g.home || !g.away || decided(g)) continue;
+      left[g.home.teamId] = (left[g.home.teamId] || 0) + 1; left[g.away.teamId] = (left[g.away.teamId] || 0) + 1; weeks.add(g.matchupPeriodId);
+    }
+    if (medOn) for (const t of L.teams) left[t.id] = (left[t.id] || 0) + weeks.size;
+    return clinchLevels(officialOrder().map((x) => ({ id: x.t.id, ...x.r })), left);
+  }
+  // Dashed lines under seed 1 (regular season winner), seed 4 (home field advantage) and the last playoff spot
+  const cutClass = (i) => [i === 0 ? "cut-first" : "", i === 3 && playoffTeams() > 4 ? "cut-hfa" : "", i + 1 === playoffTeams() ? "cut-playoff" : ""].filter(Boolean).join(" ");
+  function labelTableCuts(table) {
+    const cols = [...(table.querySelector("thead tr")?.children || [])].filter((c) => getComputedStyle(c).display !== "none").length || 4;
+    table.querySelectorAll("tr.cut-label").forEach((r) => r.remove());
+    table.querySelectorAll("tr.cut-first, tr.cut-hfa, tr.cut-playoff").forEach((tr) => {
+      const text = tr.classList.contains("cut-playoff") ? "Cancun on 3" : tr.classList.contains("cut-hfa") ? "Home Field Advantage" : "Regular season winner";
       const lab = document.createElement("tr"); lab.className = "cut-label";
       lab.innerHTML = `<td colspan="${cols}"><span>${text}</span></td>`;
       tr.after(lab);
     });
   }
-  async function renderStandings() { await renderStandingsTable(); renderPies(); makeSortable($("standings"), `standings:${state.view}`); const srt = state.sorts[`standings:${state.view}`]; if (srt && !(srt.col === 0 && srt.dir === 1)) return; if (state.view !== "accuracy" && state.view !== "luck" && state.view !== "allplay") labelCuts(); else $("standings").querySelectorAll("tr.cut-first, tr.cut-playoff").forEach((tr) => tr.classList.remove("cut-first", "cut-playoff")); }
+  const cutLegend = () => "";
+  // Labels on the dashed lines, added after each table renders.
+  function labelCuts() { labelTableCuts($("standings")); }
+  async function renderStandings() { await renderStandingsTable(); renderPies(); makeSortable($("standings"), `standings:${state.view}`); const srt = state.sorts[`standings:${state.view}`]; if (srt && !(srt.col === 0 && srt.dir === 1)) return; if (state.view !== "accuracy" && state.view !== "luck" && state.view !== "allplay") labelCuts(); else $("standings").querySelectorAll("tr.cut-first, tr.cut-hfa, tr.cut-playoff").forEach((tr) => tr.classList.remove("cut-first", "cut-hfa", "cut-playoff")); }
   async function renderStandingsTable() {
     const L = state.league; if (!L) return;
     const v = state.view, table = $("standings");
@@ -1875,11 +1903,11 @@
     const h2h = h2hRecords();
     const usesMed = leagueUsesMedian(h2h);
     $("cutLegend").innerHTML = cutLegend();
-    if (v === "current" && usesMed) $("standNote").textContent = "Official standings as ESPN has them, in playoff-seed order. Each week counts as two games: the head-to-head matchup and the median game.";
+    if (v === "current" && usesMed) $("standNote").textContent = "Official standings as ESPN has them, in playoff-seed order. Dashed lines mark the #1 seed (Regular season winner), the top 4 (Home Field Advantage) and the last playoff spot. Tags appear only once they're certain from wins alone: Clinched #1, Clinched home field, Clinched (a playoff spot), or Out. Each week counts as two games: the head-to-head matchup and the median game.";
     if (v === "ifman") $("standNote").textContent = `What the standings would be if every team had started its best possible lineup every week, against opponents who did the same${usesMed ? ". Includes both the head-to-head and median game each week." : "."}`;
     if (v === "current") {
-      const rows = officialOrder();
-      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.pf)}</td><td class="hide-m">${fmtTot(x.pa)}</td></tr>`).join("")}</tbody>`;
+      const rows = officialOrder(), lv = realClinch();
+      table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCellTag(x.t, clinchTag(lv[x.t.id]))}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.pf)}</td><td class="hide-m">${fmtTot(x.pa)}</td></tr>`).join("")}</tbody>`;
     } else if (v === "h2h") {
       const rows = L.teams.map((t) => ({ t, r: h2h[t.id] })).sort((a, b) => winPct(b.r) - winPct(a.r) || b.r.pf - a.r.pf);
       table.innerHTML = `<thead><tr><th>#</th><th>Team</th><th>Record</th><th>Points for</th><th class="hide-m">Points against</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.t.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${i + 1}</td>${teamCell(x.t)}<td class="strong">${recStr(x.r)}</td><td>${fmtTot(x.r.pf)}</td><td class="hide-m">${fmtTot(x.r.pa)}</td></tr>`).join("")}</tbody>`;
@@ -3776,18 +3804,10 @@
   // can even reach its minimum wins (it loses every unpicked game), and it's out when enough teams are already sure to
   // finish with more wins than its maximum (it wins every unpicked game). Ties count against clinching and eliminating.
   function ppStatus(order) {
-    const n = playoffTeams(), { open, medOpen } = ppOpen(), out = {};
-    if (!open.length && !medOpen.length) return out;
-    const left = {};
+    const { open, medOpen } = ppOpen(), left = {};
     for (const { g } of open) { left[g.home] = (left[g.home] || 0) + 1; left[g.away] = (left[g.away] || 0) + 1; }
     for (const { tid } of medOpen) left[tid] = (left[tid] || 0) + 1;
-    const minW = (r) => r.w + r.t / 2, maxW = (r) => r.w + r.t / 2 + (left[r.id] || 0);
-    for (const r of order) {
-      const canCatch = order.filter((o) => o.id !== r.id && maxW(o) >= minW(r)).length;
-      const sureAhead = order.filter((o) => o.id !== r.id && minW(o) > maxW(r)).length;
-      if (canCatch < n) out[r.id] = "clinched"; else if (sureAhead >= n) out[r.id] = "eliminated";
-    }
-    return out;
+    return clinchLevels(order, left);
   }
   function renderPredictor() {
     const box = $("ppBody"); if (!box || !state.league) return;
@@ -3820,9 +3840,9 @@
     const seedRow = (r, i) => {
       const moved = (r.seed0 < 99 ? r.seed0 : null), now = i + 1, d = moved ? moved - now : 0;
       const st = status[r.id];
-      return `<tr class="${r.id === state.me ? "me" : ""} ${i + 1 === n ? "cut-playoff" : ""}"><td class="rank">${now}</td>${teamCell(teamById(r.id))}
+      return `<tr class="${r.id === state.me ? "me" : ""} ${cutClass(i)}"><td class="rank">${now}</td>${teamCell(teamById(r.id))}
         <td class="strong">${recStr(r)}</td><td>${d ? `<span class="pp-mv ${d > 0 ? "up" : "down"}">${d > 0 ? "▲" : "▼"}${Math.abs(d)}</span>` : "–"}</td>
-        <td>${st === "clinched" ? `<span class="pp-tag in">Clinched</span>` : st === "eliminated" ? `<span class="pp-tag out">Out</span>` : i < byes ? `<span class="pp-tag bye">Bye</span>` : ""}</td></tr>`;
+        <td>${st ? clinchTag(st) : i < byes ? `<span class="pp-tag bye">Bye</span>` : ""}</td></tr>`;
     };
     box.innerHTML = `
       <div class="pp-weeks" role="tablist">${D.weeks.map((w) => `<button role="tab" data-pp-week="${w.week}" aria-selected="${w.week === wk.week}">Wk ${w.week}${w.live ? " · live" : ""}<span>${picked(w)}/${total(w)}</span></button>`).join("")}</div>
@@ -3834,6 +3854,7 @@
       <div class="table-scroll"><table class="pp-table"><thead><tr><th>#</th><th>Team</th><th>Record</th><th>Move</th><th></th></tr></thead><tbody>${order.map(seedRow).join("")}</tbody></table></div>
       <p class="note">Move is against the real standings right now. Ties use ${String(state.league.settings?.scheduleSettings?.playoffSeedingRule || "").includes("H2H") ? "head-to-head record among the tied teams, then points for" : "points for"} (projected points included for the weeks ahead).</p>`;
     state.pp.msg = "";
+    labelTableCuts(box.querySelector(".pp-table"));
   }
   function ppPick(week, i, key) {
     const W = (state.pp.picks[week] ||= {});
@@ -3913,7 +3934,7 @@
   let sectionWatch = null;
   function showTab(name, push = true) {
     // Old links (#foodchain, #story, #hof, ...) open the tab that now holds that section.
-    const legacy = { foodchain: "pecking", transactions: "moves", livetab: "pecking" };
+    const legacy = { foodchain: "pecking", transactions: "moves", livetab: "pecking", waivers: "moves" };
     if (legacy[name]) name = legacy[name];
     let scrollTo = null;
     if (SECTION_GROUP[name]) { scrollTo = name; name = SECTION_GROUP[name]; }
