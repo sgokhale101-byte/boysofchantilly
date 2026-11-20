@@ -1,0 +1,489 @@
+# Boys of Chantilly dashboard (v3.1)
+
+Tabs: Scoreboard (current + projected scores, current and projected median), Pecking order (median board, top 4, last place),
+Pick 'em (Vegas-adjusted win chances + voting), Standings (current, head-to-head, median, "if man" best lineups), Waivers and trades.
+
+## Layout
+- `public/index.html`, `public/logo.png` – the page
+- `netlify/functions/espn.mjs` – ESPN proxy at `/api/espn`
+- `netlify/functions/week.mjs` – live/projected scores and win chances at `/api/week`
+- `netlify/functions/ifman.mjs` – best-lineup standings at `/api/ifman` (finished weeks cached in Netlify Blobs)
+- `netlify/functions/picks.mjs` – pick 'em votes at `/api/picks` (Netlify Blobs)
+- `netlify/lib/espn.mjs`, `netlify/lib/model.mjs` – shared ESPN and projection code
+
+## Projection model
+ESPN player projections, scaled by each NFL team's Vegas implied total (from the spread and over/under on ESPN's NFL scoreboard)
+relative to the week's average: factor = (implied / average)^0.6, clamped to 0.8–1.25. Defenses use the opponent's implied total, inverted.
+Only the unplayed share of each game is projected. Win chance = normal CDF of the projected margin, with each starter's
+uncertainty set to 0.65 x their remaining projection.
+
+## Netlify settings
+Build command blank, publish directory `public`. Environment variables `ESPN_S2` and `SWID` required.
+
+## 1.3.1
+- Standings: ESPN's official record already includes median games; If man now counts both head-to-head and median games. Games column added.
+- Waivers and trades: player names resolved server-side at `/api/moves` (league player lookup, then ESPN athlete pages as a fallback).
+- Team logos: ESPN logo, then `public/logos/<ABBREV>.png`, then initials.
+
+## 1.3.2
+- Phone layout: bottom tab bar, no sideways scrolling, compact tables (extra columns hidden on phones).
+- "I'm ___" team picker next to the week selector, remembered per browser. Shows a summary card (record, standing,
+  current and projected score, opponent and win chance) and highlights that team across every tab.
+
+## 1.4
+- Awards tab (`/api/awards`): per finished week, Biggest overperformer / letdown (actual vs. starters' ESPN projections),
+  Manager of the week (fewest bench points left behind; ties go to the higher score), Noah of the week (highest-scoring
+  head-to-head loss), Srimanth of the week (lowest-scoring head-to-head win), plus a season trophy case.
+- Trophy icons are reusable SVG symbols in index.html: `<svg class="trophy"><use href="#tr-KEY"></use></svg>`,
+  keys overperformer, letdown, manager, noah, srimanth.
+- `netlify/lib/season.mjs` loads and caches every finished week (key `weeksum/v1/w<N>`); If man and Awards share it.
+
+## 1.4.2
+- Pre-game projections everywhere are the site's own (ESPN projection x Vegas factor). `/api/week` freezes each player's
+  pre-game projection at kickoff (Blobs key `pregame/v1/w<N>`); Awards compare against those. Weeks the site never saw
+  before kickoff are recomputed from the Vegas lines ESPN still lists (factor 1 if none). Season cache bumped to `weeksum/v2`.
+- Pick 'em: after voting, win chance and projection are replaced by the vote split with a fill animation.
+- Team defenses in Waivers and trades show as "<Team> D/ST" (ids 16000 + NFL team number).
+- Scoreboard lineups ordered QB/RB/RB/WR/WR/TE/FLEX/DST/K. Tab renamed "Pecking Order". Games column removed from Standings.
+
+## 1.4.3
+- Phone tab bar shows "Pecking Order" on two lines.
+- Award names: Overperformer, Letdown, Manager of the Week, Noah of the Week, Srimanth of the Week.
+- Icons: Overperformer green trophy, Letdown red trophy, Noah crying baby, Srimanth four-leaf clover.
+
+## 1.4.4
+- "I'm ___" summary lists the team's trophies with what each means and the weeks won.
+- Trophy case shows the weeks for each trophy (e.g. "Wk 1, 2").
+- Weekly awards have a week dropdown (latest finished week by default, or All weeks).
+
+## 1.5
+- Story tab (`/api/story?week=N`): Team of the Week (best lineup from every player's actual points, rostered or free agent,
+  owner = who rostered him that week, flags benched), plus trends: streak + last-3-week scoring vs. weekly median, and
+  week-to-week swing (consistency). Team of the Week cached per finished week (`tow/v1/w<N>`).
+- History tab (`/api/history`): manager profiles keyed by ESPN member id (current and former), average finish, points per game,
+  championships, official / head-to-head / median / If man records, all time or by season; final standings by season.
+  Past seasons cached (`hist/season/v1/<year>`); If man per past season cached week by week (`hist/ifman/v1/<year>/w<N>`).
+  If man is unavailable for seasons where ESPN has no weekly lineups.
+- Phone tab bar: Scores, Pecking Order, Pick 'em, Standings, More (Awards, Story, History, Waivers and trades).
+- `netlify/lib/history.mjs`, `seasonUrl` / `seasonLeague` in `netlify/lib/espn.mjs` (seasons before 2018 use ESPN's leagueHistory endpoint).
+
+## 1.5.1
+- "Pecking Order" renamed "Food Chain" (#foodchain works as a link). Adds a Weekly pot: $12 to each week's high scorer
+  (ties split), season winnings, and the live leader for the current week.
+- "Waivers and trades" renamed "Transactions". Each move shows the team's FAAB left afterward (anchored on ESPN's
+  spent total; bids from later moves added back). Finished periods cached (`tx/v1/p<N>`).
+- Standings: dashed lines under rank 1 (regular-season leader) and under the last playoff spot (ESPN's playoff team count, default 8).
+- Summary card shows when trophies are loading or failed to load.
+
+## 1.6
+- Power Rankings tab (`/api/power`): message board posts by the member named in POWER_AUTHOR (default "Saffa") that
+  mention power rankings. "1. Team - blurb" lines become a ranked list; otherwise the post is shown as written. If nothing
+  matches, the tab shows what ESPN returned (post types, authors) for troubleshooting.
+- Trade block on Transactions (`/api/tradeblock`): reads each team's `tradeBlock` from ESPN; own players = on the block,
+  other teams' players = interested.
+- Draft tab (`/api/draft?season=YYYY`): picks by round or by manager, season points, and steals/busts by position rank
+  (draft order, or price for auctions, vs. points finish; K and D/ST excluded; busts limited to the first four rounds).
+  Finished seasons cached (`hist/draft/v1/<year>`).
+- History: points allowed (per game in profiles, season totals in final standings). Season cache bumped to `hist/season/v2`.
+- Story and the "I'm ___" picker use managers' first names instead of team names.
+- Food Chain: the top 4 are The Sharks; teams below the median are labeled The Minnows.
+- Manager of the Week shows start accuracy (points scored / best possible).
+
+## 1.6.1
+- Draft: player lookup now passes scoringPeriodId=0, with fallbacks (season players_wl list, D/ST ids, ESPN athlete pages).
+  Board shows drafted and finished position ranks; the current season shows Drafted vs. Now instead of points. Cache `hist/draft/v2`.
+- History: league rank for average finish, points per game, and points allowed per game (for the chosen scope).
+- Power Rankings: [b]..[/b] bold and [i]..[/i] italic.
+- Standings: dashed lines labeled "Regular season winner" and "Cancun on 3".
+- Food Chain: dashed "Made the median" / "The Minnows" divider on the board; "The Sharks and Their Prey"; "Weekly Pot".
+
+## 1.6.2
+- Manager cleanup rules (MANAGER_RULES in index.html): team-to-manager assignments ("This Team Has Been Seized" 2018 and
+  "Property of TMA" -> Jeremy S; "Dez Nuts" 2020 -> Mahat; "Minshew and The Crew" 2020 -> Rohit) and merges (both Vijay R's
+  -> Vijay Rudraraju; both Vivek Iyer profiles). Team names match ignoring case and punctuation. Applies to History and Draft.
+- Manager headshots in public/headshots/<firstname>.jpg (alexis, jeremy, sean, vivek, shreyas) replace the team logo
+  circle everywhere, and appear on History profiles. Add a file and a HEADSHOTS entry for more.
+
+## 1.6.3
+- Draft rankings use half-PPR points computed from raw season stats (`netlify/lib/halfppr.mjs`): ESPN's public fantasy
+  player data, with ESPN's public NFL stat pages as a backup. Finishes rank against every player at the position we have
+  (drafted players plus the season's top 80 at QB/RB/WR/TE). Adds each manager's best steal and biggest bust
+  (busts from rounds 1-6). Cache `hist/draft/v3`.
+- Transactions: trade block moved to the top.
+- Food Chain: the top half of the league (6 of 12) always makes the median, even with ties.
+
+## 1.6.4
+- Draft: finished seasons rank by half-PPR points per game (min 6 games) as "PPG Rank"; the current season by total points.
+  Top-5 steals/busts compare ESPN average draft position at the position (league draft slot if ADP is missing) with that
+  rank, need a 3+ spot swing, and leave out keepers in finished seasons. The per-manager table is gone; the board tags
+  picks instead (steal: finished a starter at the position and 6+ spots (QB/TE) or 12-15 spots (RB/WR) above where he went;
+  bust: an early pick who finished that far below, or a top pick who played fewer than 6 games). Cache `hist/draft/v4`.
+- History: Vijay's merged profile shows as "Wiwi RaRa" (Vijay Rudraraju underneath).
+- Headshots added: Cameron, Nels, Noah, Srimanth, Adam.
+
+## 1.6.5
+- Draft: steals/busts (top 5 and board tags) compare where a player went at his position in this draft with his half-PPR
+  PPG rank, for every season. Current season's PPG rank needs half the games played so far. Cache `hist/draft/v5`.
+- History: "Wiwi RaRa" accounts merge into Vijay Rudraraju. Profiles add top 4 and bottom 4 finishes, best and worst
+  regular-season week, and rivals (Cakewalk: best head-to-head record; Their Daddy: worst; Rival: closest to even,
+  2+ games when possible). Season summaries now carry each team's game log. Cache `hist/season/v3`.
+- "William" shows as "Will" everywhere.
+- Headshots re-cropped wider at 320px, shown larger, tap to enlarge. Added Will and Saffa (matched by any word of the
+  ESPN first or display name).
+
+## 1.7
+- Hall of Fame tab: top/bottom 10 weekly scores (all time or by year), top/bottom 10 season PPG (finished seasons),
+  longest H2H win/loss streaks and median streaks (2022 on), following managers across seasons, and top individual player
+  performances (league scoring, bench included) via `/api/history?part=players&season=Y`.
+- `netlify/lib/history.mjs`: one cached week detail (`hist/week/v1/<year>/w<N>`) now feeds both If man and player records.
+  Season summaries list finished weeks (`hist/season/v4`).
+- Story: Record watch (this season's all-time scores, top-10 PPG pace, active streaks vs. the record).
+- Section explanations moved into "Explain It" dropdowns.
+- Draft: Round and Manager dropdowns; current season adds a Current column (total-points position rank).
+- History: current managers' Cakewalk / Their Daddy / Rival are other current managers. 2018 "This Team Has Been Seized" -> Srimanth.
+- "Trade Block" capitalized. Noah's photo replaced.
+
+## 1.8
+- Modes (header switch, remembered per browser; default Base). Each mode sets the phone tab bar; everything else is under More.
+  Desktop shows every tab with the mode's tabs first. Switching jumps to the mode's first tab if the current tab isn't in it.
+  - Sundays: Food Chain, Pick 'em, Scores
+  - Base: Standings, Story, Awards, Pick 'em
+  - Historian: History, Draft, Story
+  Edit MODES in index.html to change them.
+- Summary card shows the current matchup: both scores, projections, live/final status, and win chance.
+
+## 1.8.1
+- Phone tables: name columns truncate, number columns size to their content; season totals of 1,000+ show one decimal.
+  Checked every tab at 360px and 390px, dark and light, with no clipped cells or sideways scrolling.
+- Pick 'em: voting closes for the whole week at the first NFL kickoff (server-checked via ESPN's NFL scoreboard);
+  everyone sees results after that. One vote per matchup per phone and per person ("I'm" pick). "Won" label replaces the check mark.
+- Historian mode: History, Draft, Hall of Fame. Base and Historian hide the week picker and always show the current week.
+- Light mode toggle (remembered per browser).
+
+## 1.8.2
+- Summary card shows a special message box by manager first name (SPECIAL_CARDS in index.html). Alexis: "Fuck Jeremy".
+
+## 1.8.3
+- Pick 'em: once voting locks, the big number is the vote split and the model's real win chance ("Real odds") sits below it
+  (final score once the matchup ends).
+- iPhone Safari: buttons drop the built-in styling and selected tabs, modes, and toggles set their text color explicitly,
+  so selected labels stay visible in light mode.
+
+## 1.8.4
+- Home screen icon: public/icons (apple-touch-icon 180, 192, 512, favicon 32; 1024 master) and manifest.webmanifest
+  (name "Boys of Chantilly", home screen label "Chantilly", opens full screen).
+- Hall of Fame and Record watch rank seasons by median points per game.
+- Summary card and Food Chain board show starters left to play (and live on the card) with projected points left.
+
+## 1.9
+- Eras: Plumber era (through 2021) and Median era (2022 on) in the History profile and Hall of Fame dropdowns; every list,
+  record, and streak follows the chosen span.
+- History: tap a team in Final standings or a profile's season list for its end-of-season roster
+  (`/api/history?part=rosters&season=Y`, finished seasons cached `hist/roster/v1/<year>`).
+- Big Brain award: made the median by starting a player under 60% started across ESPN who outscored the team's margin over
+  the median. Start % is frozen per player at kickoff (`pregame-start/v1/w<N>`); earlier weeks use ESPN's current number
+  and say so. Weekly data now carries starters (`weeksum/v3`).
+- Power Rankings: checks for new posts every 10 minutes and badges the tab (or More) until opened; message board cache cut to 60s.
+
+## 1.9.1
+- History: the Records choice (all time, era, or season) stays selected while switching managers; every league season is listed.
+- Hall of Fame: median streak lists only show for the Median era and 2022+ seasons (not All time).
+
+## 1.9.2
+- Start accuracy (points scored / best possible lineup): on the summary card for this week (live, `/api/week` now includes
+  optimal + accuracy) and the season so far (from `/api/ifman`).
+- Awards: Manager of the Week = best start accuracy; new Bench Blunder = worst (not awarded if every lineup is perfect).
+- Transactions tab (`/api/txstats`): FAAB Tracker (left, spent, starting-lineup points from paid pickups per $, best buys,
+  $0 free finds), 12th Man (most points scored while benched), Dead Weight (bench players out/on IR, low scoring and
+  under 50% rostered, or never started and low scoring). Weekly data now carries bench players (`weeksum/v4`).
+- `netlify/lib/tx.mjs`: shared transaction helpers used by moves and txstats.
+
+## 1.9.3
+- "The Estime Quotient": the FAAB Tracker's points-per-dollar metric.
+- Manager of the Week must make the median (best start accuracy among teams above the weekly median).
+- Weekly Recap at the top of Story (`/api/recap`), available once ESPN finalizes the week (usually early Tuesday), with a
+  New badge: your week (matchup, median, start accuracy, best starter, biggest dud, standings move, next matchup preview),
+  around the league (high and low score and pot, median line, closest game, biggest blowout, biggest upset by projection,
+  crowd pick'em accuracy), the week's awards, and record-book entries.
+
+## 1.9.4
+- The Weekly Recap moved into the "I'm ___" summary card: before the current week's first kickoff, the card shows last week's
+  recap (your week with a next-matchup preview, around the league, awards, record books) instead of the matchup, and switches
+  to the live matchup once games start. Removed from the Story tab, along with its badge.
+
+## 1.9.5
+- Scoreboard shows each team's live start accuracy.
+- New Waivers tab holds the weekly adds/drops/trades feed; Transactions keeps Trade Block, FAAB Tracker, 12th Man, Dead Weight.
+- FAAB: starting budgets by manager (FAAB_START in netlify/lib/tx.mjs: Vivek, Cameron, Srimanth $110), also used for FAAB-left
+  on each move. Tracker table shows left and spent only. Best buys skip pickups with no starting-lineup points; up to 10.
+- 12th Man shows bench points per week benched.
+- Dead Weight: injured players only when out for the season (ESPN injury report: return date after the season or season-ending
+  notes) or when the team has an open IR spot.
+
+## 1.9.6
+- Season-long start accuracy (points scored / best possible lineup, summed over finished weeks):
+  - Standings "Accuracy" view: accuracy, points left on bench, perfect weeks, best/worst week (`/api/ifman` now returns weekly
+    actual + best lineup).
+  - History profiles: accuracy for all time, an era, or a season, with league rank, perfect weeks, and bench points left
+    (`/api/history?part=ifman` now returns weekly best lineups).
+  - Hall of Fame: most and least accurate seasons (finished seasons with 6+ weeks of lineup data).
+
+## 2.0
+- Luck index (actual H2H wins minus expected wins from the weekly all-play record), with bad beats (losses above the weekly
+  median) and lucky wins (wins below it): Standings "Luck" view (this season), History profiles (any span, league rank,
+  all-play record), Hall of Fame (luckiest/unluckiest seasons, most bad beats, most lucky wins). Computed from game logs.
+- Points by position pie charts: Standings (this season, from `/api/recap`) and History profiles (from weekly lineups;
+  `/api/history?part=ifman` now returns positions). Weekly lineup cache now keeps starters (`hist/week/v2`).
+- Trade Review tab (`/api/history?part=trades&season=Y`): every trade; finished seasons get a verdict from starting-lineup
+  points each side got from the players it received, trade week through the end of the regular season (even if the gap is
+  under 15 points or 15%), plus both teams' finishes. Past seasons cached (`hist/trades/v1`, `hist/tx/v1`).
+
+## 2.0.1
+- Trade Review verdicts now include fantasy playoff weeks (winners bracket games only, not consolation), period by period
+  so multi-week playoff rounds work (`hist/playoffs/v1/<year>`). Trade cache bumped to `hist/trades/v2`, so past verdicts recompute.
+
+## 2.1
+- Six top-level tabs: Live, Pick 'em, Standings, The Week, Library, Power Rankings (GROUPS and TABS in index.html).
+  - Live: Food Chain, Scoreboard. The Week: Story, Awards, Waivers, Transactions.
+    Library: League History, Hall of Fame, Draft, Trade Review.
+  - Each grouped tab has a sticky jump bar that scrolls to a section and highlights the one on screen; sections load as
+    they come near the screen. Old links (#hof, #story, #foodchain, ...) open the right tab and scroll there.
+- Modes updated: Sundays = Live, Pick 'em, The Week; Base = Standings, The Week, Pick 'em; Historian = Library, Standings.
+- Nothing removed: every former tab is a section in its new home.
+
+## 2.2
+- Four tabs, no modes: Live (Food Chain, Scoreboard, Weekly Pot, The Sharks), The Week (Standings, Story, Awards,
+  Transactions, Waivers), Social (Pick 'em, Power Rankings; the new-post badge is on Social), Library (Manager Profiles,
+  Final Standings, Hall of Fame, Draft, Trade Review).
+- Standings: H2H and "IF man..." renamed; Accuracy view removed (start accuracy lives on profiles as "Nth of N in the
+  league"); Luck view drops the H2H column.
+- The Week: "Record Watch" (only top-3 scores, top-3 paces, and streaks within 3 games of the record), "Trending", tap any
+  trophy for what it is and how it was earned, Explain It on Best buys and Free finds, Dead Weight removed from view.
+- Trade Block looks up names for players nobody rosters.
+- Library: profile season list shown as compact chips; Final Standings is its own section; Hall of Fame drops "Most
+  accurate seasons"; Trade Review hides team 0 (free agency) and names a winner on every trade by starting points
+  ("Winning so far" this season). Trade cache `hist/trades/v3`.
+
+## 2.2.1
+- Record Watch: this season's scores and player games in an all-time top 10, top-10 (or bottom-10) PPG paces, and active
+  streaks in the top 5 or within 3 games of it.
+- Hall of Fame: Most and Least accurate seasons only for the Median era.
+- Power Rankings: pages back through the whole message board (it mixes posts with every add/drop/trade notice), so every post shows.
+- Recap card redesigned as tiles: result banner, Median / Start accuracy / Standings tiles, Next up mini-matchup,
+  league tiles (High score + pot, Low score, Game of the Week, Biggest upset, Blowout, Pick 'em crowd), a swipeable row of
+  award tiles (tap for details), and record-book cards. Best starter and Biggest dud removed.
+
+## 2.2.2
+- Record Watch adds non-scoring paces against the Hall of Fame lists: luck (luckiest/unluckiest), bad beats, lucky wins,
+  and start accuracy (vs. Median-era seasons). Paces need 3+ games and project the current rate over a full regular season.
+  Records already in the books are listed first.
+
+## 2.2.3
+- Record Watch mirrors the Hall of Fame list by list (same metrics and sizes; all time first, then the Median era):
+  highest/lowest scores, best/worst median-PPG seasons, H2H and median win/loss streaks (top 5 or within 3 games), luckiest/
+  unluckiest seasons, most bad beats / lucky wins, most/least accurate (Median era), and best player performances.
+  "In the books" = on a list now; "On pace" = projected onto one (3+ games, full regular season).
+
+## 2.2.4
+- Record Watch grouped like the Hall of Fame: All time and Median era sections, one card per list, entries ranked, with
+  "On pace" tags. Luck, bad beats, lucky wins, and start accuracy wait until 7 games played.
+- Power Rankings: every edition is its own entry (thread replies split out, named by their first line), Saffa's numbered
+  posts count even without the word "power", and every version seen is archived (`power/archive/v1/<season>`) so edited
+  posts keep their earlier versions. Dropdown shows title, date, and "(latest)".
+- Jump bars with five sections use two rows on phones; chip text shrinks slightly at 360px.
+
+## 2.3
+- Record Watch: green "In the books" tags; records on both the all-time and Median-era lists go in a "Both" section with both ranks.
+- Power Rankings: one edition per "Power Rankings after Week N" post (latest version of each), titled and dated.
+- Manager Profiles: Favorite player (most weeks on the roster; tiebreak = starting points in that manager's wins;
+  `/api/history?part=favorites&season=Y`, cached `hist/fav/v1`), All-play record as its own stat, bench points removed.
+- Draft: keepers get a yellow Keeper tag (never steal/bust) and stay out of the top 5; players who played under 60% of the
+  season aren't busts; tags sit on their own line; tap a player for his draft history in the league. Cache `hist/draft/v6`.
+- Standings and Final Standings: tap any column header to sort (tap again to flip).
+- Trade Review: includes week 0 (preseason) trades and trades upheld after league review, de-duplicates the same trade
+  recorded twice; caches reset (`hist/trades/v4`, `hist/tx/v2`).
+
+## 2.3.1
+- Power Rankings: any post with "power rankings" in its title or opening lines counts, in any word order; the week comes from
+  "Week N" / "Wk N" anywhere, or the post's date order if there's no number. If nothing matches, the tab lists Saffa's post
+  titles exactly as ESPN returned them.
+- Trade Review: also reads trades from the message board's activity feed (type 244 "traded", all pages, 2018+), merged with
+  transaction records; a missing receiving team or trade week is worked out from the weekly rosters. Cache `hist/trades/v5`.
+- Draft: small colored icons left of the name (▲ steal, ▼ bust, K keeper) with a legend; the player history popup is
+  stacked (no sideways scrolling) and every Finished entry is filled (PPG rank, total-points rank, "Didn't play", or why it's unranked).
+
+## 2.3.2
+- Power Rankings: week numbers can be words ("After Week Two"); any post titled "power rankings" counts even from another account.
+- Trade Review: a third source reads trades off the weekly rosters (players moving directly team-to-team in both directions
+  the same week; draft picks vs. week 1 for preseason trades). The activity feed no longer depends on ESPN's trade message code,
+  and 40 pages are checked. Duplicates across sources are merged. Cache `hist/trades/v6`.
+
+## 2.3.3
+- Trade Review: only two-team trades where each side receives a player. Activity feed counts only real "traded" entries (244).
+  Waiver and free-agent pickups (from transaction records and the activity log) are recorded, and roster moves that came
+  from them are never treated as trades. Caches reset (`hist/trades/v7`, `hist/tx/v3`).
+- Power Rankings: an edition is a top-level post whose title says "power rankings" and names a week (digits or words); one
+  per week; replies and other posts are ignored. Saved editions reset (`power/archive/v2`).
+
+## 2.3.4
+- Power Rankings: the title is read from every place ESPN might put it (title/subject fields and the post's opening lines).
+  If nothing qualifies, falls back to Saffa's top-level posts that say "power rankings" and contain a numbered ranking.
+  The "What ESPN returned" note shows how Saffa's posts start and which fields ESPN sent. Saved editions reset (`power/archive/v3`).
+- Trade Review: trade items without a real player (draft-pick trades, blank entries) are dropped, and trades left without a
+  player on both sides are removed. Cache `hist/trades/v8`.
+
+## 2.4
+- New awards: Cloud 9 / Rock Bottom (a manager's best / worst score of their whole league history, 10+ earlier games,
+  worked out from league history in the page) and Dr. Strange (won after being under 25% to win once the Sunday 4 PM
+  games ended). Dr. Strange uses a snapshot saved the first time `/api/week` sees every pre-Sunday-night game final
+  (`pre-snf/v1/w<N>`), so it starts with the next Sunday the site sees live. Trophies: #tr-cloud9, #tr-rockbottom, #tr-drstrange.
+- Weekly recap card: record books follow Record Watch rules (that week's scores on a top-10 list; live streaks on a top-5
+  list or within 3 games), max 4, yours first, with In the books / Close tags. Tighter spacing; no empty tiles.
+- Best buys need an Estime Quotient of 1.0 or better.
+
+## 2.4.1
+- Weekly recap card's Record books now shows the same records as Story's Record Watch, with the same rules (one shared
+  builder, `recordWatchEntries()`): top 6 shown, yours first, with a pointer to Story for the rest.
+- Dr. Strange threshold: 36% or less to win once the Sunday 4 PM games ended.
+
+## 2.4.2
+- Weekly recap Record books ordered by tier: set that week ("Set in week N"), still current ("Still going": active streaks
+  on a list, season totals already on a list), on pace to break soon ("On pace" / "Close"), then the rest. Yours first within a tier.
+
+## 2.5
+- "Point Distribution" replaces "Where the points come from" / "Points by position".
+- Standings: new All-play view (record vs. every team every week, win %, H2H for comparison); "IF man..." renamed
+  "Best Case Scenario" (button shows "Best Case" on phones) everywhere.
+- Draft: a player who missed a big part of the season is judged on his PPG in the games he played (`healthyPpgRank`,
+  2+ games): a bust only if that pace ranks like one. Bust cards say so. Cache `hist/draft/v7`.
+
+## 2.5.1
+- Best Case Scenario renamed "If-Man" everywhere (Standings button, notes, profiles).
+
+## 2.6
+- Luck = schedule luck + injury luck, both in wins, everywhere (Standings luck view shows Luck / Sched. / Injury / BB-LW;
+  profiles show both parts; Hall of Fame and Record Watch use the combined number).
+- Injury luck (`seasonInjury` in netlify/lib/history.mjs, `/api/history?part=injury&season=Y`): public nflverse data
+  (GitHub releases: players.csv ID map, snap_counts_YYYY.csv, injuries_YYYY.csv; 2018 on). Counts a starter leaving early
+  (snap share under 60% of his normal, then on the next injury report or out next week), a starter who did not play while
+  his NFL team did, and a regular starter (2 of his last 3 available weeks) missing games, including season-ending
+  injuries after a drop. Points lost = healthy average minus what replaced him (or what he scored), turned into wins via the
+  all-play, then centered on the league average. Cached: `nflverse/idmap/v1` (14 days), `nflverse/season/v1/Y`,
+  `hist/injury/v1/Y` (finished seasons).
+
+## 2.6.1
+- Week recap card is shorter: the Standings tile is gone (last week's move now shows next to Standing at the top of the
+  card, like "▲3"); High, Low, and Game of the Week sit in one compact row; Awards and Record books sit side by side
+  (record books show the top 4, the rest are on Story).
+- Manager profiles: every "Nth of N" rank (average finish, points per game, allowed per game, start accuracy, luck) is a
+  link. Tapping it opens the full league ranking for that stat in the chosen season or era, with the manager highlighted.
+
+## 2.6.2
+- Recap card: Awards and Record books are locked side by side (left and right) on every phone. The layout no longer
+  depends on a CSS feature (`:has`) that some phone browsers don't refresh after the record books load.
+
+## 2.7
+- Injury luck uses value over replacement (VORP). A missed game now costs the player's healthy average minus replacement
+  level at his position: the points per start of the first player past the league's starting spots there (players with
+  3+ starts that season, ranked; spots counted from how many each team actually started at that position, so flex use is
+  included). It's the same for every team, so a deep bench shows up as skill instead of luck. Leaving early and being
+  started but not playing still cost his healthy average minus what he scored. Each season's replacement levels are in the
+  injury data (`replacement`).
+- Fixed the week-1 gap: a regular starter is now someone who started 2 of his last 3 available weeks, or every available
+  week if he has had fewer than 3, so a player hurt in week 1 counts from week 2.
+- Early draft picks (rounds 1-6) hurt before they could become regular starters, including preseason injuries, now count
+  while on the roster (or after being dropped, if they never play again that season). With no healthy games to go on,
+  they're valued at what the player at their draft rank at that position averaged (3rd RB taken = 3rd-best RB).
+- Injury cache moved to `hist/injury/v2/Y`, so every season is recalculated once.
+
+## 2.8
+- Injury luck now measures what injuries actually cost each team, roster included: the best lineup the team could have set
+  with its injured players at their expected points, minus the best lineup it could actually set, plus expected minus
+  scored for starters locked into the lineup (left early, started but didn't play). A deep bench softens the hit. The
+  league-wide replacement version from 2.7 is kept and shown in profiles as "vs. replacement" (`vorLuck`).
+- Expected points: healthy average from every game the player played at a normal snap share (starter or bench), blended
+  with a prior worth 3 games (last season's points per game from nflverse stats, scaled to league scoring; for a rookie
+  early pick, the value of his draft slot), times his NFL team's Vegas implied total that week over its average in his
+  healthy games (0.8-1.25), times a fill-in factor for missed weeks: how much his position group's points rose without
+  him (Vegas-adjusted) against the league-wide norm for that position, at most half weight and less with few weeks
+  (0.8-1.3).
+- Detection: any rostered player (bench or IR) out hurt counts; suspensions (R40), players who left the team, cuts and
+  healthy scratches don't (nflverse weekly roster status); injured reserve, PUP and NFI always count. Left early now also
+  checks that week's injury report, and covers players who normally play 20%+ of snaps (was 40%).
+- New public data (cached in Blobs): `stats_player_week_Y.csv` (`nflverse/stats/v1/Y`), `roster_weekly_Y.csv`
+  (`nflverse/rost/v1/Y`), `schedules/games.csv` (`nflverse/lines/v1`, 12 hours). Weekly ESPN data now keeps the whole
+  roster with points (`hist/week/v3`, `weeksum/v5`), so history re-pulls once. Injury cache `hist/injury/v3/Y`.
+
+## 2.9
+- New Library section, All-Time (jump-bar button after Final Standings): every team from every season ranked by
+  regular-season points per game. Views: Every team (10 per page, Best first / Worst first, a "Next <manager> team" jump,
+  and the selected manager's teams highlighted), By manager (that manager's teams with the year and all-time rank), and
+  By year (that season's teams with the manager and all-time rank). A strip at the top shows every team's PPG at once,
+  with the manager's teams (or the chosen season's) marked. Tap any team for its roster.
+- Injury luck: suspensions that start after the player has played that season now count (a surprise, like an injury).
+  Suspensions known before the season (already in his draft price), cuts and healthy scratches still don't.
+
+## 2.9.1
+- All-Time moved between Draft and Trade Review.
+- Its other two views are now lineups instead of team lists. Manager's all-time team: the best lineup from every player that
+  manager ever had (each player's best season with him: regular-season points while on his roster, starting or bench),
+  with the year and weeks, plus the next 5 best. Season's all-time team: the best lineup from that season's players, with
+  the manager who had each one (most weeks; other teams listed if he moved). Slots follow the league's current lineup
+  settings. New endpoint `/api/history?part=alltime&season=Y` (cache `hist/alltime/v1/Y`).
+
+## 2.9.2
+- All-Time rebuilt as three views:
+  - Team rankings: every team from every season by regular-season PPG, with regular-season finish (Reg.) and final
+    standings (Final). Highest / Lowest PPG, filters for manager and season, 10 per page with first/previous/next/last,
+    and a strip showing every team at once (filtered teams marked).
+  - All-star team by manager: best QB/RB/RB/WR/WR/TE/FLEX/D/ST/K by PPG from every player that manager ever had (PPG
+    while on his roster, games played, regular season; each player once), with the year, position rank that season and
+    games. Combined PPG and its rank among all managers (tap for the full ranking). A player needs 40% of a full regular
+    season with him.
+  - All-star team by season: the same for one season's players, with the manager who had each one (others listed if he
+    moved). Ranked among finished seasons; the season in progress shows where it's on pace to land (40% of weeks so far).
+- `/api/history?part=alltime` now returns games played and each player's position rank (cache `hist/alltime/v2/Y`).
+
+## 2.9.3
+- All-Time views renamed: Team Rankings, All Stars: By Manager, All Stars: By Year.
+- Tap the PPG strip for a pop-up of the team at that spot (team, manager, year, PPG, all-time rank, regular-season and
+  final finish, record, and a link to the roster).
+- Finished seasons only: the season in progress is left out of every All-Time view until it's over.
+- All Stars: By Manager: a player must have started at least 10 games for that manager in that season (`AT_MIN_STARTS`).
+
+## 2.9.4
+- All Stars: By Year: a player needs at least 10 games played that season (`AT_MIN_GAMES_YEAR`).
+- Team roster pop-up (everywhere it opens): Player, Pos, PPG, Rank (e.g. RB12), sorted by position then rank; the "How"
+  column is gone. PPG and rank come from the league's weekly rosters (same numbers as All-Time): points per game played
+  while on a league roster that season, and position rank by those points. Rosters now include player ids
+  (`hist/roster/v2`); all-time data keeps every rostered player (`hist/alltime/v3`).
+
+## 2.9.5
+- All Stars lineups drop D/ST (usually streamed): QB/RB/RB/WR/WR/TE/FLEX/K, combined PPG over eight players.
+
+## 3.0
+- New Social section, Playoff Predictor (after Pick 'em): pick the winner of every remaining regular-season game and,
+  with the median, whether each team finishes above or below it; records start from the real standings and the playoff
+  picture (seeds, byes, moves against the real standings, Clinched / Out) updates with every pick. Week tabs show how
+  many picks are made; Fill with projections, Fill week, Clear week, Clear all; picks are saved on the phone and can be
+  shared with "Copy link to my picks" (`?pp=` in the link). Median picks are capped at half the league each week and
+  kept consistent with the head-to-head picks. Tap a projected score for that lineup.
+- Projections (`/api/predictor`, `netlify/lib/predictor.mjs`, recomputed on every open; 60-second CDN cache): this week
+  is the live Scoreboard projection; later weeks are each team's best lineup from its current roster, with players worth
+  their points per game this season (blended with ESPN's season projection, worth 4 games), zero on byes (ESPN NFL
+  schedule), discounted for injury status next week (suspended 0, out 40%, doubtful 70%, questionable 95%; injured
+  reserve out 3 weeks), Vegas where lines exist, start % breaking near ties, and K/D/ST streamers (85% of the league's
+  average start) when a team's own is on bye. Win chances use the Scoreboard's spread (65% of each starter's projection).
+- Clinched / Out use wins only and are always safe: clinched when fewer teams than playoff spots can reach the team's
+  minimum wins; out when enough teams are sure to finish with more than its maximum. Ties in the standings follow the
+  league's seeding rule, with projected points for the weeks ahead.
+- `vegasFactor` is exported from model.mjs.
+
+## 3.1
+- Tab bar: Live, The Week, Playoffs, Library. Playoffs holds Standings and the Playoff Predictor.
+- The Week, in order: Team of the Week, Record Watch, Awards, Trending, Point Distribution, Transactions, Waivers (Record
+  Watch, Trending and Point Distribution are their own sections now, each with a jump-bar button).
+- Social moved off the tab bar to a chat-bubble button in the top right of the header; it opens a menu for
+  Pick 'em and Power Rankings. The new-power-rankings badge now shows on that button. Old links (#pickem, #power, #social,
+  #standings, #story) still work.
+- Playoff Predictor: the week in progress is included (only weeks that are completely final are left out).
